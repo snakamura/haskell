@@ -168,7 +168,7 @@ formatInline s = case matchRegexAll regex s of
                                                   return $ escapeHtml b ++ f ++ r
                       Nothing -> return $ escapeHtml s
     where
-        regex = mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|(https?://[A-Za-z0-9_=/.?&-]+)"
+        regex = mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|((https?|ftp)://[A-Za-z0-9_=/.?&+-]+)"
         formatPage' :: String -> IO String
         formatPage' page = do e <- existData page
                               if e then return $ formatPage page page
