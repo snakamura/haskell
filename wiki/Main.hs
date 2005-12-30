@@ -9,6 +9,7 @@ import Monad
 import System
 import System.Environment
 import System.Time
+import Text.Printf
 import Text.Regex
 
 dataDir, cgi, cgiURL, defaultPage, charset :: String
@@ -125,12 +126,12 @@ printListHtml = do
         printIndex (DM s t) = do c <- toCalendarTime t
                                  printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage s s ++ "</li>"
         formatDate :: CalendarTime -> String
-        formatDate c = (show $ ctYear c) ++ "/" ++
-                       (show $ (fromEnum $ ctMonth c) + 1) ++ "/" ++
-                       (show $ ctDay c) ++ " " ++
-                       (show $ ctHour c) ++ ":" ++
-                       (show $ ctMin c) ++ ":" ++
-                       (show $ ctSec c)
+        formatDate c = (printf "%04d" $ ctYear c) ++ "/" ++
+                       (printf "%02d" $ (fromEnum $ ctMonth c) + 1) ++ "/" ++
+                       (printf "%02d" $ ctDay c) ++ " " ++
+                       (printf "%02d" $ ctHour c) ++ ":" ++
+                       (printf "%02d" $ ctMin c) ++ ":" ++
+                       (printf "%02d" $ ctSec c)
 
 printContentType :: IO ()
 printContentType = printLine $ "Content-Type: text/html; charset=" ++ charset
