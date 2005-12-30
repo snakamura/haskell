@@ -1,16 +1,17 @@
-module Main
-    where
+module Main where
 
-import Char
-import Directory
-import IO
-import List
-import Monad
+import Control.Monad
+import Data.Char
 import System
 import System.Environment
+import System.IO
+import System.IO.Error
 import System.Time
 import Text.Printf
 import Text.Regex
+
+import FileStore
+import Store
 
 dataDir, cgi, cgiURL, defaultPage, charset :: String
 dataDir = "/home/snakamura/haskell/wiki/data/"
@@ -22,7 +23,7 @@ charset = "euc-jp"
 main :: IO ()
 main = do query <- getQuery
           content <- hGetContents stdin
-          process $ parseParams query ++ parseParams content
+          process (newFileStore dataDir) (parseParams query ++ parseParams content)
     where
         getQuery :: IO String
         getQuery = catch (getEnv "QUERY_STRING")
@@ -30,27 +31,27 @@ main = do query <- getQuery
                                     then return ""
                                     else ioError e)
 
-process :: Params -> IO ()
-process params = do
+process :: Store a => a -> Params -> IO ()
+process store params = do
     case getMode $ getParam params "mode" of
-         VIEW   -> do b <- existData page
-                      if b then printViewHtml page
-                           else printEditHtml page
-         EDIT   -> printEditHtml page
-         UPDATE -> do if body /= "" then do updateData page body
-                                            printUpdateHtml page
-                                    else do removeData page
-                                            printUpdateHtml defaultPage
-         LIST -> printListHtml
+         VIEW   -> do b <- existPage store page
+                      if b then printViewHtml store page
+                           else printEditHtml store page
+         EDIT   -> printEditHtml store page
+         UPDATE -> do if body /= "" then do updatePage store page body
+                                            printUpdateHtml store page
+                                    else do removePage store page
+                                            printUpdateHtml store defaultPage
+         LIST -> printListHtml store
     where
         page = if page' == "" then defaultPage else page'
         page' = getParam params "page"
         body = getParam params "body"
 
-printViewHtml :: String -> IO ()
-printViewHtml page = do
-    body <- getData page
-    formattedBody <- formatBody body
+printViewHtml :: Store a => a -> String -> IO ()
+printViewHtml store page = do
+    body <- getPage store page
+    formattedBody <- formatBody store body
     printContentType
     printLine ""
     printLine "<html>"
@@ -64,9 +65,9 @@ printViewHtml page = do
     printLine "</body>"
     printLine "</html>"
 
-printEditHtml :: String -> IO ()
-printEditHtml page = do
-    body <- getData page
+printEditHtml :: Store a => a -> String -> IO ()
+printEditHtml store page = do
+    body <- getPage store page
     printContentType
     printLine ""
     printLine "<html>"
@@ -87,8 +88,8 @@ printEditHtml page = do
     printLine "</body>"
     printLine "</html>"
 
-printUpdateHtml :: String -> IO ()
-printUpdateHtml page = do
+printUpdateHtml :: Store a => a -> String -> IO ()
+printUpdateHtml store page = do
     printContentType
     printLine $ "Location: " ++ thisURL
     printLine ""
@@ -104,9 +105,9 @@ printUpdateHtml page = do
     where
         thisURL = cgiURL ++ "?page=" ++ encodeURLComponent page
 
-printListHtml :: IO ()
-printListHtml = do
-    list <- listData
+printListHtml :: Store a => a -> IO ()
+printListHtml store = do
+    list <- listPages store
     printContentType
     printLine ""
     printLine "<html>"
@@ -122,9 +123,9 @@ printListHtml = do
     printLine "</body>"
     printLine "</html>"
     where
-        printIndex :: DataMetadata -> IO ()
-        printIndex (DM s t) = do c <- toCalendarTime t
-                                 printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage s s ++ "</li>"
+        printIndex :: PageMetadata -> IO ()
+        printIndex (PM name time) = do c <- toCalendarTime time
+                                       printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>"
         formatDate :: CalendarTime -> String
         formatDate c = (printf "%04d" $ ctYear c) ++ "/" ++
                        (printf "%02d" $ (fromEnum $ ctMonth c) + 1) ++ "/" ++
@@ -150,28 +151,29 @@ printLine :: String -> IO ()
 printLine s = do putStr s
                  putStr "\r\n"
 
-formatBody :: String -> IO String
-formatBody body = do x <- foldM (\ l r -> f r >>= return . (l ++))
-                                [] (lines $ normalizeNewLine body)
-                     return $ "<p>" ++ x ++ "</p>"
+formatBody :: Store a => a -> String -> IO String
+formatBody store body = do x <- foldM (\ l r -> f r >>= return . (l ++))
+                                      [] (lines $ normalizeNewLine body)
+                           return $ "<p>" ++ x ++ "</p>"
     where
         f :: String -> IO String
         f ""   = return "</p>\n<p>"
-        f line = do l <- formatInline line
+        f line = do l <- formatInline store line
                     return $ l ++ "\n"
         normalizeNewLine = filter ('\r' /=)
 
-formatInline :: String -> IO String
-formatInline s = case matchRegexAll regex s of
-                      Just (b, m, a, _:w:_) -> do f <- if w /= "" then formatPage' m
-                                                                  else formatURL' m
-                                                  r <- formatInline a
-                                                  return $ escapeHtml b ++ f ++ r
-                      Nothing -> return $ escapeHtml s
+formatInline :: Store a => a -> String -> IO String
+formatInline store s =
+    case matchRegexAll regex s of
+         Just (b, m, a, _:w:_) -> do f <- if w /= "" then formatPage' m
+                                                     else formatURL' m
+                                     r <- formatInline store a
+                                     return $ escapeHtml b ++ f ++ r
+         Nothing -> return $ escapeHtml s
     where
         regex = mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|((https?|ftp)://[A-Za-z0-9_=/.?&+-]+)"
         formatPage' :: String -> IO String
-        formatPage' page = do e <- existData page
+        formatPage' page = do e <- existPage store page
                               if e then return $ formatPage page page
                                    else return $ formatPage page "?" ++ page
         formatURL' :: String -> IO String
@@ -182,36 +184,6 @@ formatPage page content = formatURL (cgiURL ++ "?page=" ++ page) content
 
 formatURL :: String -> String -> String
 formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
-
-data DataMetadata = DM String ClockTime
-
-existData :: String -> IO Bool
-existData = doesFileExist . getDataPath
-
-getData :: String -> IO String
-getData page = catch (readFile $ getDataPath page)
-                     (\ e -> return "")
-
-updateData :: String -> String -> IO ()
-updateData = writeFile . getDataPath
-
-removeData :: String -> IO ()
-removeData = removeFile . getDataPath
-
-listData :: IO [DataMetadata]
-listData = getDirectoryContents dataDir >>=
-           filterM isFile >>=
-           return . sort >>=
-           mapM pairFileTime
-    where
-        isFile :: String -> IO Bool
-        isFile (c:_)  = return $ c /= '.'
-        pairFileTime :: String -> IO DataMetadata
-        pairFileTime file = (getModificationTime $ getDataPath file) >>=
-                            return . DM file
-
-getDataPath :: String -> FilePath
-getDataPath page = dataDir ++ page
 
 
 data Mode = VIEW
@@ -233,12 +205,6 @@ getParam :: Params -> String -> String
 getParam params name = case lookup name params of
                             Just v  -> v
                             Nothing -> ""
-{-
-getParam [] _ = ""
-getParam ((n, v):params) name
-    | n == name = v
-    | otherwise = getParam params name 
--}
 
 parseParams :: String -> Params
 parseParams = map parseParam . paramList
