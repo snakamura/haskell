@@ -11,10 +11,10 @@ import System.Environment
 import System.Time
 import Text.Regex
 
-dataDir, cgi, url, defaultPage, charset :: String
+dataDir, cgi, cgiURL, defaultPage, charset :: String
 dataDir = "/home/snakamura/haskell/wiki/data/"
 cgi = "wiki.cgi"
-url = "http://home.snak.org/~snakamura/" ++ cgi
+cgiURL = "http://home.snak.org/~snakamura/" ++ cgi
 defaultPage = "FrontPage"
 charset = "euc-jp"
 
@@ -101,7 +101,7 @@ printUpdateHtml page = do
     printLine "</body>"
     printLine "</html>"
     where
-        thisURL = url ++ "?page=" ++ encodeURLComponent page
+        thisURL = cgiURL ++ "?page=" ++ encodeURLComponent page
 
 printListHtml :: IO ()
 printListHtml = do
@@ -123,7 +123,7 @@ printListHtml = do
     where
         printIndex :: DataMetadata -> IO ()
         printIndex (DM s t) = do c <- toCalendarTime t
-                                 printLine $ "<li>" ++ formatDate c ++ " : " ++ formatLink s s ++ "</li>"
+                                 printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage s s ++ "</li>"
         formatDate :: CalendarTime -> String
         formatDate c = (show $ ctYear c) ++ "/" ++
                        (show $ (fromEnum $ ctMonth c) + 1) ++ "/" ++
@@ -139,10 +139,10 @@ printNavigator :: String -> IO ()
 printNavigator page = do
     printLine "<div>"
     if page /= ""
-       then printLine $ "<a href=\"" ++ url ++ "?mode=edit&page=" ++ encodeURLComponent page ++ "\">Edit</a> | "
+       then printLine $ "<a href=\"" ++ cgiURL ++ "?mode=edit&page=" ++ encodeURLComponent page ++ "\">Edit</a> | "
        else return ()
-    printLine $ "<a href=\"" ++ url ++ "?page=FrontPage\">Top</a> | "
-    printLine $ "<a href=\"" ++ url ++ "?mode=list\">List</a>"
+    printLine $ "<a href=\"" ++ cgiURL ++ "?page=FrontPage\">Top</a> | "
+    printLine $ "<a href=\"" ++ cgiURL ++ "?mode=list\">List</a>"
     printLine "</div>"
 
 printLine :: String -> IO ()
@@ -161,23 +161,26 @@ formatBody body = do x <- foldM (\ l r -> f r >>= return . (l ++))
         normalizeNewLine = filter ('\r' /=)
 
 formatInline :: String -> IO String
-formatInline = formatWikiName
-
-formatWikiName :: String -> IO String
-formatWikiName s = case matchRegexAll regex s of
-                        Just (b, m, a, _) -> do f <- format m
-                                                r <- formatWikiName a
-                                                return $ escapeHtml b ++ f ++ r
-                        Nothing -> return $ escapeHtml s
+formatInline s = case matchRegexAll regex s of
+                      Just (b, m, a, _:w:_) -> do f <- if w /= "" then formatPage' m
+                                                                  else formatURL' m
+                                                  r <- formatInline a
+                                                  return $ escapeHtml b ++ f ++ r
+                      Nothing -> return $ escapeHtml s
     where
-        regex = mkRegex "\\b([A-Z]([A-Za-z])+){2,}\\b"
-        format :: String -> IO String
-        format page = do e <- existData page
-                         if e then return $ formatLink page page
-                              else return $ formatLink page "?" ++ page
+        regex = mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|(https?://[A-Za-z0-9_=/.?&-]+)"
+        formatPage' :: String -> IO String
+        formatPage' page = do e <- existData page
+                              if e then return $ formatPage page page
+                                   else return $ formatPage page "?" ++ page
+        formatURL' :: String -> IO String
+        formatURL' url = return $ formatURL url url
 
-formatLink :: String -> String -> String
-formatLink page content = "<a href=\"" ++ url ++ "?page=" ++ page ++ "\">" ++ content ++ "</a>"
+formatPage :: String -> String -> String
+formatPage page content = formatURL (cgiURL ++ "?page=" ++ page) content
+
+formatURL :: String -> String -> String
+formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
 
 data DataMetadata = DM String ClockTime
 
