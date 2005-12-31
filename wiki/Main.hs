@@ -127,12 +127,9 @@ printListHtml store = do
         printIndex (PM name time) = do c <- toCalendarTime time
                                        printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>"
         formatDate :: CalendarTime -> String
-        formatDate c = (printf "%04d" $ ctYear c) ++ "/" ++
-                       (printf "%02d" $ (fromEnum $ ctMonth c) + 1) ++ "/" ++
-                       (printf "%02d" $ ctDay c) ++ " " ++
-                       (printf "%02d" $ ctHour c) ++ ":" ++
-                       (printf "%02d" $ ctMin c) ++ ":" ++
-                       (printf "%02d" $ ctSec c)
+        formatDate c = printf "%04d/%02d/%02d %02d:%02d:%02d"
+                           (ctYear c) ((fromEnum $ ctMonth c) + 1) (ctDay c)
+                           (ctHour c) (ctMin c) (ctSec c)
 
 printContentType :: IO ()
 printContentType = printLine $ "Content-Type: text/html; charset=" ++ charset
