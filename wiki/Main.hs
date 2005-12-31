@@ -157,17 +157,19 @@ formatBody store body = do x <- foldM (\ l r -> f r >>= return . (l ++))
                            return $ "<p>" ++ x ++ "</p>"
     where
         f :: String -> IO String
-        f ""   = return "</p>\n<p>"
-        f line = do l <- formatInline store line
-                    return $ l ++ "\n"
+        f ""   = return "</p>\r\n<p>"
+        f line = formatInline store line >>= return . (++ "\r\n")
         normalizeNewLine = filter ('\r' /=)
 
 formatInline :: Store a => a -> String -> IO String
-formatInline store s =
+formatInline = formatInlineText
+
+formatInlineText :: Store a => a -> String -> IO String
+formatInlineText store s =
     case matchRegexAll regex s of
          Just (b, m, a, _:w:_) -> do f <- if w /= "" then formatPage' m
                                                      else formatURL' m
-                                     r <- formatInline store a
+                                     r <- formatInlineText store a
                                      return $ escapeHtml b ++ f ++ r
          Nothing -> return $ escapeHtml s
     where

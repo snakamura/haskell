@@ -21,10 +21,10 @@ instance Store FileStore where
     
     removePage fs page = removeFile $ getPagePath fs page
     
-    listPages fs@(FS base) = getDirectoryContents base >>=
-                             filterM isFile >>=
-                             return . sort >>=
-                             mapM pairFileTime
+    listPages fs@(FS dir) = getDirectoryContents dir >>=
+                            filterM isFile >>=
+                            return . sort >>=
+                            mapM pairFileTime
         where
             isFile :: String -> IO Bool
             isFile (c:_)  = return $ c /= '.'
