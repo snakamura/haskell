@@ -22,15 +22,15 @@ instance Store FileStore where
     removePage fs page = removeFile $ getPagePath fs page
     
     listPages fs@(FS dir) = getDirectoryContents dir >>=
-                            filterM isFile >>=
+                            filterM isPage >>=
                             return . sort >>=
-                            mapM pairFileTime
+                            mapM createPageMetadata
         where
-            isFile :: String -> IO Bool
-            isFile (c:_)  = return $ c /= '.'
-            pairFileTime :: String -> IO PageMetadata
-            pairFileTime file = (getModificationTime $ getPagePath fs file) >>=
-                                return . PM file
+            isPage :: String -> IO Bool
+            isPage (c:_)  = return $ c /= '.'
+            createPageMetadata :: String -> IO PageMetadata
+            createPageMetadata page = (getModificationTime $ getPagePath fs page) >>=
+                                      return . PM page
 
 getPagePath :: FileStore -> String -> FilePath
 getPagePath (FS dir) page = dir ++ page
