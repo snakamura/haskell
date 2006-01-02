@@ -25,11 +25,13 @@ evalTemplate (Template s) vars =
                     <|> try unescapedVariable
                     <|> do char '$'
                            return "$"
-        escapedVariable = do char '$'
+        escapedVariable = do string "${"
                              name <- many1 alphaNum
+                             char '}'
                              return $ escapeHtml $ lookupVariable name
-        unescapedVariable = do string "$$"
+        unescapedVariable = do string "$${"
                                name <- many1 alphaNum
+                               char '}'
                                return $ lookupVariable name
         lookupVariable :: String -> String
         lookupVariable = getVariable vars
