@@ -124,8 +124,9 @@ printListHtml store = do
     printLine "</html>"
     where
         printIndex :: PageMetadata -> IO ()
-        printIndex (PM name time) = do c <- toCalendarTime time
-                                       printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>"
+        printIndex (PageMetadata name time) = do
+            c <- toCalendarTime time
+            printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>"
         formatDate :: CalendarTime -> String
         formatDate c = printf "%04d/%02d/%02d %02d:%02d:%02d"
                            (ctYear c) ((fromEnum $ ctMonth c) + 1) (ctDay c)

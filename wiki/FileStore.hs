@@ -30,7 +30,7 @@ instance Store FileStore where
             isPage (c:_)  = return $ c /= '.'
             createPageMetadata :: String -> IO PageMetadata
             createPageMetadata page = (getModificationTime $ getPagePath fs page) >>=
-                                      return . PM page
+                                      return . PageMetadata page
 
 getPagePath :: FileStore -> String -> FilePath
 getPagePath (FS dir) page = dir ++ page

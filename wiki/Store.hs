@@ -3,7 +3,7 @@ module Store where
 import System.Time
 
 
-data PageMetadata = PM String ClockTime
+data PageMetadata = PageMetadata String ClockTime
 
 class Store a where
     existPage  :: a -> String -> IO Bool
