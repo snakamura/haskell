@@ -11,10 +11,13 @@ import Text.Printf
 import Text.Regex
 
 import FileStore
+import HTMLUtil
 import Store
+import Template
 
-dataDir, cgi, cgiURL, defaultPage, charset :: String
+dataDir, templateDir, cgi, cgiURL, defaultPage, charset :: String
 dataDir = "/home/snakamura/haskell/wiki/data/"
+templateDir = "/home/snakamura/haskell/wiki/template/"
 cgi = "wiki.cgi"
 cgiURL = "http://home.snak.org/~snakamura/" ++ cgi
 defaultPage = "FrontPage"
@@ -50,83 +53,55 @@ process store params = do
 
 printViewHtml :: Store a => a -> String -> IO ()
 printViewHtml store page = do
+    template <- loadTemplate $ templateDir ++ "view.html"
     body <- getPage store page
     formattedBody <- formatBody store body
     printContentType
     printLine ""
-    printLine "<html>"
-    printLine "<head>"
-    printLine $ "<title>" ++ escapeHtml page ++ "</title>"
-    printLine "</head>"
-    printLine "<body>"
-    printNavigator page
-    printLine $ "<h1>" ++ escapeHtml page ++ "</h1>"
-    printLine formattedBody
-    printLine "</body>"
-    printLine "</html>"
+    putStrLn $ evalTemplate template [ ("cgi",           cgi          ),
+                                       ("page",          page         ),
+                                       ("body",          body         ),
+                                       ("formattedBody", formattedBody) ]
 
 printEditHtml :: Store a => a -> String -> IO ()
 printEditHtml store page = do
+    template <- loadTemplate $ templateDir ++ "edit.html"
     body <- getPage store page
     printContentType
     printLine ""
-    printLine "<html>"
-    printLine "<head>"
-    printLine $ "<title>" ++ escapeHtml page ++ "</title>"
-    printLine "</head>"
-    printLine "<body>"
-    printNavigator page
-    printLine $ "<h1>" ++ escapeHtml page ++ "</h1>"
-    printLine $ "<form action=\""++ cgi ++ "\" method=\"POST\">"
-    putStr "<div><textarea name=\"body\" rows=\"20\" cols=\"80\">"
-    putStr $ escapeHtml body
-    printLine "</textarea></div>"
-    printLine "<div><input type=\"submit\" value=\"Save\"></input></div>"
-    printLine $ "<input name=\"page\" type=\"hidden\" value=\"" ++ escapeHtml page ++ "\"></input>"
-    printLine "<input name=\"mode\" type=\"hidden\" value=\"update\"></input>"
-    printLine "</form>"
-    printLine "</body>"
-    printLine "</html>"
+    putStrLn $ evalTemplate template [ ("cgi",  cgi ),
+                                       ("page", page),
+                                       ("body", body) ]
 
 printUpdateHtml :: Store a => a -> String -> IO ()
 printUpdateHtml store page = do
+    template <- loadTemplate $ templateDir ++ "update.html"
     printContentType
     printLine $ "Location: " ++ thisURL
     printLine ""
-    printLine "<html>"
-    printLine "<head>"
-    printLine $ "<meta http-equiv=\"refresh\" content=\"0;url=" ++ thisURL ++ "\">"
-    printLine $ "<title>" ++ escapeHtml page ++ "</title>"
-    printLine "</head>"
-    printLine "<body>"
-    printLine $ "<p><a href=\"" ++ cgi ++ "?page=" ++ encodeURLComponent page ++ "\">Click here</a></p>"
-    printLine "</body>"
-    printLine "</html>"
+    putStrLn $ evalTemplate template [ ("cgi",  cgi    ),
+                                       ("page", page   ),
+                                       ("url",  thisURL) ]
     where
         thisURL = cgiURL ++ "?page=" ++ encodeURLComponent page
 
 printListHtml :: Store a => a -> IO ()
 printListHtml store = do
+    template <- loadTemplate $ templateDir ++ "list.html"
     list <- listPages store
+    content <- formatList list
     printContentType
     printLine ""
-    printLine "<html>"
-    printLine "<head>"
-    printLine $ "<title>List</title>"
-    printLine "</head>"
-    printLine "<body>"
-    printNavigator ""
-    printLine $ "<h1>List</h1>"
-    printLine "<ul>"
-    mapM_ printIndex list
-    printLine "</ul>"
-    printLine "</body>"
-    printLine "</html>"
+    putStrLn $ evalTemplate template [ ("cgi",      cgi    ),
+                                       ("content",  content) ]
     where
-        printIndex :: PageMetadata -> IO ()
-        printIndex (PageMetadata name time) = do
+        formatList :: [PageMetadata] -> IO String
+        formatList list = do f <- mapM formatMetadata list
+                             return $ "<ul>\r\n" ++ concat f ++ "</ul>\r\n"
+        formatMetadata :: PageMetadata -> IO String
+        formatMetadata (PageMetadata name time) = do
             c <- toCalendarTime time
-            printLine $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>"
+            return $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>\r\n"
         formatDate :: CalendarTime -> String
         formatDate c = printf "%04d/%02d/%02d %02d:%02d:%02d"
                            (ctYear c) ((fromEnum $ ctMonth c) + 1) (ctDay c)
@@ -134,16 +109,6 @@ printListHtml store = do
 
 printContentType :: IO ()
 printContentType = printLine $ "Content-Type: text/html; charset=" ++ charset
-
-printNavigator :: String -> IO ()
-printNavigator page = do
-    printLine "<div>"
-    if page /= ""
-       then printLine $ "<a href=\"" ++ cgiURL ++ "?mode=edit&page=" ++ encodeURLComponent page ++ "\">Edit</a> | "
-       else return ()
-    printLine $ "<a href=\"" ++ cgiURL ++ "?page=FrontPage\">Top</a> | "
-    printLine $ "<a href=\"" ++ cgiURL ++ "?mode=list\">List</a>"
-    printLine "</div>"
 
 printLine :: String -> IO ()
 printLine s = do putStr s
@@ -180,7 +145,7 @@ formatInlineText store s =
         formatURL' url = return $ formatURL url url
 
 formatPage :: String -> String -> String
-formatPage page content = formatURL (cgiURL ++ "?page=" ++ page) content
+formatPage page content = formatURL (cgi ++ "?page=" ++ page) content
 
 formatURL :: String -> String -> String
 formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
@@ -235,17 +200,6 @@ splitString :: Char -> String -> (String, String)
 splitString c s = case break (c ==) s of
                        (_, [])    -> (s, [])
                        (xs, _:ys) -> (xs, ys)
-
-escapeHtml :: String -> String
---escapeHtml = foldr ((++) . escapeHtmlChar) []
-escapeHtml = concatMap escapeHtmlChar
-    where
-        escapeHtmlChar :: Char -> String
-        escapeHtmlChar c | c == '<'  = "&lt;"
-                         | c == '>'  = "&gt;"
-                         | c == '&'  = "&amp;"
-                         | c == '\"' = "&quot;"
-                         | otherwise = [c]
 
 encodeURLComponent :: String -> String
 encodeURLComponent = concatMap encodeURLComponentChar

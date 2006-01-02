@@ -1,0 +1,20 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>$page</title>
+</head>
+<body>
+
+<div><a href="$cgi?page=FrontPage">Top</a> | <a href="$cgi?mode=list">List</a></div>
+
+<h1>$page</h1>
+
+<form action="$cgi" method="POST">
+<div><textarea name="body" rows="20" cols="80">$body</textarea></div>
+<div><input type="submit" value="Save"></input></div>
+<input name="page" type="hidden" value="$page"></input>
+<input name="mode" type="hidden" value="update"></input>
+</form>
+
+</body>
+</html>
