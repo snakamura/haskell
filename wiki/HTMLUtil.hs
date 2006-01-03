@@ -1,5 +1,6 @@
 module HTMLUtil (escapeHtml,
-                 encodeURLComponent)
+                 encodeURLComponent,
+                 decodeURL)
     where
 
 import Data.Char
@@ -20,10 +21,18 @@ encodeURLComponent = concatMap encodeURLComponentChar
     where
         encodeURLComponentChar :: Char -> String
         encodeURLComponentChar c
-            | 'A' <= c && c <= 'Z' = [c]
-            | 'a' <= c && c <= 'z' = [c]
-            | '0' <= c && c <= '9' = [c]
-            | c == '_'             = [c]
-            | otherwise            = '%':(intToDigit $ n `div` 16):(intToDigit $ n `mod` 16):[]
+            | isAlphaNum c = [c]
+            | c == '_'     = [c]
+            | otherwise    = '%':(intToDigit $ n `div` 16):(intToDigit $ n `mod` 16):[]
             where
                 n = ord c
+
+decodeURL :: String -> String
+decodeURL "" = ""
+decodeURL ('%':r@(c1:c2:s)) | isHexDigit c1 && isHexDigit c2 = (decodeChar c1 c2):(decodeURL s)
+                            | otherwise                      = '%':(decodeURL r)
+    where
+        decodeChar :: Char -> Char -> Char
+        decodeChar c1 c2 = chr ((digitToInt c1)*16 + digitToInt c2)
+decodeURL (c:s) | c == '+'  = ' ':(decodeURL s)
+                | otherwise = c:(decodeURL s)

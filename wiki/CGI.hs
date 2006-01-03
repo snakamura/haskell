@@ -11,6 +11,7 @@ import Data.Char
 import System.Environment
 import System.IO.Error
 
+import HTMLUtil
 import TextUtil
 
 data Method = GET
@@ -50,13 +51,4 @@ parseParam :: String -> Param
 parseParam = decodeValue . splitString '='
     where
         decodeValue :: Param -> Param
-        decodeValue (name, value) = (name, decode value)
-        decode :: String -> String
-        decode "" = ""
-        decode ('%':r@(c1:c2:s))
-            | isHexDigit c1 && isHexDigit c2 = (decodeChar c1 c2):(decode s)
-            | otherwise                      = '%':(decode r)
-        decode (c:s) | c == '+'  = ' ':(decode s)
-                     | otherwise = c:(decode s)
-        decodeChar :: Char -> Char -> Char
-        decodeChar c1 c2 = chr ((digitToInt c1)*16 + digitToInt c2)
+        decodeValue (name, value) = (name, decodeURL value)
