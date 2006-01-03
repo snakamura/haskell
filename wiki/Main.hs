@@ -9,85 +9,86 @@ import Text.Printf
 import Text.Regex
 
 import CGI
+import Config
 import FileStore
 import HTMLUtil
 import Store
 import Template
 
-dataDir, templateDir, cgi, cgiURL, defaultPage, charset :: String
-dataDir     = "/home/snakamura/haskell/wiki/data/"
-templateDir = "/home/snakamura/haskell/wiki/template/"
+cgi, defaultPage :: String
 cgi         = "wiki.cgi"
-cgiURL      = "http://home.snak.org/~snakamura/" ++ cgi
 defaultPage = "FrontPage"
-charset     = "euc-jp"
 
 main :: IO ()
-main = requestParams >>= process (newFileStore dataDir)
+main = loadConfig "./config" >>= processMain
+
+processMain :: Config -> IO ()
+processMain config = requestParams >>= process (newFileStore dataDir) config
     where
         requestParams :: IO Params
         requestParams = do method <- getRequestMethod
                            case method of
                                 GET  -> getQuery >>= return . parseParams
                                 POST -> hGetContents stdin >>= return . parseParams
+        dataDir = getConfig config "dataDir"
 
-process :: Store a => a -> Params -> IO ()
-process store params = do
+process :: Store a => a -> Config -> Params -> IO ()
+process store config params = do
     case getMode $ getParam params "mode" of
          VIEW   -> do b <- existPage store page
-                      if b then printViewHtml store page
-                           else printEditHtml store page
-         EDIT   -> printEditHtml store page
+                      if b then printViewHtml store config page
+                           else printEditHtml store config page
+         EDIT   -> printEditHtml store config page
          UPDATE -> do if body /= "" then do updatePage store page body
-                                            printUpdateHtml store page
+                                            printUpdateHtml store config page
                                     else do removePage store page
-                                            printUpdateHtml store defaultPage
-         LIST -> printListHtml store
+                                            printUpdateHtml store config defaultPage
+         LIST -> printListHtml store config
     where
         page = if page' == "" then defaultPage else page'
         page' = getParam params "page"
         body = getParam params "body"
 
-printViewHtml :: Store a => a -> String -> IO ()
-printViewHtml store page = do
-    template <- loadTemplate $ templateDir ++ "view.html"
+printViewHtml :: Store a => a -> Config -> String -> IO ()
+printViewHtml store config page = do
+    template <- loadConfigTemplate config "view.html"
     body <- getPage store page
     formattedBody <- formatBody store body
-    printContentType
+    printContentType config
     printLine ""
     putStrLn $ evalTemplate template [ ("cgi",           cgi          ),
                                        ("page",          page         ),
                                        ("body",          body         ),
                                        ("formattedBody", formattedBody) ]
 
-printEditHtml :: Store a => a -> String -> IO ()
-printEditHtml store page = do
-    template <- loadTemplate $ templateDir ++ "edit.html"
+printEditHtml :: Store a => a -> Config -> String -> IO ()
+printEditHtml store config page = do
+    template <- loadConfigTemplate config "edit.html"
     body <- getPage store page
-    printContentType
+    printContentType config
     printLine ""
     putStrLn $ evalTemplate template [ ("cgi",  cgi ),
                                        ("page", page),
                                        ("body", body) ]
 
-printUpdateHtml :: Store a => a -> String -> IO ()
-printUpdateHtml store page = do
-    template <- loadTemplate $ templateDir ++ "update.html"
-    printContentType
+printUpdateHtml :: Store a => a -> Config -> String -> IO ()
+printUpdateHtml store config page = do
+    template <- loadConfigTemplate config "update.html"
+    printContentType config
     printLine $ "Location: " ++ thisURL
     printLine ""
     putStrLn $ evalTemplate template [ ("cgi",  cgi    ),
                                        ("page", page   ),
                                        ("url",  thisURL) ]
     where
-        thisURL = cgiURL ++ "?page=" ++ encodeURLComponent page
+        thisURL = getConfig config "baseURL" ++ cgi ++ "?page=" ++ encodeURLComponent page
 
-printListHtml :: Store a => a -> IO ()
-printListHtml store = do
-    template <- loadTemplate $ templateDir ++ "list.html"
+printListHtml :: Store a => a -> Config -> IO ()
+printListHtml store config = do
+    template <- loadConfigTemplate config "list.html"
     list <- listPages store
     content <- formatList list
-    printContentType
+    printContentType config
     printLine ""
     putStrLn $ evalTemplate template [ ("cgi",      cgi    ),
                                        ("content",  content) ]
@@ -104,8 +105,8 @@ printListHtml store = do
                            (ctYear c) ((fromEnum $ ctMonth c) + 1) (ctDay c)
                            (ctHour c) (ctMin c) (ctSec c)
 
-printContentType :: IO ()
-printContentType = printLine $ "Content-Type: text/html; charset=" ++ charset
+printContentType :: Config -> IO ()
+printContentType config = printLine $ "Content-Type: text/html; charset=" ++ (getConfig config "charset")
 
 printLine :: String -> IO ()
 printLine s = do putStr s
@@ -159,3 +160,8 @@ formatPage page content = formatURL (cgi ++ "?page=" ++ page) content
 
 formatURL :: String -> String -> String
 formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
+
+loadConfigTemplate :: Config -> String -> IO Template
+loadConfigTemplate config name = loadTemplate $ templateDir ++ name
+    where
+        templateDir = getConfig config "templateDir"

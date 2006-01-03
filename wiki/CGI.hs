@@ -11,6 +11,8 @@ import Data.Char
 import System.Environment
 import System.IO.Error
 
+import TextUtil
+
 data Method = GET
             | POST
 
@@ -58,9 +60,3 @@ parseParam = decodeValue . splitString '='
                      | otherwise = c:(decode s)
         decodeChar :: Char -> Char -> Char
         decodeChar c1 c2 = chr ((digitToInt c1)*16 + digitToInt c2)
-
-
-splitString :: Char -> String -> (String, String)
-splitString c s = case break (c ==) s of
-                       (_, [])    -> (s, [])
-                       (xs, _:ys) -> (xs, ys)

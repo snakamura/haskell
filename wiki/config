@@ -1,0 +1,4 @@
+dataDir     = /home/snakamura/haskell/wiki/data/
+templateDir = /home/snakamura/haskell/wiki/template/
+baseURL     = http://home.snak.org/~snakamura/
+charset     = euc-jp

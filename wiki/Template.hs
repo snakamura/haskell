@@ -1,4 +1,5 @@
-module Template (loadTemplate,
+module Template (Template(),
+                 loadTemplate,
                  evalTemplate)
     where
 
