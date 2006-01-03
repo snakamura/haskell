@@ -1,4 +1,5 @@
-module FileStore (newFileStore) where
+module FileStore (newFileStore)
+    where
 
 import Control.Monad
 import Data.List

@@ -1,4 +1,6 @@
-module Template (loadTemplate, evalTemplate) where
+module Template (loadTemplate,
+                 evalTemplate)
+    where
 
 import Text.ParserCombinators.Parsec
 

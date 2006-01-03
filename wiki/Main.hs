@@ -1,38 +1,36 @@
-module Main (main) where
+module Main (main)
+    where
 
 import Control.Monad
 import Data.Char
 import System
-import System.Environment
 import System.IO
-import System.IO.Error
 import System.Time
 import Text.Printf
 import Text.Regex
 
+import CGI
 import FileStore
 import HTMLUtil
 import Store
 import Template
 
 dataDir, templateDir, cgi, cgiURL, defaultPage, charset :: String
-dataDir = "/home/snakamura/haskell/wiki/data/"
+dataDir     = "/home/snakamura/haskell/wiki/data/"
 templateDir = "/home/snakamura/haskell/wiki/template/"
-cgi = "wiki.cgi"
-cgiURL = "http://home.snak.org/~snakamura/" ++ cgi
+cgi         = "wiki.cgi"
+cgiURL      = "http://home.snak.org/~snakamura/" ++ cgi
 defaultPage = "FrontPage"
-charset = "euc-jp"
+charset     = "euc-jp"
 
 main :: IO ()
-main = do query <- getQuery
-          content <- hGetContents stdin
-          process (newFileStore dataDir) (parseParams query ++ parseParams content)
+main = requestParams >>= process (newFileStore dataDir)
     where
-        getQuery :: IO String
-        getQuery = catch (getEnv "QUERY_STRING")
-                         (\ e -> if isDoesNotExistError e
-                                    then return ""
-                                    else ioError e)
+        requestParams :: IO Params
+        requestParams = do method <- getRequestMethod
+                           case method of
+                                GET  -> getQuery >>= return . parseParams
+                                POST -> hGetContents stdin >>= return . parseParams
 
 process :: Store a => a -> Params -> IO ()
 process store params = do
@@ -134,7 +132,7 @@ formatInlineText store s =
                                                      else formatURL' m
                                      r <- formatInlineText store a
                                      return $ escapeHtml b ++ f ++ r
-         Nothing -> return $ escapeHtml s
+         Nothing               -> return $ escapeHtml s
     where
         regex = mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|((https?|ftp)://[A-Za-z0-9_=/.?&+-]+)"
         formatPage' :: String -> IO String
@@ -162,44 +160,6 @@ getMode mode | mode == "edit"   = EDIT
              | mode == "list"   = LIST
              | otherwise        = VIEW
 
-
-type Param = (String, String)
-type Params = [Param]
-
-getParam :: Params -> String -> String
-getParam params name = case lookup name params of
-                            Just v  -> v
-                            Nothing -> ""
-
-parseParams :: String -> Params
-parseParams = map parseParam . paramList
-    where
-        paramList :: String -> [String]
-        paramList "" = []
-        paramList s = case splitString '&' s of
-                           (_, [])    -> [s]
-                           (xs, ys) -> xs:(paramList ys)
-
-parseParam :: String -> Param
-parseParam = decodeValue . splitString '='
-    where
-        decodeValue :: Param -> Param
-        decodeValue (name, value) = (name, decode value)
-        decode :: String -> String
-        decode "" = ""
-        decode ('%':r@(c1:c2:s))
-            | isHexDigit c1 && isHexDigit c2 = (decodeChar c1 c2):(decode s)
-            | otherwise                      = '%':(decode r)
-        decode (c:s) | c == '+'  = ' ':(decode s)
-                     | otherwise = c:(decode s)
-        decodeChar :: Char -> Char -> Char
-        decodeChar c1 c2 = chr ((digitToInt c1)*16 + digitToInt c2)
-
-
-splitString :: Char -> String -> (String, String)
-splitString c s = case break (c ==) s of
-                       (_, [])    -> (s, [])
-                       (xs, _:ys) -> (xs, ys)
 
 encodeURLComponent :: String -> String
 encodeURLComponent = concatMap encodeURLComponentChar

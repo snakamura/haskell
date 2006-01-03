@@ -1,4 +1,5 @@
-module HTMLUtil (escapeHtml) where
+module HTMLUtil (escapeHtml)
+    where
 
 escapeHtml :: String -> String
 --escapeHtml = foldr ((++) . escapeHtmlChar) []
