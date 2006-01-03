@@ -1,4 +1,5 @@
-module FileStore (newFileStore)
+module FileStore (FileStore(),
+                  newFileStore)
     where
 
 import Control.Monad
@@ -20,7 +21,8 @@ instance Store FileStore where
     
     updatePage fs page body = writeFile (getPagePath fs page) body
     
-    removePage fs page = removeFile $ getPagePath fs page
+    removePage fs page = catch (removeFile $ getPagePath fs page)
+                               (\ e -> return ())
     
     listPages fs@(FS dir) = getDirectoryContents dir >>=
                             filterM isPage >>=
