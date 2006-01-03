@@ -5,11 +5,11 @@
 </head>
 <body>
 
-<div><a href="${cgi}?mode=edit&page=${page}">Edit</a> | <a href="${cgi}?page=FrontPage">Top</a> | <a href="${cgi}?mode=list">List</a></div>
+<div><a href="${cgi}?mode=edit&page=${u:page}">Edit</a> | <a href="${cgi}?page=FrontPage">Top</a> | <a href="${cgi}?mode=list">List</a></div>
 
 <h1>${page}</h1>
 
-${u:formattedBody}
+${!:formattedBody}
 
 </body>
 </html>

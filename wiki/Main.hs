@@ -2,7 +2,6 @@ module Main (main)
     where
 
 import Control.Monad
-import Data.Char
 import System
 import System.IO
 import System.Time
@@ -112,6 +111,19 @@ printLine :: String -> IO ()
 printLine s = do putStr s
                  putStr "\r\n"
 
+
+data Mode = VIEW
+          | EDIT
+          | UPDATE
+          | LIST
+
+getMode :: String -> Mode
+getMode mode | mode == "edit"   = EDIT
+             | mode == "update" = UPDATE
+             | mode == "list"   = LIST
+             | otherwise        = VIEW
+
+
 formatBody :: Store a => a -> String -> IO String
 formatBody store body = do x <- foldM (\ l r -> f r >>= return . (l ++))
                                       [] (lines $ normalizeNewLine body)
@@ -147,29 +159,3 @@ formatPage page content = formatURL (cgi ++ "?page=" ++ page) content
 
 formatURL :: String -> String -> String
 formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
-
-
-data Mode = VIEW
-          | EDIT
-          | UPDATE
-          | LIST
-
-getMode :: String -> Mode
-getMode mode | mode == "edit"   = EDIT
-             | mode == "update" = UPDATE
-             | mode == "list"   = LIST
-             | otherwise        = VIEW
-
-
-encodeURLComponent :: String -> String
-encodeURLComponent = concatMap encodeURLComponentChar
-    where
-        encodeURLComponentChar :: Char -> String
-        encodeURLComponentChar c
-            | 'A' <= c && c <= 'Z' = [c]
-            | 'a' <= c && c <= 'z' = [c]
-            | '0' <= c && c <= '9' = [c]
-            | c == '_'             = [c]
-            | otherwise            = '%':(intToDigit $ n `div` 16):(intToDigit $ n `mod` 16):[]
-            where
-                n = ord c

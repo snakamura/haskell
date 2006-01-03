@@ -23,18 +23,23 @@ evalTemplate (Template s) vars =
     where
         parser = many oneParser >>= return . concat
         oneParser =     many1 (noneOf "$")
+                    <|> try variable
                     <|> try escapedVariable
-                    <|> try unescapedVariable
+                    <|> try urlVariable
                     <|> do char '$'
                            return "$"
+        variable = do string "${!:"
+                      name <- variableName
+                      char '}'
+                      return $ lookupVariable name
         escapedVariable = do string "${"
                              name <- variableName
                              char '}'
                              return $ escapeHtml $ lookupVariable name
-        unescapedVariable = do string "${u:"
-                               name <- variableName
-                               char '}'
-                               return $ lookupVariable name
+        urlVariable = do string "${u:"
+                         name <- variableName
+                         char '}'
+                         return $ escapeHtml $ encodeURLComponent $ lookupVariable name
         variableName = many1 alphaNum
         lookupVariable :: String -> String
         lookupVariable = getVariable vars
