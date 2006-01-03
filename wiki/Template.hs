@@ -26,13 +26,14 @@ evalTemplate (Template s) vars =
                     <|> do char '$'
                            return "$"
         escapedVariable = do string "${"
-                             name <- many1 alphaNum
+                             name <- variableName
                              char '}'
                              return $ escapeHtml $ lookupVariable name
-        unescapedVariable = do string "$${"
-                               name <- many1 alphaNum
+        unescapedVariable = do string "${u:"
+                               name <- variableName
                                char '}'
                                return $ lookupVariable name
+        variableName = many1 alphaNum
         lookupVariable :: String -> String
         lookupVariable = getVariable vars
 
