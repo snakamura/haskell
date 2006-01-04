@@ -2,12 +2,12 @@ module Store (PageMetadata(..),
               Store(..))
     where
 
-import System.Time
+import qualified System.Time as Time
 
 
 data PageMetadata = PageMetadata {
                         name         :: String,
-                        lastModified :: ClockTime
+                        lastModified :: Time.ClockTime
                     }
 
 class Store a where

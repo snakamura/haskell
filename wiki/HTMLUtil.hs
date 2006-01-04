@@ -5,6 +5,7 @@ module HTMLUtil (escapeHtml,
 
 import Data.Char
 
+
 escapeHtml :: String -> String
 --escapeHtml = foldr ((++) . escapeHtmlChar) []
 escapeHtml = concatMap escapeHtmlChar

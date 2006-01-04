@@ -3,7 +3,8 @@ module Config (Config,
                getConfig)
     where
 
-import TextUtil
+import qualified TextUtil
+
 
 type Config = [(String, String)]
 
@@ -24,4 +25,4 @@ parseConfig = concatMap parseLine . lines
         parseLine line = case break ('=' ==) line of
                               ([], _) -> []
                               (_, []) -> []
-                              (k, _:v) -> [(trimString k, trimString v)]
+                              (k, _:v) -> [(TextUtil.trimString k, TextUtil.trimString v)]

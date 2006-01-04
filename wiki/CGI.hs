@@ -7,26 +7,26 @@ module CGI (Method(..),
             parseParams)
     where
 
-import Data.Char
-import System.Environment
-import System.IO.Error
+import qualified System.Environment as Env
+import qualified System.IO.Error    as IOError
 
 import HTMLUtil
 import TextUtil
+
 
 data Method = GET
             | POST
 
 getRequestMethod :: IO Method
-getRequestMethod = getEnv "REQUEST_METHOD" >>= return . getMethod
+getRequestMethod = Env.getEnv "REQUEST_METHOD" >>= return . getMethod
     where
         getMethod :: String -> Method
         getMethod method | method == "POST" = POST
                          | otherwise        = GET
 
 getQuery :: IO String
-getQuery = catch (getEnv "QUERY_STRING")
-                 (\ e -> if isDoesNotExistError e
+getQuery = catch (Env.getEnv "QUERY_STRING")
+                 (\ e -> if IOError.isDoesNotExistError e
                             then return ""
                             else ioError e)
 

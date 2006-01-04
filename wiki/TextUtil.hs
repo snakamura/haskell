@@ -4,6 +4,7 @@ module TextUtil (splitString,
 
 import Data.Char
 
+
 splitString :: Char -> String -> (String, String)
 splitString c s = case break (c ==) s of
                        (_, [])    -> (s, [])

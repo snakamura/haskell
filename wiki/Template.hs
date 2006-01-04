@@ -3,9 +3,10 @@ module Template (Template(),
                  evalTemplate)
     where
 
-import Text.ParserCombinators.Parsec
+import           Text.ParserCombinators.Parsec
 
-import HTMLUtil
+import qualified HTMLUtil
+
 
 data Template = Template String
 
@@ -36,11 +37,11 @@ evalTemplate (Template s) vars =
         escapedVariable = do string "${"
                              name <- variableName
                              char '}'
-                             return $ escapeHtml $ lookupVariable name
+                             return $ HTMLUtil.escapeHtml $ lookupVariable name
         urlVariable = do string "${u:"
                          name <- variableName
                          char '}'
-                         return $ escapeHtml $ encodeURLComponent $ lookupVariable name
+                         return $ HTMLUtil.escapeHtml $ HTMLUtil.encodeURLComponent $ lookupVariable name
         variableName = many1 alphaNum
         lookupVariable :: String -> String
         lookupVariable = getVariable vars
