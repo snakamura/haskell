@@ -97,9 +97,11 @@ printListHtml store config = do
         formatList list = do f <- mapM formatMetadata list
                              return $ "<ul>\r\n" ++ concat f ++ "</ul>\r\n"
         formatMetadata :: PageMetadata -> IO String
-        formatMetadata (PageMetadata name time) = do
-            c <- toCalendarTime time
-            return $ "<li>" ++ formatDate c ++ " : " ++ formatPage name name ++ "</li>\r\n"
+        formatMetadata metadata = do
+            c <- toCalendarTime $ lastModified metadata
+            return $ "<li>" ++ formatDate c ++ " : " ++ formatPage pageName pageName ++ "</li>\r\n"
+            where
+                pageName = name $ metadata
         formatDate :: CalendarTime -> String
         formatDate c = printf "%04d/%02d/%02d %02d:%02d:%02d"
                            (ctYear c) ((fromEnum $ ctMonth c) + 1) (ctDay c)

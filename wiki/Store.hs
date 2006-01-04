@@ -1,9 +1,14 @@
-module Store where
+module Store (PageMetadata(..),
+              Store(..))
+    where
 
 import System.Time
 
 
-data PageMetadata = PageMetadata String ClockTime
+data PageMetadata = PageMetadata {
+                        name         :: String,
+                        lastModified :: ClockTime
+                    }
 
 class Store a where
     existPage  :: a -> String -> IO Bool
