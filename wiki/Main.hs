@@ -5,11 +5,11 @@ import           Control.Monad
 import           System
 import           System.IO     as IO
 import qualified System.Time   as Time
-import           Text.Printf
+import qualified Text.Printf   as Printf
 import qualified Text.Regex    as Regex
 
 import qualified CGI
-import           Config
+import qualified Config
 import qualified FileStore
 import qualified HTMLUtil
 import qualified Store
@@ -21,9 +21,10 @@ cgi         = "wiki.cgi"
 defaultPage = "FrontPage"
 
 main :: IO ()
-main = loadConfig "./config" >>= processMain
+main = Config.loadConfig "./config" >>= processMain
 
-processMain :: Config -> IO ()
+{-
+processMain :: Config.Config -> IO ()
 processMain config = requestParams >>= process (FileStore.newFileStore dataDir) config
     where
         requestParams :: IO CGI.Params
@@ -31,9 +32,9 @@ processMain config = requestParams >>= process (FileStore.newFileStore dataDir) 
                            case method of
                                 CGI.GET  -> CGI.getQuery >>= return . CGI.parseParams
                                 CGI.POST -> IO.hGetContents IO.stdin >>= return . CGI.parseParams
-        dataDir = getConfig config "dataDir"
+        dataDir = Config.getConfig config "dataDir"
 
-process :: Store.Store a => a -> Config -> CGI.Params -> IO ()
+process :: Store.Store a => a -> Config.Config -> CGI.Params -> IO ()
 process store config params = do
     case getMode $ CGI.getParam params "mode" of
          VIEW   -> do b <- Store.existPage store page
@@ -44,13 +45,13 @@ process store config params = do
                                             printUpdateHtml store config page
                                     else do Store.removePage store page
                                             printUpdateHtml store config defaultPage
-         LIST -> printListHtml store config
+         LIST   -> printListHtml store config
     where
         page = if page' == "" then defaultPage else page'
         page' = CGI.getParam params "page"
         body = CGI.getParam params "body"
 
-printViewHtml :: Store.Store a => a -> Config -> String -> IO ()
+printViewHtml :: Store.Store a => a -> Config.Config -> String -> IO ()
 printViewHtml store config page = do
     template <- loadConfigTemplate config "view.html"
     body <- Store.getPage store page
@@ -62,7 +63,7 @@ printViewHtml store config page = do
                                                 ("body",          body         ),
                                                 ("formattedBody", formattedBody) ]
 
-printEditHtml :: Store.Store a => a -> Config -> String -> IO ()
+printEditHtml :: Store.Store a => a -> Config.Config -> String -> IO ()
 printEditHtml store config page = do
     template <- loadConfigTemplate config "edit.html"
     body <- Store.getPage store page
@@ -72,7 +73,7 @@ printEditHtml store config page = do
                                                 ("page", page),
                                                 ("body", body) ]
 
-printUpdateHtml :: Store.Store a => a -> Config -> String -> IO ()
+printUpdateHtml :: Store.Store a => a -> Config.Config -> String -> IO ()
 printUpdateHtml store config page = do
     template <- loadConfigTemplate config "update.html"
     printContentType config
@@ -82,9 +83,10 @@ printUpdateHtml store config page = do
                                                 ("page", page   ),
                                                 ("url",  thisURL) ]
     where
-        thisURL = getConfig config "baseURL" ++ cgi ++ "?page=" ++ HTMLUtil.encodeURLComponent page
+        thisURL = baseURL ++ cgi ++ "?page=" ++ HTMLUtil.encodeURLComponent page
+        baseURL = Config.getConfig config "baseURL"
 
-printListHtml :: Store.Store a => a -> Config -> IO ()
+printListHtml :: Store.Store a => a -> Config.Config -> IO ()
 printListHtml store config = do
     template <- loadConfigTemplate config "list.html"
     list <- Store.listPages store
@@ -104,16 +106,110 @@ printListHtml store config = do
             where
                 pageName = Store.name $ metadata
         formatDate :: Time.CalendarTime -> String
-        formatDate c = printf "%04d/%02d/%02d %02d:%02d:%02d"
+        formatDate c = Printf.printf "%04d/%02d/%02d %02d:%02d:%02d"
                            (Time.ctYear c) ((fromEnum $ Time.ctMonth c) + 1) (Time.ctDay c)
                            (Time.ctHour c) (Time.ctMin c) (Time.ctSec c)
 
-printContentType :: Config -> IO ()
-printContentType config = printLine $ "Content-Type: text/html; charset=" ++ (getConfig config "charset")
+printContentType :: Config.Config -> IO ()
+printContentType config = printLine $ "Content-Type: text/html; charset=" ++ charset
+    where
+        charset = Config.getConfig config "charset"
 
 printLine :: String -> IO ()
 printLine s = do putStr s
                  putStr "\r\n"
+
+-}
+
+processMain :: Config.Config -> IO ()
+processMain config = CGI.process $ process store config
+    where
+        store = FileStore.newFileStore dataDir
+        dataDir = Config.getConfig config "dataDir"
+
+process :: Store.Store a => a -> Config.Config -> CGI.HTTPRequest -> IO CGI.HTTPResponse
+process store config request = do
+    case getMode $ CGI.getParam params "mode" of
+         VIEW   -> do b <- Store.existPage store page
+                      if b then processView store config page
+                           else processEdit store config page
+         EDIT   -> processEdit store config page
+         UPDATE -> do if body /= "" then do Store.updatePage store page body
+                                            processUpdate store config page
+                                    else do Store.removePage store page
+                                            processUpdate store config defaultPage
+         LIST   -> processList store config
+    where
+        params = CGI.requestParams request
+        page = if page' == "" then defaultPage else page'
+        page' = CGI.getParam params "page"
+        body = CGI.getParam params "body"
+
+processView :: Store.Store a => a -> Config.Config -> String -> IO CGI.HTTPResponse
+processView store config page = do
+    template <- loadConfigTemplate config "view.html"
+    body <- Store.getPage store page
+    formattedBody <- formatBody store body
+    return $ CGI.HTTPResponse header $ Template.evalTemplate template $ variables body formattedBody
+    where
+        header = [ ("Content-Type", getContentType config) ]
+        variables body formattedBody = [ ("cgi",           cgi          ),
+                                         ("page",          page         ),
+                                         ("body",          body         ),
+                                         ("formattedBody", formattedBody) ]
+
+processEdit :: Store.Store a => a -> Config.Config -> String -> IO CGI.HTTPResponse
+processEdit store config page = do
+    template <- loadConfigTemplate config "edit.html"
+    body <- Store.getPage store page
+    return $ CGI.HTTPResponse header $ Template.evalTemplate template $ variables body
+    where
+        header = [ ("Content-Type", getContentType config) ]
+        variables body = [ ("cgi",  cgi ),
+                           ("page", page),
+                           ("body", body) ]
+
+processUpdate :: Store.Store a => a -> Config.Config -> String -> IO CGI.HTTPResponse
+processUpdate store config page = do
+    template <- loadConfigTemplate config "update.html"
+    return $ CGI.HTTPResponse header $ Template.evalTemplate template variables
+    where
+        header = [ ("Content-Type", getContentType config),
+                   ("Location",     thisURL)               ]
+        variables = [ ("cgi",  cgi    ),
+                      ("page", page   ),
+                      ("url",  thisURL) ]
+        thisURL = baseURL ++ cgi ++ "?page=" ++ HTMLUtil.encodeURLComponent page
+        baseURL = Config.getConfig config "baseURL"
+
+processList :: Store.Store a => a -> Config.Config -> IO CGI.HTTPResponse
+processList store config = do
+    template <- loadConfigTemplate config "list.html"
+    list <- Store.listPages store
+    content <- formatList list
+    return $ CGI.HTTPResponse header $ Template.evalTemplate template $ variables content
+    where
+        header = [ ("Content-Type", getContentType config) ]
+        variables content = [ ("cgi",      cgi    ),
+                              ("content",  content) ]
+        formatList :: [Store.PageMetadata] -> IO String
+        formatList list = do f <- mapM formatMetadata list
+                             return $ "<ul>\n" ++ concat f ++ "</ul>\n"
+        formatMetadata :: Store.PageMetadata -> IO String
+        formatMetadata metadata = do
+            c <- Time.toCalendarTime $ Store.lastModified metadata
+            return $ "<li>" ++ formatDate c ++ " : " ++ formatPage pageName pageName ++ "</li>\n"
+            where
+                pageName = Store.name $ metadata
+        formatDate :: Time.CalendarTime -> String
+        formatDate c = Printf.printf "%04d/%02d/%02d %02d:%02d:%02d"
+                           (Time.ctYear c) ((fromEnum $ Time.ctMonth c) + 1) (Time.ctDay c)
+                           (Time.ctHour c) (Time.ctMin c) (Time.ctSec c)
+
+getContentType :: Config.Config -> String
+getContentType config = "text/html; charset=" ++ charset
+    where
+        charset = Config.getConfig config "charset"
 
 
 data Mode = VIEW
@@ -134,8 +230,8 @@ formatBody store body = do x <- foldM (\ l r -> f r >>= return . (l ++))
                            return $ "<p>" ++ x ++ "</p>"
     where
         f :: String -> IO String
-        f ""   = return "</p>\r\n<p>"
-        f line = formatInline store line >>= return . (++ "\r\n")
+        f ""   = return "</p>\n<p>"
+        f line = formatInline store line >>= return . (++ "\n")
         normalizeNewLine = filter ('\r' /=)
 
 formatInline :: Store.Store a => a -> String -> IO String
@@ -164,7 +260,7 @@ formatPage page content = formatURL (cgi ++ "?page=" ++ page) content
 formatURL :: String -> String -> String
 formatURL url content = "<a href=\"" ++ url ++ "\">" ++ content ++ "</a>"
 
-loadConfigTemplate :: Config -> String -> IO Template.Template
+loadConfigTemplate :: Config.Config -> String -> IO Template.Template
 loadConfigTemplate config name = Template.loadTemplate $ templateDir ++ name
     where
-        templateDir = getConfig config "templateDir"
+        templateDir = Config.getConfig config "templateDir"
