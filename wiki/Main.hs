@@ -148,7 +148,7 @@ formatInlineText store s =
                                      return $ HTMLUtil.escapeHtml b ++ f ++ r
          Nothing               -> return $ HTMLUtil.escapeHtml s
     where
-        regex = Regex.mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|((https?|ftp)://[A-Za-z0-9_=/.?&+-]+)"
+        regex = Regex.mkRegex "\\b(([A-Z]([A-Za-z])+){2,})\\b|((https?|ftp)://[A-Za-z0-9_=/.?&~+-]+)"
         formatPage' :: String -> IO String
         formatPage' page = do e <- Store.existPage store page
                               if e then return $ formatPage page page
