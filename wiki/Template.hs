@@ -14,8 +14,7 @@ type Variable = (String, String)
 type Variables = [Variable]
 
 loadTemplate :: String -> IO Template
-loadTemplate path = do s <- readFile path
-                       return $ Template s
+loadTemplate path = readFile path >>= return . Template
 
 evalTemplate :: Template -> Variables -> String
 evalTemplate (Template s) vars =
