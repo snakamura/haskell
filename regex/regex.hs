@@ -1,7 +1,7 @@
 import Char
 
 data Regex = Branch Regex Regex
-           | Seq Regex Regex
+           | Seq [Regex]
            | Atom Char Quantifier
            | Group Regex Quantifier
            | Empty
@@ -35,10 +35,11 @@ parsePiece = uncurry parseNext . parseOnePiece
         parseNext Empty rest         = (Empty, rest)
         parseNext regex []           = (regex, []  )
         parseNext regex rest@('|':_) = (regex, rest)
-        parseNext regex rest         = let (regex', rest') = parsePiece rest
-                                       in case regex' of
-                                              Empty -> (regex, rest')
-                                              _     -> (Seq regex regex', rest')
+        parseNext regex rest         = uncurry makeSeq $ parsePiece rest
+            where
+                makeSeq Empty    s = (regex,          s)
+                makeSeq (Seq rs) s = (Seq (regex:rs), s)
+                makeSeq r        s = (Seq [regex, r], s)
 
 parseGroup :: String -> (Regex, String)
 parseGroup ('(':s) = uncurry makeGroup $ parseBranch s
