@@ -1,5 +1,6 @@
 import Char
 import Control.Monad
+import Prelude hiding (seq)
 
 type Regex = [Seq]
 
@@ -24,20 +25,20 @@ parse = fst . runParser parser
                     return regex
 
 branch :: Parser String Regex
-branch =     do s <- seq_
+branch =     do s <- seq
                 char '|'
                 b <- branch
                 return $ s:b
-         <|> do s <- seq_
+         <|> do s <- seq
                 return [s]
 
-seq_ :: Parser String Seq
-seq_ =     do p <- piece
-              s <- seq_
-              return $ p:s
-       <|> do p <- piece
-              return [p]
-       <|> return []
+seq :: Parser String Seq
+seq =     do p <- piece
+             s <- seq
+             return $ p:s
+      <|> do p <- piece
+             return [p]
+      <|> return []
 
 piece :: Parser String Piece
 piece = do a <- atom
