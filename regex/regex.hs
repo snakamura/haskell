@@ -22,6 +22,7 @@ parse s = case parseBranch s of
               _                -> Nothing
 
 parseBranch :: Parser String Regex
+{-
 parseBranch = uncurry parseNext . parsePiece
     where parseNext Nothing s          = (Nothing,    s )
           parseNext (Just seq) ('|':s) = uncurry makeBranch $ parseBranch s
@@ -29,8 +30,17 @@ parseBranch = uncurry parseNext . parsePiece
                   makeBranch Nothing      s = (Nothing,          s)
                   makeBranch (Just regex) s = (Just (seq:regex), s)
           parseNext (Just seq) s       = (Just [seq],  s)
+-}
+parseBranch =     empty
+              <|> (parsePiece |>>= \ps ->
+                   char '|' |>>
+                   parseBranch |>>= \regex ->
+                   always (ps:regex))
+              <|> (parsePiece |>>= \ps ->
+                   always [ps])
 
 parsePiece :: Parser String Seq
+{-
 parsePiece = uncurry parseNext . parseOnePiece
     where
         parseOnePiece = parseGroup <|> parseAtom
@@ -41,8 +51,18 @@ parsePiece = uncurry parseNext . parseOnePiece
             where
                 makeSeq Nothing   s = (Nothing,     s)
                 makeSeq (Just ps) s = (Just (p:ps), s)
+-}
+parsePiece =     (parseGroup |>>= \g ->
+                  parsePiece |>>= \ps ->
+                  always (g ++ ps))
+             <|> (parseAtom |>>= \a ->
+                  parsePiece |>>= \ps ->
+                  always (a ++ ps))
+             <|> always []
+
 
 parseGroup :: Parser String [Piece]
+{-
 parseGroup ('(':s) = uncurry makeGroup $ parseBranch s
     where
         makeGroup (Just regex) (')':'?':s) = (Just [(Group regex, Optional)], s    )
@@ -50,6 +70,21 @@ parseGroup ('(':s) = uncurry makeGroup $ parseBranch s
         makeGroup (Just regex) (')':s)     = (Just [(Group regex, None)],     s    )
         makeGroup _            _           = (Nothing,                        '(':s)
 parseGroup s       = (Nothing, s)
+-}
+parseGroup =     (char '(' |>>
+                  parseBranch |>>= \regex ->
+                  char ')' |>>
+                  char '?' |>>
+                  always [(Group regex, Optional)])
+             <|> (char '(' |>>
+                  parseBranch |>>= \regex ->
+                  char ')' |>>
+                  char '*' |>>
+                  always [(Group regex, Repeat)])
+             <|> (char '(' |>>
+                  parseBranch |>>= \regex ->
+                  char ')' |>>
+                  always [(Group regex, None)])
 
 parseAtom :: Parser String [Piece]
 {-
@@ -73,10 +108,14 @@ parseAtom =     empty
             <|> (charOf isAtomChar |>>= \c -> char '*' |> (\_ -> [(CharAtom c, Repeat  )]))
             <|> (charOf isAtomChar                     |> (\c -> [(CharAtom c, None    )]))
 -}
-parseAtom =     empty
-            <|> (charOf isAtomChar |>>= \c -> char '?' |>>= (\_ -> always [(CharAtom c, Optional)]))
-            <|> (charOf isAtomChar |>>= \c -> char '*' |>>= (\_ -> always [(CharAtom c, Repeat  )]))
-            <|> (charOf isAtomChar                     |>>= (\c -> always [(CharAtom c, None    )]))
+parseAtom =     (charOf isAtomChar |>>= \c ->
+                 char '?' |>>
+                 always [(CharAtom c, Optional)])
+            <|> (charOf isAtomChar |>>= \c ->
+                 char '*' |>>
+                 always [(CharAtom c, Repeat  )])
+            <|> (charOf isAtomChar |>>= \c ->
+                 always [(CharAtom c, None    )])
 
 empty :: Parser String [a]
 empty [] = (Just [], [])
@@ -128,6 +167,10 @@ infixl 7 |>>=
                          in case x of
                                 Nothing -> (Nothing, r)
                                 Just v  -> f v r
+
+infixl 7 |>>
+(|>>) :: Parser a b -> Parser a c -> Parser a c
+(|>>) parser1 parser2 = parser1 |>>= \_ -> parser2
 
 {-
 infixl 6 |>
