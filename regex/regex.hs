@@ -1,4 +1,5 @@
 import Char
+import Control.Monad
 
 type Regex = [Seq]
 
@@ -23,49 +24,46 @@ parse = fst . runParser parser
                     return regex
 
 branch :: Parser String Regex
-branch =     do empty
-                return [[]]
-         <|> do ps <- piece
+branch =     do s <- seq_
                 char '|'
-                regex <- branch
-                return (ps:regex)
-         <|> do ps <- piece
-                return [ps]
+                b <- branch
+                return $ s:b
+         <|> do s <- seq_
+                return [s]
 
-piece :: Parser String Seq
-piece =     do g <- group
-               ps <- piece
-               return (g:ps)
-        <|> do a <- atom
-               ps <- piece
-               return (a:ps)
-        <|> return []
+seq_ :: Parser String Seq
+seq_ =     do p <- piece
+              s <- seq_
+              return $ p:s
+       <|> do p <- piece
+              return [p]
+       <|> return []
 
-group :: Parser String Piece
-group =     do char '('
-               regex <- branch
-               char ')'
-               char '?'
-               return (Group regex, Optional)
-        <|> do char '('
-               regex <- branch
-               char ')'
-               char '*'
-               return (Group regex, Repeat)
-        <|> do char '('
-               regex <- branch
-               char ')'
-               return (Group regex, None)
+piece :: Parser String Piece
+piece = do a <- atom
+           q <- quantifier
+           return (a, q)
 
-atom :: Parser String Piece
-atom =     do c <- charOf isAtomChar
-              char '?'
-              return (CharAtom c, Optional)
-       <|> do c <- charOf isAtomChar
-              char '*'
-              return (CharAtom c, Repeat)
-       <|> do c <- charOf isAtomChar
-              return (CharAtom c, None)
+atom :: Parser String Atom
+atom =     atomChar
+       <|> group
+
+atomChar :: Parser String Atom
+atomChar = do c <- charOf isAtomChar
+              return $ CharAtom c
+
+group :: Parser String Atom
+group = do char '('
+           b <- branch
+           char ')'
+           return $ Group b
+
+quantifier :: Parser String Quantifier
+quantifier =     do char '*'
+                    return Repeat
+             <|> do char '?'
+                    return Optional
+             <|> return None
 
 empty :: Parser String ()
 empty = Parser empty'
@@ -98,6 +96,11 @@ instance Monad (Parser a)
     where
         (>>=) = (|>>=)
         return = always
+
+instance MonadPlus (Parser a)
+    where
+        mzero = Parser $ \s -> (Nothing, s)
+        mplus = (<|>)
 
 infixr 1 <|>
 (<|>) :: Parser a b -> Parser a b -> Parser a b
