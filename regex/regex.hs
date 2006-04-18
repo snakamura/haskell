@@ -18,54 +18,54 @@ data Quantifier = None
 parse :: String -> Maybe Regex
 parse = fst . runParser parser
     where
-        parser = branch >>= \regex ->
-                 empty >>
-                 return regex
+        parser = do regex <- branch
+                    empty
+                    return regex
 
 branch :: Parser String Regex
-branch =     (empty >>
-              return [[]])
-         <|> (piece >>= \ps ->
-              char '|' >>
-              branch >>= \regex ->
-              return (ps:regex))
-         <|> (piece >>= \ps ->
-              return [ps])
+branch =     do empty
+                return [[]]
+         <|> do ps <- piece
+                char '|'
+                regex <- branch
+                return (ps:regex)
+         <|> do ps <- piece
+                return [ps]
 
 piece :: Parser String Seq
-piece =     (group >>= \g ->
-             piece >>= \ps ->
-             return (g:ps))
-        <|> (atom >>= \a ->
-             piece >>= \ps ->
-             return (a:ps))
-        <|>  return []
+piece =     do g <- group
+               ps <- piece
+               return (g:ps)
+        <|> do a <- atom
+               ps <- piece
+               return (a:ps)
+        <|> return []
 
 group :: Parser String Piece
-group =     (char '(' >>
-             branch >>= \regex ->
-             char ')' >>
-             char '?' >>
-             return (Group regex, Optional))
-        <|> (char '(' >>
-             branch >>= \regex ->
-             char ')' >>
-             char '*' >>
-             return (Group regex, Repeat))
-        <|> (char '(' >>
-             branch >>= \regex ->
-             char ')' >>
-             return (Group regex, None))
+group =     do char '('
+               regex <- branch
+               char ')'
+               char '?'
+               return (Group regex, Optional)
+        <|> do char '('
+               regex <- branch
+               char ')'
+               char '*'
+               return (Group regex, Repeat)
+        <|> do char '('
+               regex <- branch
+               char ')'
+               return (Group regex, None)
 
 atom :: Parser String Piece
-atom =     (charOf isAtomChar >>= \c ->
-            char '?' >>
-            return (CharAtom c, Optional))
-       <|> (charOf isAtomChar >>= \c ->
-            char '*' >>
-            return (CharAtom c, Repeat  ))
-       <|> (charOf isAtomChar >>= \c ->
-            return (CharAtom c, None    ))
+atom =     do c <- charOf isAtomChar
+              char '?'
+              return (CharAtom c, Optional)
+       <|> do c <- charOf isAtomChar
+              char '*'
+              return (CharAtom c, Repeat)
+       <|> do c <- charOf isAtomChar
+              return (CharAtom c, None)
 
 empty :: Parser String ()
 empty = Parser empty'
