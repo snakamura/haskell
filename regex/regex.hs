@@ -52,6 +52,7 @@ parseGroup ('(':s) = uncurry makeGroup $ parseBranch s
 parseGroup s       = (Nothing, s)
 
 parseAtom :: Parser String [Piece]
+{-
 parseAtom []                      = (Just [], [])
 parseAtom cs@(c:s) | isAtomChar c = makeAtom s
                    | otherwise    = (Just [], cs)
@@ -59,6 +60,38 @@ parseAtom cs@(c:s) | isAtomChar c = makeAtom s
         makeAtom ('?':s) = (Just [(CharAtom c, Optional)], s)
         makeAtom ('*':s) = (Just [(CharAtom c, Repeat)],   s)
         makeAtom s       = (Just [(CharAtom c, None)],     s)
+-}
+{-
+parseAtom =     empty
+            <|> (charOf isAtomChar |>>= char '?') (\c _ -> [(CharAtom c, Optional)])
+            <|> (charOf isAtomChar |>>= char '*') (\c _ -> [(CharAtom c, Repeat  )])
+            <|> charOf isAtomChar |> (\c -> [(CharAtom c, None    )])
+-}
+{-
+parseAtom =     empty
+            <|> (charOf isAtomChar |>>= \c -> char '?' |> (\_ -> [(CharAtom c, Optional)]))
+            <|> (charOf isAtomChar |>>= \c -> char '*' |> (\_ -> [(CharAtom c, Repeat  )]))
+            <|> (charOf isAtomChar                     |> (\c -> [(CharAtom c, None    )]))
+-}
+parseAtom =     empty
+            <|> (charOf isAtomChar |>>= \c -> char '?' |>>= (\_ -> always [(CharAtom c, Optional)]))
+            <|> (charOf isAtomChar |>>= \c -> char '*' |>>= (\_ -> always [(CharAtom c, Repeat  )]))
+            <|> (charOf isAtomChar                     |>>= (\c -> always [(CharAtom c, None    )]))
+
+empty :: Parser String [a]
+empty [] = (Just [], [])
+empty s  = (Nothing, s )
+
+always :: b -> Parser a b
+always x s = (Just x, s)
+
+char :: Char -> Parser String Char
+char c = charOf (==c)
+
+charOf :: (Char -> Bool) -> Parser String Char
+charOf f []                = (Nothing, []   )
+charOf f (c:s) | f c       = (Just c,  s    )
+               | otherwise = (Nothing, (c:s))
 
 isAtomChar :: Char -> Bool
 isAtomChar = flip notElem "|()*?"
@@ -72,3 +105,35 @@ infixl 5 <|>
                             in case x of
                                    Nothing -> parse2 s
                                    _       -> (x, r)
+
+{-
+infixl 6 |>>=
+(|>>=) :: Parser a b -> Parser a c -> (b -> c -> d) -> Parser a d
+(|>>=) parser1 parser2 = \f s -> let (x, r) = parser1 s
+                                 in case x of
+                                        Nothing -> (Nothing, r)
+                                        Just v  -> let (x', r') = parser2 r
+                                                   in case x' of
+                                                          Nothing -> (Nothing,       r')
+                                                          Just v' -> (Just $ f v v', r')
+
+infixl 6 |>>
+(|>>) :: Parser a b -> Parser a c -> Parser a c
+(|>>) parser1 parser2 = (|>>=) parser1 parser2 (flip const)
+-}
+
+infixl 7 |>>=
+(|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
+(|>>=) parser1 f = \s -> let (x, r) = parser1 s
+                         in case x of
+                                Nothing -> (Nothing, r)
+                                Just v  -> f v r
+
+{-
+infixl 6 |>
+(|>) :: Parser a b -> (b -> c) -> Parser a c
+(|>) parser f = \s -> let (x, r) = parser s
+                      in case x of
+                             Nothing -> (Nothing,    r)
+                             Just v  -> (Just $ f v, r)
+-}
