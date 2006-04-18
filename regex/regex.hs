@@ -20,52 +20,52 @@ parse = fst . runParser parser
     where
         parser = branch >>= \regex ->
                  empty >>
-                 always regex
+                 return regex
 
 branch :: Parser String Regex
 branch =     (empty >>
-              always [[]])
+              return [[]])
          <|> (piece >>= \ps ->
               char '|' >>
               branch >>= \regex ->
-              always (ps:regex))
+              return (ps:regex))
          <|> (piece >>= \ps ->
-              always [ps])
+              return [ps])
 
 piece :: Parser String Seq
 piece =     (group >>= \g ->
              piece >>= \ps ->
-             always (g:ps))
+             return (g:ps))
         <|> (atom >>= \a ->
              piece >>= \ps ->
-             always (a:ps))
-        <|>  always []
+             return (a:ps))
+        <|>  return []
 
 group :: Parser String Piece
 group =     (char '(' >>
              branch >>= \regex ->
              char ')' >>
              char '?' >>
-             always (Group regex, Optional))
+             return (Group regex, Optional))
         <|> (char '(' >>
              branch >>= \regex ->
              char ')' >>
              char '*' >>
-             always (Group regex, Repeat))
+             return (Group regex, Repeat))
         <|> (char '(' >>
              branch >>= \regex ->
              char ')' >>
-             always (Group regex, None))
+             return (Group regex, None))
 
 atom :: Parser String Piece
 atom =     (charOf isAtomChar >>= \c ->
             char '?' >>
-            always (CharAtom c, Optional))
+            return (CharAtom c, Optional))
        <|> (charOf isAtomChar >>= \c ->
             char '*' >>
-            always (CharAtom c, Repeat  ))
+            return (CharAtom c, Repeat  ))
        <|> (charOf isAtomChar >>= \c ->
-            always (CharAtom c, None    ))
+            return (CharAtom c, None    ))
 
 empty :: Parser String ()
 empty = Parser empty'
@@ -106,13 +106,13 @@ infixr 1 <|>
                                                               Nothing -> parse2 s
                                                               _       -> (x, r)
 
-infixl 9 |>>=
+infixl 1 |>>=
 (|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
 (|>>=) (Parser parser1) f = Parser $ \s -> let (x, r) = parser1 s
                                            in case x of
                                                   Nothing -> (Nothing, r)
                                                   Just v  -> runParser (f v) $ r
 
-infixl 9 |>>
+infixl 1 |>>
 (|>>) :: Parser a b -> Parser a c -> Parser a c
 (|>>) parser1 parser2 = parser1 |>>= \_ -> parser2
