@@ -18,53 +18,53 @@ data Quantifier = None
 parse :: String -> Maybe Regex
 parse = fst . runParser parser
     where
-        parser = branch |>>= \regex ->
-                 empty |>>
+        parser = branch >>= \regex ->
+                 empty >>
                  always regex
 
 branch :: Parser String Regex
-branch =     (empty |>>
+branch =     (empty >>
               always [[]])
-         <|> (piece |>>= \ps ->
-              char '|' |>>
-              branch |>>= \regex ->
+         <|> (piece >>= \ps ->
+              char '|' >>
+              branch >>= \regex ->
               always (ps:regex))
-         <|> (piece |>>= \ps ->
+         <|> (piece >>= \ps ->
               always [ps])
 
 piece :: Parser String Seq
-piece =     (group |>>= \g ->
-             piece |>>= \ps ->
+piece =     (group >>= \g ->
+             piece >>= \ps ->
              always (g:ps))
-        <|> (atom |>>= \a ->
-             piece |>>= \ps ->
+        <|> (atom >>= \a ->
+             piece >>= \ps ->
              always (a:ps))
         <|>  always []
 
 group :: Parser String Piece
-group =     (char '(' |>>
-             branch |>>= \regex ->
-             char ')' |>>
-             char '?' |>>
+group =     (char '(' >>
+             branch >>= \regex ->
+             char ')' >>
+             char '?' >>
              always (Group regex, Optional))
-        <|> (char '(' |>>
-             branch |>>= \regex ->
-             char ')' |>>
-             char '*' |>>
+        <|> (char '(' >>
+             branch >>= \regex ->
+             char ')' >>
+             char '*' >>
              always (Group regex, Repeat))
-        <|> (char '(' |>>
-             branch |>>= \regex ->
-             char ')' |>>
+        <|> (char '(' >>
+             branch >>= \regex ->
+             char ')' >>
              always (Group regex, None))
 
 atom :: Parser String Piece
-atom =     (charOf isAtomChar |>>= \c ->
-            char '?' |>>
+atom =     (charOf isAtomChar >>= \c ->
+            char '?' >>
             always (CharAtom c, Optional))
-       <|> (charOf isAtomChar |>>= \c ->
-            char '*' |>>
+       <|> (charOf isAtomChar >>= \c ->
+            char '*' >>
             always (CharAtom c, Repeat  ))
-       <|> (charOf isAtomChar |>>= \c ->
+       <|> (charOf isAtomChar >>= \c ->
             always (CharAtom c, None    ))
 
 empty :: Parser String ()
@@ -93,6 +93,11 @@ isAtomChar = flip notElem "|()*?"
 
 
 newtype Parser a b = Parser { runParser :: a -> (Maybe b, a) }
+
+instance Monad (Parser a)
+    where
+        (>>=) = (|>>=)
+        return = always
 
 infixr 1 <|>
 (<|>) :: Parser a b -> Parser a b -> Parser a b
