@@ -46,11 +46,11 @@ piece = do a <- atom
            return (a, q)
 
 atom :: Parser String Atom
-atom =     atomChar
+atom =     charAtom
        <|> group
 
-atomChar :: Parser String Atom
-atomChar = do c <- charOf isAtomChar
+charAtom :: Parser String Atom
+charAtom = do c <- charOf isAtomChar
               return $ CharAtom c
 
 group :: Parser String Atom
