@@ -18,7 +18,7 @@ data Quantifier = None
     deriving Show
 
 parse :: String -> Maybe Regex
-parse = fst . runParser parser
+parse s = (runParser parser) s >>= return . fst
     where
         parser = do regex <- branch
                     empty
@@ -69,13 +69,13 @@ quantifier =     do char '*'
 empty :: Parser String ()
 empty = Parser empty'
     where
-        empty' [] = (Just (), [])
-        empty' s  = (Nothing, s )
+        empty' [] = Just ((), [])
+        empty' s  = Nothing
 
 always :: b -> Parser a b
 always = Parser . always'
     where
-        always' x s = (Just x, s)
+        always' x s = Just (x, s)
 
 char :: Char -> Parser String Char
 char c = charOf (==c)
@@ -83,39 +83,39 @@ char c = charOf (==c)
 charOf :: (Char -> Bool) -> Parser String Char
 charOf = Parser . charOf'
     where
-        charOf' f []                = (Nothing, []   )
-        charOf' f (c:s) | f c       = (Just c,  s    )
-                        | otherwise = (Nothing, (c:s))
+        charOf' f []                = Nothing
+        charOf' f (c:s) | f c       = Just (c, s)
+                        | otherwise = Nothing
 
 isAtomChar :: Char -> Bool
 isAtomChar = flip notElem "|()*?"
 
 
-newtype Parser a b = Parser { runParser :: a -> (Maybe b, a) }
+newtype Parser a b = Parser { runParser :: a -> Maybe (b, a) }
 
 instance Monad (Parser a)
     where
-        (>>=) = (|>>=)
+        (>>=)  = (|>>=)
         return = always
+        fail _ = Parser $ \s -> Nothing
 
 instance MonadPlus (Parser a)
     where
-        mzero = Parser $ \s -> (Nothing, s)
+        mzero = Parser $ \s -> Nothing
         mplus = (<|>)
 
 infixr 1 <|>
 (<|>) :: Parser a b -> Parser a b -> Parser a b
-(<|>) (Parser parse1) (Parser parse2) = Parser $ \s -> let (x, r) = parse1 s
-                                                       in case x of
+(<|>) (Parser parse1) (Parser parse2) = Parser $ \s -> let r = parse1 s
+                                                       in case r of
                                                               Nothing -> parse2 s
-                                                              _       -> (x, r)
+                                                              _       -> r
 
 infixl 1 |>>=
 (|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
-(|>>=) (Parser parser1) f = Parser $ \s -> let (x, r) = parser1 s
-                                           in case x of
-                                                  Nothing -> (Nothing, r)
-                                                  Just v  -> runParser (f v) $ r
+(|>>=) (Parser parser1) f = Parser $ \s -> case parser1 s of
+                                               Nothing     -> Nothing
+                                               Just (v, s) -> runParser (f v) $ s
 
 infixl 1 |>>
 (|>>) :: Parser a b -> Parser a c -> Parser a c
