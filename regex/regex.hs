@@ -1,4 +1,3 @@
-import Char
 import Control.Monad
 import Prelude hiding (seq)
 
@@ -25,20 +24,10 @@ parse s = (runParser parser) s >>= return . fst
                     return regex
 
 branch :: Parser String Regex
-branch =     do s <- seq
-                char '|'
-                b <- branch
-                return $ s:b
-         <|> do s <- seq
-                return [s]
+branch = sepBy1 seq '|'
 
 seq :: Parser String Seq
-seq =     do p <- piece
-             s <- seq
-             return $ p:s
-      <|> do p <- piece
-             return [p]
-      <|> return []
+seq = many piece
 
 piece :: Parser String Piece
 piece = do a <- atom
@@ -66,11 +55,11 @@ quantifier =     do char '*'
                     return Optional
              <|> return None
 
-empty :: Parser String ()
+empty :: Parser [a] ()
 empty = Parser empty'
     where
         empty' [] = Just ((), [])
-        empty' s  = Nothing
+        empty' _  = Nothing
 
 always :: b -> Parser a b
 always = Parser . always'
@@ -78,14 +67,36 @@ always = Parser . always'
         always' x s = Just (x, s)
 
 char :: Char -> Parser String Char
-char c = charOf (==c)
+char = token
 
 charOf :: (Char -> Bool) -> Parser String Char
-charOf = Parser . charOf'
+charOf = tokenOf
+
+token :: Eq a => a -> Parser [a] a
+token c = tokenOf (==c)
+
+tokenOf :: (a -> Bool) -> Parser [a] a
+tokenOf = Parser . token'
     where
-        charOf' f []                = Nothing
-        charOf' f (c:s) | f c       = Just (c, s)
-                        | otherwise = Nothing
+        token' f []                = Nothing
+        token' f (c:s) | f c       = Just (c, s)
+                       | otherwise = Nothing
+
+many :: Parser a b -> Parser a [b]
+many parser =     do r <- parser
+                     m <- many parser
+                     return $ r:m
+              <|> do r <- parser
+                     return [r]
+              <|> do return []
+
+sepBy1 :: Eq a => Parser [a] b -> a -> Parser [a] [b]
+sepBy1 parser sep =     do r <- parser
+                           token sep
+                           m <- sepBy1 parser sep
+                           return $ r:m
+                    <|> do r <- parser
+                           return [r]
 
 isAtomChar :: Char -> Bool
 isAtomChar = flip notElem "|()*?"
@@ -97,19 +108,18 @@ instance Monad (Parser a)
     where
         (>>=)  = (|>>=)
         return = always
-        fail _ = Parser $ \s -> Nothing
+        fail _ = Parser $ \_ -> Nothing
 
 instance MonadPlus (Parser a)
     where
-        mzero = Parser $ \s -> Nothing
+        mzero = Parser $ \_ -> Nothing
         mplus = (<|>)
 
 infixr 1 <|>
 (<|>) :: Parser a b -> Parser a b -> Parser a b
-(<|>) (Parser parse1) (Parser parse2) = Parser $ \s -> let r = parse1 s
-                                                       in case r of
-                                                              Nothing -> parse2 s
-                                                              _       -> r
+(<|>) (Parser parse1) (Parser parse2) = Parser $ \s -> case parse1 s of
+                                                           Nothing -> parse2 s
+                                                           r       -> r
 
 infixl 1 |>>=
 (|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
