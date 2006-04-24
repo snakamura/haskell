@@ -1,0 +1,500 @@
+正規表現をパースすることを考えてみます。最近の正規表現はややこしいので本当に正規言語で表せる部分のみで便利な記法も一切なしで、以下のようなBNFをパースします。
+
+||>
+regex ::= branch
+
+branch ::= seq
+         | seq '|' branch
+
+seq ::= <empty>
+      | piece
+      | piece seq
+
+piece ::= atom quantifier
+
+atom ::= atomChar
+       | group
+
+atomChar ::= <char except for '()|*?'>
+
+group ::= '(' branch ')'
+
+quantifier ::= '*'
+             | '?'
+||<
+
+素直に書くとこんな感じ。
+
+||>
+import Prelude hiding (seq)
+
+newtype Regex = Regex Branch
+    deriving Show
+
+type Branch = [Seq]
+
+type Seq = [Piece]
+
+type Piece = (Atom, Quantifier)
+
+data Atom = CharAtom Char
+          | Group Branch
+    deriving Show
+
+data Quantifier = None
+                | Optional
+                | Repeat
+    deriving Show
+
+parse :: String -> Maybe Regex
+parse s = case parseBranch s of
+               Nothing      -> Nothing
+               Just (b, []) -> Just (Regex b)
+               _            -> Nothing
+
+parseBranch :: String -> Maybe (Branch, String)
+parseBranch s = case parseSeq s of
+                    Nothing            -> Nothing
+                    Just (seq, '|':rs) -> case parseBranch rs of
+                                              Nothing        -> Nothing
+                                              Just (b', rs') -> Just (seq:b', rs')
+                    Just (seq, rs    ) -> Just ([seq], rs)
+
+parseSeq :: String -> Maybe (Seq, String)
+parseSeq s = case parsePiece s of
+                 Nothing       -> Just ([], s)
+                 Just (p,  []) -> Just ([p], [])
+                 Just (p,  rs) -> case parseSeq rs of
+                                      Nothing         -> Nothing
+                                      Just (seq, rs') -> Just (p:seq, rs')
+
+parsePiece :: String -> Maybe (Piece, String)
+parsePiece s = case parseAtom s of
+                   Nothing      -> Nothing
+                   Just (a, rs) -> case parseQuantifier rs of
+                                        Nothing       -> Nothing
+                                        Just (q, rs') -> Just ((a, q), rs')
+
+parseAtom :: String -> Maybe (Atom, String)
+parseAtom s = case parseGroup s of
+                  Nothing -> parseCharAtom s
+                  g       -> g
+
+parseGroup :: String -> Maybe (Atom, String)
+parseGroup ('(':s) = case parseBranch s of
+                         Nothing          -> Nothing
+                         Just (b, ')':rs) -> Just (Group b, rs)
+                         Just (_, rs    ) -> Nothing
+parseGroup s       = Nothing
+
+parseCharAtom :: String -> Maybe (Atom, String)
+parseCharAtom (c:s) | isAtomChar c = Just (CharAtom c, s)
+                    | otherwise    = Nothing
+parseCharAtom []                   = Nothing
+
+parseQuantifier :: String -> Maybe (Quantifier, String)
+parseQuantifier ('*':s) = Just (Repeat,   s)
+parseQuantifier ('?':s) = Just (Optional, s)
+parseQuantifier s       = Just (None,     s)
+
+isAtomChar :: Char -> Bool
+isAtomChar = flip notElem "|()*?"
+||<
+
+ここで、parseAtomを見ると、parseGroupに成功したらその結果を、失敗したらparseCharAtomした結果を返しています。そこで、
+
+||>
+or parser1 parser2 s = case parser1 s of
+                           Nothing -> parser2 s
+                           r       -> r
+||<
+
+というような関数orを定義してみます。二つの関数と入力を引数にとって、一つ目の関数が成功したらその結果を、そうでなければ二つ目の関数の結果を返す関数です。型を見ると、
+
+||>
+or :: (String -> Maybe (Atom, String)) -> (String -> Maybe (Atom, String)) -> String -> Maybe (Atom, String)
+||<
+
+ですが、繰り返しが多いので、String -> Maybe (Atom, String)に名前をつけることにします。
+
+||>
+type Parser = String -> Maybe (Atom, String)
+||<
+
+ただし、このままだと使い回しが効かないので、StringとAtomを型引数にして、
+
+||>
+type Parser a b = a -> Maybe (b, a)
+||<
+
+にします。すると、orは、
+
+||>
+or :: Parser a b -> Parser a b -> Parser a b
+||<
+
+という型になり、二項演算子のように見えるので<|>という演算子として定義してみます。
+
+||>
+(<|>) :: Parser a b -> Parser a b -> Parser a b
+(<|>) parser1 parser2 = \s -> case parser1 s of
+                                  Nothing -> parser2 s
+                                  r       -> r
+||<
+
+これを使うと、parseAtomは、
+
+||>
+parseAtom = parseGroup <|> parseCharAtom
+||<
+
+と、なんだかそれっぽく書けるようになります。
+
+次に、parsePieceを見ると、parseAtomが成功したらその結果とparseQuantifierの結果の組み合わせを、どちらかが失敗したら失敗を返しています。<|>と同じ方針で、
+
+||>
+con :: Parser a b -> Parser a c -> (b -> c -> d) -> Parser a d
+con parser1 parser2 f s = case parser1 s of
+                              Nothing      -> Nothing
+                              Just (v, rs) -> case parser2 rs of
+                                                  Nothing        -> Nothing
+                                                  Just (v', rs') -> Just (f v v', rs')
+||<
+
+という関数conを定義すると、
+
+||>
+parsePiece s = con parseAtom parseQuantifier (,) s
+||<
+
+と書けますが、二つ以上繋げるのが難しくなります。そこで引数としては二番目のパーサ関数を返す関数を渡すことにして、その関数に一番目のパーサ関数の結果を渡すようにします。
+
+||>
+(|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
+(|>>=) parser1 f = \s -> case parser1 s of
+                             Nothing     -> Nothing
+                             Just (v, rs)-> let parser2 = f v
+                                            in parser2 rs
+||<
+
+すると、parsePieceは、
+
+||>
+parsePiece s = parseAtom |>>= (\a -> parseQuantifier |>>= \q -> ...))
+||<
+
+のような形で書けそうです。...の部分ではparseAtomの結果(a)とparseQuantifierの結果(q)を混ぜてやればよさそうです。|>>=を使うとさらにパーサを作らなくてはいけなくなってしまうので、パーサの代わりに結果を返す関数を取る|>=を定義します。
+
+||>
+(|>=) :: Parser a b -> (b -> c) -> Parser a c
+(|>=) = parser f = \s -> case parser s of
+                             Nothing      -> Nothing
+                             Just (v, rs) -> Just (f v, rs)
+||<
+
+すると、parsePieceは、
+
+||>
+parsePiece = parseAtom |>>= (\a ->
+             parseQuantifier |>= (\q ->
+             (a, q)))
+||<
+
+と書けます。ここで、上記の通り、|>=は渡す関数が次のパーサ関数を返す代わりにパースした結果を返すことを除けば|>>=と同じです。そこで、パース自体は何もしないで指定された引数の値を常に返すパーサ関数alwaysを使うと、|>>=を使って|>=を定義できます。
+
+||>
+always :: b -> Parser a b
+always x = \s -> (Just x, s)
+
+(|>=) parser f = parser |>>= always . f
+||<
+
+最終的にparsePieceは、
+
+||>
+parsePiece = parseAtom |>>= (\a ->
+             parseQuantifier |>>= (\q ->
+             always (a, q)))
+||<
+
+と書けることになります。
+
+続けてparseGroupを見ると、'('から始まっている場合とそうでない場合で処理が分けられています。パターンマッチングで処理を分けるのをやめるために、'('だけをパースする関数と')'だけをパースする関数を用意すると以下のように書けることになります。
+
+||>
+parseOpenParen ('(':s) = Just ('(', s)
+parseOpenParen _       = Nothing
+
+parseCloseParen (')':s) = Just (')', s)
+parseCloseParen _       = Nothing
+
+parseGroup = parseOpenParen |>>= (\_ ->
+             parseBranch |>>= (\b ->
+             parseCloseParen |>>= (\_ ->
+             always (Group b))))
+||<
+
+このような変形を全てに適用すると以下のように変形することができます。
+
+||>
+parse :: String -> Maybe Regex
+parse s = case parseBranch s of
+               Nothing      -> Nothing
+               Just (b, []) -> Just (Regex b)
+               _            -> Nothing
+
+parseBranch :: Parser String Branch
+parseBranch =     (parseSeq |>>= (\s ->
+                   parseChar '|' |>>
+                   parseBranch |>>= (\b ->
+                   always $ s:b)))
+              <|> (parseSeq |>>= (\s ->
+                   always [s]))
+
+parseSeq :: Parser String Seq
+parseSeq =     (parsePiece |>>= (\p ->
+                parseSeq |>>= (\s ->
+                always $ p:s)))
+           <|> (parsePiece |>>= (\p ->
+                always [p]))
+           <|> always []
+
+parsePiece :: Parser String Piece
+parsePiece = parseAtom |>>= (\a ->
+             parseQuantifier |>>= (\q ->
+             always (a, q)))
+
+parseAtom :: Parser String Atom
+parseAtom =     parseGroup
+            <|> parseCharAtom
+
+parseGroup :: Parser String Atom
+parseGroup = parseChar '(' |>>
+             parseBranch |>>= (\b ->
+             parseChar ')' |>>
+             always (Group b))
+
+parseCharAtom :: Parser String Atom
+parseCharAtom = parseCharOf isAtomChar |>>= (\c ->
+                always $ CharAtom c)
+
+parseQuantifier :: Parser String Quantifier
+parseQuantifier =     (parseChar '*' |>>
+                       always Repeat)
+                  <|> (parseChar '?' |>>
+                       always Optional)
+                  <|> always None
+
+parseChar :: Char -> Parser String Char
+parseChar c = parseCharOf (==c)
+
+parseCharOf :: (Char -> Bool) -> Parser String Char
+parseCharOf f (c:s) | f c       = Just (c, s)
+                    | otherwise = Nothing
+parseCharOf _ []                = Nothing
+
+always :: b -> Parser a b
+always x = \s -> Just (x, s)
+
+isAtomChar :: Char -> Bool
+isAtomChar = flip notElem "|()*?"
+
+
+type Parser a b = a -> Maybe (b, a)
+
+(<|>) :: Parser a b -> Parser a b -> Parser a b
+(<|>) p1 p2 = \s -> case p1 s of
+                        Nothing -> p2 s
+                        r       -> r
+
+(|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
+(|>>=) p f = \s -> case p s of
+                       Nothing     -> Nothing
+                       Just (v, rs)-> (f v) rs
+
+(|>>) :: Parser a b -> Parser a c -> Parser a c
+(|>>) p1 p2 = p1 |>>= \_ -> p2
+||<
+
+なんとなくBNFの書式に似てきた気がしませんか。しませんか。ここで、関数の型を見ればわかるように、|>>=はモナドの>>=に、alwaysはreturnにあたるので、モナドにすることができます。しかし、Parserがtypeを使って別名として定義されているとモナドのインスタンスにできないので、newtypeを使うようにした上で、モナドのインスタンスにしてみます。
+
+||>
+newtype Parser a b = Parser { runParser :: a -> Maybe (b, a) }
+
+instance Monad (Parser a)
+    where
+        (>>=) = (|>>=)
+        return = always
+        fail _ = Parser $ \_ -> Nothing
+||<
+
+これを使って書き直すと以下のようになります。
+
+||>
+parse :: String -> Maybe Regex
+parse s = (runParser parse') s >>= return . Regex . fst
+    where
+        parse' = parseBranch >>= (\b ->
+                 parseEmpty >>
+                 (return b))
+
+parseBranch :: Parser String Branch
+parseBranch =     (parseSeq >>= (\s ->
+                   parseChar '|' >>
+                   parseBranch >>= (\b ->
+                   return $ s:b)))
+              <|> (parseSeq >>= (\s ->
+                   return [s]))
+
+parseSeq :: Parser String Seq
+parseSeq =     (parsePiece >>= (\p ->
+                parseSeq >>= (\s ->
+                return $ p:s)))
+           <|> (parsePiece >>= (\p ->
+                return [p]))
+           <|> return []
+
+parsePiece :: Parser String Piece
+parsePiece = parseAtom >>= (\a ->
+             parseQuantifier >>= (\q ->
+             return (a, q)))
+
+parseAtom :: Parser String Atom
+parseAtom =     parseGroup
+            <|> parseCharAtom
+
+parseGroup :: Parser String Atom
+parseGroup = parseChar '(' >>
+             parseBranch >>= (\b ->
+             parseChar ')' >>
+             return (Group b))
+
+parseCharAtom :: Parser String Atom
+parseCharAtom = parseCharOf isAtomChar >>= (\c ->
+                return $ CharAtom c)
+
+parseQuantifier :: Parser String Quantifier
+parseQuantifier =     (parseChar '*' >>
+                       return Repeat)
+                  <|> (parseChar '?' >>
+                       return Optional)
+                  <|> return None
+
+parseChar :: Char -> Parser String Char
+parseChar c = parseCharOf (==c)
+
+parseCharOf :: (Char -> Bool) -> Parser String Char
+parseCharOf f = Parser $ \s -> parseCharOf' f s
+    where
+        parseCharOf' f (c:s) | f c       = Just (c, s)
+                             | otherwise = Nothing
+        parseCharOf' _ []                = Nothing
+
+parseEmpty :: Parser [a] ()
+parseEmpty = Parser $ parseEmpty'
+    where
+        parseEmpty' [] = Just ((), [])
+        parseEmpty' _  = Nothing
+
+always :: b -> Parser a b
+always x = Parser $ \s -> Just (x, s)
+
+isAtomChar :: Char -> Bool
+isAtomChar = flip notElem "|()*?"
+
+
+newtype Parser a b = Parser { runParser :: a -> Maybe (b, a) }
+
+instance Monad (Parser a)
+    where
+        (>>=) = (|>>=)
+        return = always
+        fail _ = Parser $ \_ -> Nothing
+
+(<|>) :: Parser a b -> Parser a b -> Parser a b
+(<|>) (Parser p1) (Parser p2) = Parser $ \s -> case p1 s of
+                                                   Nothing -> p2 s
+                                                   r       -> r
+
+(|>>=) :: Parser a b -> (b -> Parser a c) -> Parser a c
+(|>>=) (Parser p) f = Parser $ \s -> case p s of
+                                         Nothing     -> Nothing
+                                         Just (v, rs)-> runParser (f v) $ rs
+
+(|>>) :: Parser a b -> Parser a c -> Parser a c
+(|>>) p1 p2 = p1 |>>= \_ -> p2
+||<
+
+そして、これをdo記法で書くとこうなります。ついでに関数の名前もそれっぽくしてみます。
+
+||>
+parse :: String -> Maybe Regex
+parse s = (runParser parser) s >>= return . Regex . fst
+    where
+        parser = do b <- branch
+                    empty
+                    return b
+
+branch :: Parser String Branch
+branch =     do s <- seq
+                char '|'
+                b <- branch
+                return $ s:b
+         <|> do s <- seq
+                return [s]
+
+seq :: Parser String Seq
+seq =     do p <- piece
+             s <- seq
+             return $ p:s
+      <|> do p <- piece
+             return [p]
+      <|> return []
+
+piece :: Parser String Piece
+piece = do a <- atom
+           q <- quantifier
+           return (a, q)
+
+atom :: Parser String Atom
+atom =     group
+       <|> charAtom
+
+group :: Parser String Atom
+group = do char '('
+           b <- branch
+           char ')'
+           return $ Group b
+
+charAtom :: Parser String Atom
+charAtom = do c <- charOf isAtomChar
+              return $ CharAtom c
+
+quantifier :: Parser String Quantifier
+quantifier =     do char '*'
+                    return Repeat
+             <|> do char '?'
+                    return Optional
+             <|> return None
+
+char :: Char -> Parser String Char
+char c = charOf (==c)
+
+charOf :: (Char -> Bool) -> Parser String Char
+charOf f = Parser $ \s -> charOf' f s
+    where
+        charOf' f (c:s) | f c       = Just (c, s)
+                        | otherwise = Nothing
+        charOf' _ []                = Nothing
+
+empty :: Parser [a] ()
+empty = Parser $ empty'
+    where
+        empty' [] = Just ((), [])
+        empty' _  = Nothing
+
+always :: b -> Parser a b
+always x = Parser $ \s -> Just (x, s)
+||<
+
+今度こそBNFとそっくりになっていませんか。いませんか。そうですか。

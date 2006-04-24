@@ -1,13 +1,16 @@
 import Prelude hiding (seq)
 
-type Regex = [Seq]
+newtype Regex = Regex Branch
+    deriving Show
+
+type Branch = [Seq]
 
 type Seq = [Piece]
 
 type Piece = (Atom, Quantifier)
 
 data Atom = CharAtom Char
-          | Group Regex
+          | Group Branch
     deriving Show
 
 data Quantifier = None
@@ -18,10 +21,10 @@ data Quantifier = None
 parse :: String -> Maybe Regex
 parse s = case parseBranch s of
                Nothing      -> Nothing
-               Just (b, []) -> Just b
+               Just (b, []) -> Just (Regex b)
                _            -> Nothing
 
-parseBranch :: String -> Maybe (Regex, String)
+parseBranch :: String -> Maybe (Branch, String)
 parseBranch s = case parseSeq s of
                     Nothing            -> Nothing
                     Just (seq, '|':rs) -> case parseBranch rs of
