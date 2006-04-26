@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad
-import List hiding (group)
 import Maybe
 import Prelude hiding (seq)
 import System
@@ -141,11 +140,6 @@ infixl 1 |>>
 data NFAState a = NFAState { runNFA :: [a] -> [(NFAState a, [a])] }
                 | NFAEndState
 
-instance Eq (NFAState a)
-    where
-        NFAEndState == NFAEndState = True
-        _           == _           = False
-
 compile :: Regex -> NFAState Char
 compile (Regex branch) = compileBranch NFAEndState branch
 
@@ -200,20 +194,10 @@ searchNFA nfa = or . concatMap (searchNFA' nfa) . takeWhile (not . null) . itera
         searchNFA' :: NFAState Char -> String -> [Bool]
         searchNFA' NFAEndState _ = [True]
         searchNFA' nfa         s = let next = runNFA nfa $ s
-                                  in concatMap (uncurry searchNFA') next
+                                   in concatMap (uncurry searchNFA') next
 
 
 main :: IO ()
-{-
-main = do args <- getArgs
-          let pattern = args !! 0
-              s = args !! 1
-          case parse pattern of
-              Just regex -> case matchRegex regex s of
-                                True  -> putStrLn "Match"
-                                False -> putStrLn "Not Match"
-              Nothing    -> putStrLn $ "Invalid pattern: `" ++ pattern ++ "'"
--}
 main = do args <- getArgs
           let pattern = args !! 0
           case parse pattern of
@@ -221,16 +205,10 @@ main = do args <- getArgs
               Nothing    -> putStrLn $ "Invalid pattern: `" ++ pattern ++ "'"
 
 grep :: FilePath -> NFAState Char -> IO ()
-grep path nfa = do contents <- readFile path
-                   let r = [ (s, n) | (s, n) <- zip (lines contents) [1..], searchNFA nfa s ]
-                   mapM_ (\(s, n) -> putStrLn (path ++ ":" ++ show n ++ ":" ++ s)) r
-
-{-
-searchNFA :: NFAState Char -> String -> Bool
-searchNFA nfa = or . map (searchNFA' nfa) . candidates
+grep path nfa = catch (readFile path >>= mapM_ (uncurry printLine) . matchedLines . lines)
+                      (\e -> putStrLn $ "File not found: " ++ path ++ " (" ++ show e ++ ")")
     where
-        candidates = reverse . map reverse . takeWhile (not . null) . iterate (drop 1) . reverse
-        searchNFA' nfa s@(_:s') | matchNFA nfa s = True
-                                | otherwise      = searchNFA' nfa s'
-        searchNFA' nfa []                        = False
--}
+        matchedLines :: (Enum a, Num a) => [String] -> [(String, a)]
+        matchedLines l = [ (s, n) | (s, n) <- zip l [1..], searchNFA nfa s ]
+        printLine :: Show a => String -> a -> IO ()
+        printLine s n = putStrLn (path ++ ":" ++ show n ++ ":" ++ s)
