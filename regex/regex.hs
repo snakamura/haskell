@@ -1,4 +1,6 @@
 import Control.Monad
+import List hiding (group)
+import Maybe
 import Prelude hiding (seq)
 
 newtype Regex = Regex Branch
@@ -131,3 +133,56 @@ infixl 1 |>>=
 infixl 1 |>>
 (|>>) :: Parser a b -> Parser a c -> Parser a c
 (|>>) p1 p2 = p1 |>>= \_ -> p2
+
+
+data NFAState a = NFAState { runNFA :: [a] -> [(NFAState a, [a])] }
+                | NFAEndState
+
+instance Eq (NFAState a)
+    where
+        NFAEndState == NFAEndState = True
+        _           == _           = False
+
+compile :: Regex -> NFAState Char
+compile (Regex branch) = compileBranch NFAEndState branch
+
+compileBranch :: NFAState Char -> Branch -> NFAState Char
+compileBranch next seq = NFAState $ newState
+    where
+        newState s = zip (compileBranch' seq) (cycle [s])
+        compileBranch' (seq:[])     = [compileSeq next seq]
+        compileBranch' (seq:branch) = compileSeq next seq:compileBranch' branch
+        compileBranch' []           = [next]
+
+compileSeq ::NFAState Char -> Seq -> NFAState Char
+compileSeq next (piece:seq) = compilePiece (compileSeq next seq) piece
+compileSeq next []          = next
+
+compilePiece :: NFAState Char -> Piece -> NFAState Char
+compilePiece next (a, None)     = compileAtom next a
+compilePiece next (a, Optional) = NFAState $ newState
+    where
+        newState s = [(compileAtom next a, s), (next, s)]
+compilePiece next (a, Repeat)   = NFAState $ newState
+    where
+        newState s = [(compileAtom (NFAState newState) a, s), (next, s)]
+
+compileAtom :: NFAState Char -> Atom -> NFAState Char
+compileAtom next (CharAtom c) = NFAState $ newState
+    where
+        newState (c':s) | c' == c   = [(next, s)]
+                        | otherwise = []
+        newState _                  = []
+compileAtom next (Group branch) = compileBranch next branch
+
+match :: String -> String -> Maybe Bool
+match regex s = parse regex >>= Just . flip matchRegex s
+
+matchRegex :: Regex -> String -> Bool
+matchRegex regex = or . matchNFA (compile regex)
+        
+matchNFA :: NFAState Char -> String -> [Bool]
+matchNFA NFAEndState [] = [True]
+matchNFA NFAEndState _  = [False]
+matchNFA nfa s          = let next = runNFA nfa $ s
+                          in concatMap (uncurry matchNFA) next
