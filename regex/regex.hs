@@ -1,7 +1,10 @@
+module Main where
+
 import Control.Monad
 import List hiding (group)
 import Maybe
 import Prelude hiding (seq)
+import System
 
 newtype Regex = Regex Branch
     deriving Show
@@ -147,9 +150,9 @@ compile :: Regex -> NFAState Char
 compile (Regex branch) = compileBranch NFAEndState branch
 
 compileBranch :: NFAState Char -> Branch -> NFAState Char
-compileBranch next seq = NFAState $ newState
+compileBranch next branch = NFAState $ newState
     where
-        newState s = zip (compileBranch' seq) (cycle [s])
+        newState s = zip (compileBranch' branch) (cycle [s])
         compileBranch' (seq:[])     = [compileSeq next seq]
         compileBranch' (seq:branch) = compileSeq next seq:compileBranch' branch
         compileBranch' []           = [next]
@@ -168,21 +171,33 @@ compilePiece next (a, Repeat)   = NFAState $ newState
         newState s = [(compileAtom (NFAState newState) a, s), (next, s)]
 
 compileAtom :: NFAState Char -> Atom -> NFAState Char
-compileAtom next (CharAtom c) = NFAState $ newState
+compileAtom next (CharAtom char) = NFAState $ newState
     where
-        newState (c':s) | c' == c   = [(next, s)]
-                        | otherwise = []
-        newState _                  = []
+        newState (c:s) | c == char = [(next, s)]
+                       | otherwise = []
+        newState _                 = []
 compileAtom next (Group branch) = compileBranch next branch
+
 
 match :: String -> String -> Maybe Bool
 match regex s = parse regex >>= Just . flip matchRegex s
 
 matchRegex :: Regex -> String -> Bool
 matchRegex regex = or . matchNFA (compile regex)
-        
+
 matchNFA :: NFAState Char -> String -> [Bool]
 matchNFA NFAEndState [] = [True]
 matchNFA NFAEndState _  = [False]
-matchNFA nfa s          = let next = runNFA nfa $ s
+matchNFA nfa         s  = let next = runNFA nfa $ s
                           in concatMap (uncurry matchNFA) next
+
+
+main :: IO()
+main = do args <- getArgs
+          let pattern = args !! 0
+              s = args !! 1
+          case parse pattern of
+              Just regex -> case matchRegex regex s of
+                                True  -> putStrLn "Match"
+                                False -> putStrLn "Not Match"
+              Nothing    -> putStrLn $ "Invalid pattern: `" ++ pattern ++ "'"
