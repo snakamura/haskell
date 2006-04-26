@@ -183,16 +183,28 @@ match :: String -> String -> Maybe Bool
 match regex s = parse regex >>= Just . flip matchRegex s
 
 matchRegex :: Regex -> String -> Bool
-matchRegex regex = or . matchNFA (compile regex)
+matchRegex = matchNFA . compile
 
-matchNFA :: NFAState Char -> String -> [Bool]
-matchNFA NFAEndState [] = [True]
-matchNFA NFAEndState _  = [False]
-matchNFA nfa         s  = let next = runNFA nfa $ s
-                          in concatMap (uncurry matchNFA) next
+matchNFA :: NFAState Char -> String -> Bool
+matchNFA nfa = or . matchNFA' nfa
+    where
+        matchNFA' :: NFAState Char -> String -> [Bool]
+        matchNFA' NFAEndState [] = [True]
+        matchNFA' NFAEndState _  = [False]
+        matchNFA' nfa         s  = let next = runNFA nfa $ s
+                                   in concatMap (uncurry matchNFA') next
+
+searchNFA :: NFAState Char -> String -> Bool
+searchNFA nfa = or . concatMap (searchNFA' nfa) . takeWhile (not . null) . iterate tail
+    where
+        searchNFA' :: NFAState Char -> String -> [Bool]
+        searchNFA' NFAEndState _ = [True]
+        searchNFA' nfa         s = let next = runNFA nfa $ s
+                                  in concatMap (uncurry searchNFA') next
 
 
-main :: IO()
+main :: IO ()
+{-
 main = do args <- getArgs
           let pattern = args !! 0
               s = args !! 1
@@ -201,3 +213,24 @@ main = do args <- getArgs
                                 True  -> putStrLn "Match"
                                 False -> putStrLn "Not Match"
               Nothing    -> putStrLn $ "Invalid pattern: `" ++ pattern ++ "'"
+-}
+main = do args <- getArgs
+          let pattern = args !! 0
+          case parse pattern of
+              Just regex -> mapM_ (flip grep $ compile regex) $ tail args
+              Nothing    -> putStrLn $ "Invalid pattern: `" ++ pattern ++ "'"
+
+grep :: FilePath -> NFAState Char -> IO ()
+grep path nfa = do contents <- readFile path
+                   let r = [ (s, n) | (s, n) <- zip (lines contents) [1..], searchNFA nfa s ]
+                   mapM_ (\(s, n) -> putStrLn (path ++ ":" ++ show n ++ ":" ++ s)) r
+
+{-
+searchNFA :: NFAState Char -> String -> Bool
+searchNFA nfa = or . map (searchNFA' nfa) . candidates
+    where
+        candidates = reverse . map reverse . takeWhile (not . null) . iterate (drop 1) . reverse
+        searchNFA' nfa s@(_:s') | matchNFA nfa s = True
+                                | otherwise      = searchNFA' nfa s'
+        searchNFA' nfa []                        = False
+-}
