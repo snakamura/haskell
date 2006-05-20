@@ -1,0 +1,249 @@
+エラーの処理について考えます。お題は10進数のパースということにします。つまり、文字列を与えるとそれを10進数としてパースして数値を返す関数です。エラーが発生する可能性があるのでMaybeを使うことにして書くとこんな感じ。Javaでいうとエラーが起きたらnullを返すようなイメージです。
+
+>||
+import Char
+
+parseDecMaybe :: String -> Maybe Int
+parseDecMaybe [] = Nothing
+parseDecMaybe s = parseDec' 0 s
+ where
+     parseDec' x (c:s) = case parseDecCharMaybe c of
+                             Just y -> let z = x*10 + y
+                                       in if z < 0
+                                              then Nothing
+                                              else parseDec' z s
+                             Nothing -> Nothing
+     parseDec' x []    = Just x
+
+parseDecCharMaybe :: Char -> Maybe Int
+parseDecCharMaybe c = if isDigit c
+                          then Just $ fromEnum c - fromEnum '0'
+                          else Nothing
+||<
+
+文字列が空だったり、不正な文字が含まれていたとき、オーバーフローが発生したときにエラーになります。しかし、これだとエラーの原因がわからないのでエラーメッセージを付ける事にします。このような場合には、Eitherを使います。
+
+>||
+parseDecEither :: String -> Either String Int
+parseDecEither [] = Left "Empty String"
+parseDecEither s = parseDec' 0 s
+ where
+     parseDec' x (c:s) = case parseDecCharEither c of
+                             Right y -> let z = x*10 + y
+                                        in if z < 0
+                                               then Left "Overflow"
+                                               else parseDec' z s
+                             e       -> e
+     parseDec' x []    = Right x
+
+parseDecCharEither :: Char -> Either String Int
+parseDecCharEither c = if isDigit c
+                           then Right $ fromEnum c - fromEnum '0'
+                           else Left $ "Invalid character: " ++ [c]
+||<
+
+Justの代わりにRightを、Nothingの代わりにLeftとエラー文字列を渡すようにしただけで全体の構成はほぼ同じです。そっくりなのにメッセージがあるかないかで二種類も書くのはいまいちです。そこでまずMaybe版をモナドを使った形式に書き換えてみます。
+
+>||
+parseDecM :: Monad m => String -> m Int
+parseDecM [] = fail "Empty String"
+parseDecM s = parseDec' 0 s
+ where
+     parseDec' x (c:s) = do y <- parseDecCharM c
+                            let z = x*10 + y
+                            if z < 0
+                                then fail "Overflow"
+                                else parseDec' z s
+     parseDec' x []    = return x
+
+parseDecCharM :: Monad m => Char -> m Int
+parseDecCharM c = if isDigit c
+                      then return $ fromEnum c - fromEnum '0'
+                      else fail $ "Invalid character: " ++ [c]
+||<
+
+Justを直接使う代わりにreturnを使い、Nothingの代わりにfailとエラーメッセージを使います。これによってMaybeに直接依存する部分がなくなりました。この関数の型は、Monad m => String -> m Intなので、モナドであればMaybeでなくても使えることになります。
+
+そこで、Eitherもモナドにしてみます。ひとまず、returnと(>>=)は以下のようになります。エラーにならなかったらRightを返し、一回エラーになったらその後の計算は全て無視してエラーを返します。
+
+>||
+instance Monad (Either e) where
+    return          = Right
+    (Left  x) >>= _ = Left x
+    (Right x) >>= f = f x
+||<
+
+このままだとfailが定義されていないのでデフォルトの定義が使われ、エラーが発生するとそこで実行が中断してしまいます。failの型は、String -> m aなので、文字列からEitherを生成する必要があります。この生成方法は型によって違うので、文字列から生成できることを示すクラスを作ります。
+
+>||
+class Error e where
+    fromString :: String -> e
+||<
+
+今はエラーメッセージとしてStringを使っているので、String用のインスタンス宣言をします。
+
+>||
+instance Error String where
+    fromString = id
+||<
+
+ちなみに、Haskell 98の仕様だとtypeで付けられた名前をインスタンスにすることができないので、-fglasgow-extsの拡張が必要です。
+
+そして、Eitherのモナドはエラーとして使う型がErrorのインスタンスであることが必要ということにします。
+
+>||
+instance Error e => Monad (Either e) where
+    return          = Right
+    (Left  x) >>= _ = Left x
+    (Right x) >>= f = f x
+    fail            = Left . fromString
+
+||<
+
+これで、Eitherもモナドとして扱えるようになりました。例えば、
+
+>||
+case parseDecM "123" of
+    Just x  -> putStrLn $ show x
+    Nothing -> putStrLn "Error"
+||<
+
+のように呼び出すとMaybeが使われ、
+
+>||
+case parseDecM "123" of
+    Right x -> putStrLn $ show x
+    Left  e -> putStrLn e
+||<
+
+とするとEitherが使われます。エラーメッセージが必要ないときには前者を、必要なときには後者を使えば良いという事になります。呼び出し側の返り値の受け取り方で使われる型が変わるというのがなかなか面白いです。
+
+
+さて話は少し変わって今度はエラーメッセージに加えて別の情報もエラーとして渡したいとします。ここではエラーが何文字目で起きたかをエラーに含めることにします。最初のEither版に戻って考えるとこんな感じになります。
+
+>||
+import Char
+
+data ParseError = ParseError {
+    index :: Int,
+    msg   :: String
+}
+    deriving Show
+
+parseDecEither :: String -> Either ParseError Int
+parseDecEither [] = Left $ ParseError 0 "Empty String"
+parseDecEither s = parseDec' 0 s 0
+ where
+     parseDec' x (c:s) index = case parseDecCharEither c index of
+                                   Right y -> let z = x*10 + y
+                                              in if z < 0
+                                                     then Left $ ParseError index "Overflow"
+                                                     else parseDec' z s (index + 1)
+                                   e       -> e
+     parseDec' x [] _        = Right x
+
+parseDecCharEither :: Char -> Int -> Either ParseError Int
+parseDecCharEither c index = if isDigit c
+                                 then Right $ fromEnum c - fromEnum '0'
+                                 else Left $ ParseError index ("Invalid character: " ++ [c])
+||<
+
+さて、これをモナドで扱えるようにします。エラーとして渡す型はErrorクラスのインスタンスである必要があったので、
+
+>||
+instance Error ParseError where
+    fromString = ParseError 0
+||<
+
+のようにして文字列からParseErrorを作れるようにします。何文字目でエラーが起きたかはわからないので0にしておきます。このまま先ほどと同じようにRightをreturnに、Leftをfailに置き換えてもうまくいきません。これは、Leftに渡しているのはParseErrorなのにfailの引数はStringだからです。そこで、任意の型を渡せるバージョンのfailを作ることにします。
+
+この関数をthrowErrorという名前にし、Monadから派生したMonadErrorクラスに定義します。
+
+>||
+class Monad m => MonadError e m | m -> e where
+    throwError :: e -> m a
+||<
+
+このクラスは型引数が二つあります。Haskell 98ではクラスの型引数は一つしか許されませんが、これも拡張で二つ以上指定することができるようになります。この場合、指定した二つの型の間の関係を表すクラスということになります。オブジェクト指向で言うところのデュアルディスパッチのようなものをイメージすると良いのではないかと思われます。また、| m -> eはFunctional Dependenciesといって、mの型が決まったときにeの型が一意に決まることをあらわします。これがないと、mの型からeの型が求められずに型推論に失敗してしまいます。論文はこれです。<http://www.cse.ogi.edu/~mpj/pubs/fundeps.html>
+
+そして、Eitherとエラーの型をこのクラスのインスタンスにします。
+
+>||
+instance Error e => MonadError e (Either e) where
+    throwError = Left
+||<
+
+throwErrorの中ではfromStringを使っていないのでError e =>は必要ないような気がしますが、MonadError自体がMonadの派生クラスなので、そのインスタンスは全てMonadである必要があり、EitherがMonadのインスタンスであるためにはError eである必要があるのでError e =>は外せません。
+
+準備ができたので、モナドとして扱ってみます。
+
+>||
+parseDecM :: MonadError ParseError m => String -> m Int
+parseDecM [] = throwError $ ParseError 0 "Empty String"
+parseDecM s = parseDec' 0 s 0
+ where
+     parseDec' x (c:s) index = do y <- parseDecCharM c index
+                                  let z = x*10 + y
+                                  if z < 0
+                                      then throwError $ ParseError index "Overflow"
+                                      else parseDec' z s (index + 1)
+     parseDec' x [] _        = return x
+
+parseDecCharM :: MonadError ParseError m => Char -> Int -> m Int
+parseDecCharM c index = if isDigit c
+                            then return $ fromEnum c - fromEnum '0'
+                            else throwError $ ParseError index ("Invalid character: " ++ [c])
+||<
+
+元のモナド版に比べると、failの代わりにthrowErrorを使うようになった点が違います。
+
+呼び出し方はほぼ一緒で、
+
+>||
+case parseDecM (args !! 0) of
+    Right x -> putStrLn $ show x
+    Left  e -> putStrLn $ show e
+||<
+
+のように呼び出します。
+
+エラーを投げるところでthrowErrorを作ったのだからcatchErrorも欲しいところです。そうするとエラー処理をするところでEitherであることをあまり意識しなくて済むようになります。まず、MonadErrorクラスを拡張してcatchErrorを追加します。
+
+>||
+class Monad m => MonadError e m | m -> e where
+    throwError :: e -> m a
+    catchError :: m a -> (e -> m a) -> m a
+||<
+
+catchErrorはエラーが起きたときにエラーの値からモナドの値を生成する関数を引数にとります。インスタンス宣言はこうなります。
+
+>||
+instance Error e => MonadError e (Either e) where
+    throwError             = Left
+    catchError (Right x) _ = Right x
+    catchError (Left  e) f = f e
+||<
+
+エラーが起きなかったときには値をそのまま返し、エラーが起きたときには関数で値を変換します。これで呼び出し側はこのようになります。
+
+>||
+case catchError (parseDecM "123" >>= return . show) (return . show) of
+    Right x -> putStrLn x
+||<
+
+ここでは、正常終了したら結果を文字列に変換し、エラーが起きたらエラーを文字列にフォーマットします。とりあえずLeft側の判定が要らなくなります。
+
+ちなみに、catchErrorの型を、m a -> (e -> a) -> m aにして、実装をcatchError (Left e) f = Right $ f eとすることもできますが、これをやってしまうとcatchErrorがさらにエラーを発生させることができなくなってしまうのでよろしくないです。catchErrorがエラーを発生させることができるようにすることで、ネストしたエラー処理が可能になります。例えば、こんな感じ。
+
+>||
+parse s = do let (Right x) = catchError (parse' s >>= return . show) (return . show)
+             putStrLn x
+ where
+     parse' s = catchError (parseDecM s) handler
+      where
+          handler e = if index e == 0
+                          then return 0
+                          else throwError e
+||<
+
+0文字目でエラーが発生したらエラーが起きなかったものとして扱い（結果は0にする）、それ以外の場合にはエラーとして扱ってエラーの内容をを表示します。
