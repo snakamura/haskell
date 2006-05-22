@@ -26,14 +26,15 @@ mul4' xs = mulCps xs id
 --     mulCps []     = \f -> f 1
      mulCps []     = r 1
 --     mulCps (x:xs) = \f -> mulCps xs (\y -> f (x * y))
+--     mulCps (x:xs) = mulCps xs |>>= (\y -> \f -> f $ x * y)
      mulCps (x:xs) = mulCps xs |>>= (\y -> r $ x * y)
 
-type C a b = (a -> b) -> b
+type C r a = (a -> r) -> r
 
-r :: a -> C a b
+r :: a -> C r a
 r n = \f -> f n
 
---(|>>=) :: C a b -> (b -> C a c) -> C a c
+(|>>=) :: C r a -> (a -> C r b) -> C r b
 cont |>>= f = \k -> cont (\a -> f a k)
 --(|>>=) :: ((a -> b) -> b) -> (a -> b) -> (
 --c |>>= f = 
