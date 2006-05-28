@@ -1,5 +1,3 @@
-import Control.Monad.Cont
-
 mul1 :: Num a => [a] -> a
 mul1 = foldr (*) 1
 
@@ -18,26 +16,6 @@ mul4 = mulCps id
      mulCps :: Num a => (a -> b) -> [a] -> b
      mulCps f []     = f 1
      mulCps f (x:xs) = mulCps (\r -> f (x * r)) xs
-
-mul4' :: Num a => [a] -> a
-mul4' xs = mulCps xs id
- where
-     mulCps :: Num a => [a] -> (a -> b) -> b
---     mulCps []     = \f -> f 1
-     mulCps []     = r 1
---     mulCps (x:xs) = \f -> mulCps xs (\y -> f (x * y))
---     mulCps (x:xs) = mulCps xs |>>= (\y -> \f -> f $ x * y)
-     mulCps (x:xs) = mulCps xs |>>= (\y -> r $ x * y)
-
-type C r a = (a -> r) -> r
-
-r :: a -> C r a
-r n = \f -> f n
-
-(|>>=) :: C r a -> (a -> C r b) -> C r b
-cont |>>= f = \k -> cont (\a -> f a k)
---(|>>=) :: ((a -> b) -> b) -> (a -> b) -> (
---c |>>= f = 
 
 mul5 :: Num a => [a] -> a
 mul5 = mulCps id
@@ -110,3 +88,38 @@ mt3 t = runCont (mtCont t) id
                                 y <- mtCont r
                                 return $ n * x * y
      mtCont (Node n)       = return n
+
+
+newtype Cont r a = Cont { runCont :: (a -> r) -> r }
+
+instance Monad (Cont r) where
+    return x = Cont $ \f -> f x
+    Cont c >>= f = Cont $ \g -> c (\x -> runCont (f x) g)
+
+class Monad m => MonadCont m where
+    callCC :: ((a -> m b) -> m a) -> m a
+
+instance MonadCont (Cont r) where
+    callCC f = Cont $ \g -> runCont (f (\x -> Cont $ \_ -> g x)) g
+
+
+mul4' :: Num a => [a] -> a
+mul4' xs = mulCps xs id
+ where
+     mulCps :: Num a => [a] -> (a -> b) -> b
+--     mulCps []     = \f -> f 1
+     mulCps []     = r 1
+--     mulCps (x:xs) = \f -> mulCps xs (\y -> f (x * y))
+--     mulCps (x:xs) = mulCps xs |>>= (\y -> \f -> f $ x * y)
+     mulCps (x:xs) = mulCps xs |>>= (\y -> r $ x * y)
+
+type C r a = (a -> r) -> r
+
+r :: a -> C r a
+r x = \f -> f x
+
+(|>>=) :: C r a -> (a -> C r b) -> C r b
+cont |>>= f = \k -> cont (\x -> f x k)
+
+callcc :: ((a -> C r b) -> C r a) -> C r a
+callcc f = \g -> (f (\x -> \_ -> g x)) g
