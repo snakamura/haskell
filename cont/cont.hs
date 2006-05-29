@@ -38,7 +38,7 @@ mul6 = mulCps id
 mul7 :: Num a => [a] -> a
 mul7 x = runCont (mulCont x) id
  where
-     mulCont :: Num a => [a] -> Cont a a
+     mulCont :: Num a => [a] -> Cont b a
      mulCont []     = return 1
      mulCont (x:xs) = do r <- mulCont xs
                          return $ x * r
@@ -46,7 +46,7 @@ mul7 x = runCont (mulCont x) id
 mul8 :: Num a => [a] -> a
 mul8 x = runCont (mulCont x) id
  where
-     mulCont :: Num a => [a] -> Cont a a
+     mulCont :: Num a => [a] -> Cont b a
      mulCont []     = return 1
      mulCont (0:xs) = return 0
      mulCont (x:xs) = do r <- mulCont xs
@@ -55,7 +55,7 @@ mul8 x = runCont (mulCont x) id
 mul9 :: Num a => [a] -> a
 mul9 x = runCont (callCC $ mulCont x) id
  where
-     mulCont :: Num a => [a] -> (a -> Cont a a) -> Cont a a
+     mulCont :: Num a => [a] -> (a -> Cont b a) -> Cont b a
      mulCont x c = mulCont' x
       where
           mulCont' []     = return 1
@@ -83,11 +83,23 @@ mt2 = mtCps id
 mt3 :: Num a => Tree a -> a
 mt3 t = runCont (mtCont t) id
  where
-     mtCont :: Num a => Tree a -> Cont a a
+     mtCont :: Num a => Tree a -> Cont b a
      mtCont (Branch n l r) = do x <- mtCont l
                                 y <- mtCont r
                                 return $ n * x * y
      mtCont (Node n)       = return n
+
+mt4 :: Num a => Tree a -> a
+mt4 t = runCont (callCC $ mtCont t) id
+ where
+     mtCont :: Num a => Tree a -> (a -> Cont b a) -> Cont b a
+     mtCont t c = mtCont' t
+      where
+          mtCont' (Branch n l r) = do x <- mtCont' l
+                                      y <- mtCont' r
+                                      return $ n * x * y
+          mtCont' (Node 0)       = c 0
+          mtCont' (Node n)       = return n
 
 
 newtype Cont r a = Cont { runCont :: (a -> r) -> r }
@@ -112,6 +124,16 @@ mul4' xs = mulCps xs id
 --     mulCps (x:xs) = \f -> mulCps xs (\y -> f (x * y))
 --     mulCps (x:xs) = mulCps xs |>>= (\y -> \f -> f $ x * y)
      mulCps (x:xs) = mulCps xs |>>= (\y -> r $ x * y)
+
+mul6' :: Num a => [a] -> a
+mul6' xs = mulCps xs id
+ where
+     mulCps :: Num a => [a] -> (a -> b) -> b
+     mulCps xs f = mulCps' xs f
+      where
+          mulCps' []     g = g 1
+          mulCps' (0:xs) _ = f 0
+          mulCps' (x:xs) g = mulCps' xs (\r -> g (x * r))
 
 type C r a = (a -> r) -> r
 
