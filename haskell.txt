@@ -1,0 +1,302 @@
+★MySQLのインストール
+<http://www.mysql.org/downloads/mysql/5.0.html#Source>からソースをダウンロード
+- バイナリは後でunixODBCからHDBCでアクセスするときにリンクできない（soが入っていない）のでソースからビルドする
+
+sudo apt-get install libncurses5-dev
+tar zxf mysqwl-5.0.24.tar.gz
+cd mysql-5.0.24
+./configure --prefix=/usr/local/mysql --with-mysqld-user=mysql --with-extra-charsets=all --enable-thread-safe-client
+make
+sudo make install
+
+sudo groupadd mysql
+sudo useradd -g mysql -s /noexists -d /usr/local/mysql mysql
+
+cd /usr/local/mysql
+sudo bin/mysql_install_db --user=mysql
+
+sudo cp share/mysql/mysql.server /etc/init.d/mysql
+sudo update-rc.d mysql defaults 99 01
+
+sudo /etc/init.d/mysql start
+
+# rootのパスワードを設定
+bin/mysqladmin -u root password ThisIsPassword
+
+匿名ユーザを削除
+- mysqlで接続してmysql.userテーブルからuserが空なものを削除する
+
+bin/mysql -u root -p mysql
+> delete from user where User=''
+
+
+/etc/my.cnfを以下のようにする
+
+[mysqld]
+default-character-set=utf8
+
+[client]
+default-character-set=utf8
+socket=/tmp/mysql.sock
+
+リスタート
+/etc/init.d/mysql restart
+
+
+
+★GHCのインストール
+<http://www.haskell.org/ghc/download_ghc_642.html>からGeneric Linux with glibc 2.3のバイナリをダウンロード
+
+tar jxf ghc-6.4.2-i386-unknown-linux.tar.bz2
+cd ghc-6.4.2
+./configure
+sudo make install
+
+
+★HSQLのインストール
+<http://htoolkit.sourceforge.net/>からHSQL 1.7をダウンロード
+
+あらかじめ/usr/local/mysql/binにPATHを通しておく（MySQLのconfigureをするときにmysql_configを使うから）
+
+mv HSQL.tar.gz HSQL-1.7.tar.gz
+tar zxf HSQL-1.7.tar.gz
+mv HSQL HSQL-1.7
+
+cd HSQL
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+
+cd ../MySQL
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+
+
+
+★テストデータ作成
+
+# data.txtをmysqlコマンドで取り込む
+mysql -u root -p test < data.txt
+
+
+
+★HSQLでテスト
+runghc hsql.hs
+
+HSQL-1.7.patchを当てるとmy.cnfを読み込むようになるので、「SET NAMES utf8」しなくて良い
+読み込むセクションは、hsqlとclient
+
+
+
+★unixODBCのインストール
+sargeのパッケージは古くてHDBC-ODBCがビルドできない
+<http://www.unixodbc.org/>からダウンロード
+
+flexが入っているとビルドに失敗する（sargeのflexが古くてバグがあるからっぽい）
+ configure時にflexがないとコンパイル済みのソースが使われるので問題ない
+ flexをアンインストールするか、ソースからビルドしておく
+
+tar zxf unixODBC-2.2.11.tar.gz
+cd unixODBC-2.2.11
+./configure --enable-gui=no
+
+
+
+★MySQLのODBCドライバのインストール
+unixODBCに入っているMySQLドライバは若干古いのとデフォルトではインストールされないっぽいので自分で持ってきて入れる
+<http://dev.mysql.com/downloads/connector/odbc/3.51.html>からダウンロードする
+
+# あらかじめlibltdl3-devを入れておく（入っていないとconfigureで失敗する「Could not find compile MySQL single user test program.」）
+sudo apt-get install libltdl3-dev
+
+tar zxf mysql-connector-odbc-3.51.12.tar.gz
+cd mysql-connector-odbc-3.51.12
+./configure --enable-gui=no --with-unixODBC=/usr/local --with-mysql-path=/usr/local/mysql
+make
+sudo make install
+
+
+
+★ODBCドライバとDSNの登録
+
+ドライバの登録
+
+sudo odbcinst -i -d -f odbcinst.ini
+
+odbcinst.iniを直接/usr/local/etcに置いても良いが、odbcinstを使うと参照カウントなどを管理してくれる
+
+
+DSNの登録
+
+odbcinst -i -s -f odbc.ini
+
+~/.odbc.iniができる
+システムDSNとしてインストールしたいときには、-lをつけると、/usr/local/etcに入る
+CGIで使う場合、SuEXECしないのであればシステムDSNにする必要がある（もしくは、cgiを実行するユーザのユーザDSNにする）
+
+# isqlで繋いでみる
+isql MySQL-test
+
+
+★HDBCのインストール
+<http://quux.org:70/devel/hdbc>からダウンロード
+
+HDBC-ODBC 1.0.1.0とMyODBC 3.51.12の組み合わせだと接続できないので、hdbc-odbc-1.0.1.0.patchを当てる
+- SQL_DRIVER_COMPLETEを指定したときにウィンドウハンドルを指定しないと強制的にエラーになるので、SQL_DRIVER_NOPROMPTを使う
+
+tar zxf hdbc_1.0.1.tar.gz
+mv hdbc hdbc-1.0.1
+cd hdbc-1.0.1
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+
+tar zxf hdbc-odbc_1.0.1.0.tar.gz
+mv hdbc-odbc hdbc-odbc-1.0.1.0
+cd hdbc-odbc-1.0.1.0
+patch -p1 < ../hdbc-odbc-1.0.1.0.patch
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+★HDBCでテスト
+
+/etc/ld.so.confに/usr/local/libを追加してsudo ldconfigしておく
+
+runghc hdbc.hs
+
+MyODBC 3.51.12にはバグがあって、sqlDriverConnectするときの文字列がNULで終わっていないとゴミが渡ってしまう。HDBC-ODBCから呼び出すとNULで終わっていない。「DSN=MySQL-test;」のように最後に;をつけておくととりあえず回避できる
+
+
+
+★fps-0.7のインストール
+<http://www.cse.unsw.edu.au/~dons/fps.html>
+
+tar zxf fps-0.7.tar.gz
+cd fps-0.7
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+★xhtml-2006.7.5のインストール
+<http://www.cs.chalmers.se/~bringert/darcs/haskell-xhtml/doc/>
+
+tar zxf xhtml-2006.7.5.tar.gz
+cd xhtml-2006.7.5
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+/*
+★cgi-2006.8.5のインストール
+<http://www.cs.chalmers.se/~bringert/darcs/haskell-cgi/doc/>
+
+tar zxf cgi-2006.8.5.tar.gz
+cd cgi-2006.8.5
+patch -p1 < ../cgi-2006.8.5.patch
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+*/
+
+★cgi-2006.9.6のインストール
+<http://www.cs.chalmers.se/~bringert/darcs/haskell-cgi/doc/>
+
+tar zxf cgi-compat-2006.9.5.tar.gz
+cd cgi-2006.9.5
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+★CGIのテスト
+
+最も簡単なcgi1.hs
+XHTMLを出力するcgi2.hs
+入力パラメータを読むcgi3.hs
+HDBCを使ってMySQLを使うcgi4.hs
+
+
+/*
+★fastcgi-2006.8.5のインストール
+<http://www.cs.chalmers.se/~bringert/darcs/haskell-fastcgi/doc/>
+
+libapache2-mod-fcgidとlibfcgi-devをインストール
+a2enmod fcgid
+sudo /etc/init.d/apache2 restart
+
+tar zxf fastcgi-2006.8.5.tar.gz
+cd fastcgi-2006.8.5
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+*/
+★fastcgi-2006.9.1のインストール
+<http://www.cs.chalmers.se/~bringert/darcs/haskell-fastcgi/doc/>
+
+libapache2-mod-fcgidとlibfcgi-devをインストール
+a2enmod fcgid
+sudo /etc/init.d/apache2 restart
+
+fastcgi.cabelのdependencyのcgiをcgi-compatに変更
+
+tar zxf fastcgi-2006.9.1.tar.gz
+cd fastcgi-2006.9.1
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+
+★FastCGIのテスト
+
+cgi4.hsをCGIでもFastCGIでも動くようにしたfcgi.hs
+
+Network.CGI.runCGIをNetwork.FastCGI.runFastCGIorCGIに変更するだけ
+
+拡張子がcgiだとCGIとして、fcgiだとFastCGIとして動く
+
+/usr/sbin/ab -n 1000 -c 10 http://localhost/fcgi.cgi?id=3
+/usr/sbin/ab -n 1000 -c 10 http://localhost/fcgi.fcgi?id=3
+
+を比較するとどの程度効果があるかわかる
+
+
+★Streams-0.2.1のインストール
+<http://haskell.org/haskellwiki/Library/ArrayRef>
+からArrayRef-0.1を入れる
+
+mkdir ArrayRef-0.1
+cd ArrayRef-0.1
+tar zxf ../ArrayRef.tar.gz
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+<http://haskell.org/haskellwiki/Library/Streams>
+からStreams-0.2.1を入れる
+
+mkdir Streams-0.2.1
+cd Streams-0.2.1
+tar zxf ../StreamsBeta.tar.gz
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install
+
+
+★Crypto-3.0.3のインストール
+<http://www.haskell.org/crypto/>
+
+NewBinaryの代わりにStreamsのAltBinaryを使うためにパッチを当てる
+
+tar zxf Crypto-3.0.3.tar.gz
+cd Crypto-3.0.3
+patch -p1 < ../Crypto-3.0.3.patch
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install

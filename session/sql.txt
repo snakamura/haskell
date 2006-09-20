@@ -1,0 +1,34 @@
+DROP DATABASE session;
+
+CREATE DATABASE session;
+USE session;
+CREATE TABLE user (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                   username VARCHAR(32) NOT NULL UNIQUE,
+                   password CHAR(32) NOT NULL,
+                   fullname TEXT);
+CREATE INDEX user_idx ON user (username, password);
+
+INSERT INTO user VALUES
+    (NULL, 'snakamura', md5('hogehoge'), 'Satoshi Nakamura'),
+    (NULL, 'ishii', md5('fugafuga'), NULL);
+
+
+CREATE TABLE session (id CHAR(40) NOT NULL PRIMARY KEY,
+                      userid INT NOT NULL,
+                      expire INT NOT NULL);
+
+CREATE TABLE data (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                   userid INT NOT NULL,
+                   name TEXT NOT NULL,
+                   type TEXT,
+                   updated TIMESTAMP NOT NULL,
+                   comment TEXT,
+                   content TEXT NOT NULL);
+CREATE INDEX data_userid_idx ON data (userid);
+CREATE INDEX data_name_idx ON data (name(32));
+
+#INSERT INTO data VALUES
+#    (NULL, 1, 'Test1.txt', 'text/plain', 'This is a test.', 'sql.txt'),
+#    (NULL, 1, 'Test2.txt', 'application/octet-stream', 'Comment', 'sql.txt'),
+#    (NULL, 1, 'Test3.txt', 'image/jpeg', 'null', 'nomaneko.jpg'),
+#    (NULL, 1, 'Test.jpg', 'image/jpeg', 'Image', 'nomaneko.jpg');

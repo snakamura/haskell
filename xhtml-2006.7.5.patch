@@ -1,0 +1,24 @@
+diff -ur xhtml-2006.7.5.orig/Text/XHtml.hs xhtml-2006.7.5/Text/XHtml.hs
+--- xhtml-2006.7.5.orig/Text/XHtml.hs	2006-07-06 11:27:18.000000000 +0900
++++ xhtml-2006.7.5/Text/XHtml.hs	2006-08-29 14:16:58.000000000 +0900
+@@ -179,8 +179,9 @@
+       fixChar '>' = "&gt;"
+       fixChar '&' = "&amp;"
+       fixChar '"' = "&quot;"
+-      fixChar c | isAscii c && (isPrint c || isSpace c) = [c]
+-      fixChar c = "&#" ++ show (ord c) ++ ";"
++--      fixChar c | isAscii c && (isPrint c || isSpace c) = [c]
++--      fixChar c = "&#" ++ show (ord c) ++ ";"
++      fixChar c = [c]
+ 
+ -- ---------------------------------------------------------------------------
+ -- Classes
+@@ -506,7 +507,7 @@
+ height              =   strAttr "height"
+ href                =   strAttr "href"
+ hspace              =   intAttr "hspace"
+-httpequiv           =   strAttr "httpequiv"
++httpequiv           =   strAttr "http-equiv"
+ identifier          =   strAttr "id"
+ ismap               = emptyAttr "ismap"
+ lang                =   strAttr "lang"

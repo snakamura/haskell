@@ -1,0 +1,15 @@
+diff -ur xhtml-2006.9.13.orig/Text/XHtml/Internals.hs xhtml-2006.9.13/Text/XHtml/Internals.hs
+--- xhtml-2006.9.13.orig/Text/XHtml/Internals.hs	2006-09-14 04:41:46.000000000 +0900
++++ xhtml-2006.9.13/Text/XHtml/Internals.hs	2006-09-14 10:44:11.000000000 +0900
+@@ -170,8 +170,9 @@
+       fixChar '>' = "&gt;"
+       fixChar '&' = "&amp;"
+       fixChar '"' = "&quot;"
+-      fixChar c | isAscii c && (isPrint c || isSpace c) = [c]
+-      fixChar c = "&#" ++ show (ord c) ++ ";"
++--      fixChar c | isAscii c && (isPrint c || isSpace c) = [c]
++--      fixChar c = "&#" ++ show (ord c) ++ ";"
++      fixChar c = [c]
+ 
+ 
+ -- | This is not processed for special chars. 

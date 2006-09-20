@@ -1,0 +1,99 @@
+diff -ur Crypto-3.0.3.orig/AttributeCertificate.hs Crypto-3.0.3/AttributeCertificate.hs
+--- Crypto-3.0.3.orig/AttributeCertificate.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/AttributeCertificate.hs	2006-09-05 22:25:26.000000000 +0900
+@@ -15,7 +15,7 @@
+ import System.Console.GetOpt
+ import Codec.Utils
+ import Codec.ASN1.TLV
+-import NewBinary.Binary
++import Data.AltBinary hiding (decode)
+ import Text.PrettyPrint
+ import Codec.Text.Raw
+ 
+diff -ur Crypto-3.0.3.orig/Codec/ASN1/TLV.hs Crypto-3.0.3/Codec/ASN1/TLV.hs
+--- Crypto-3.0.3.orig/Codec/ASN1/TLV.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/Codec/ASN1/TLV.hs	2006-09-05 22:23:11.000000000 +0900
+@@ -1,3 +1,5 @@
++{-# OPTIONS_GHC -fallow-overlapping-instances #-}
++
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Codec.ASN1.TLV
+@@ -25,7 +27,7 @@
+ import Control.Monad.State
+ import Control.Monad.Error
+ import System.IO.Error
+-import qualified NewBinary.Binary as B (BinHandle, getBits, getByte)
++import qualified Data.AltBinary as B (BinHandle, getBits, getByte)
+ import Codec.ASN1.BER
+ import Codec.Utils
+ 
+@@ -132,7 +134,7 @@
+    getByte :: BinHandle -> m Octet
+ 
+ instance Binary IO where
+-   getBits = B.getBits
++   getBits h n = B.getBits n h
+    getByte = B.getByte
+ 
+ type Offset  = Int
+diff -ur Crypto-3.0.3.orig/crypto.cabal Crypto-3.0.3/crypto.cabal
+--- Crypto-3.0.3.orig/crypto.cabal	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/crypto.cabal	2006-09-05 19:19:43.000000000 +0900
+@@ -10,7 +10,7 @@
+                  and Attribute Certificates, General ASN.1 Support, Base64, PKCS8,
+                  PKCS1v15, Hexdump, Support for Word128, Word192 and Word256 and Beyond, PKCS5
+                  Padding, Various Encryption Modes e.g. Cipher Block Chaining all in one package.
+-Build-Depends:   base, mtl, QuickCheck, HUnit, NewBinary
++Build-Depends:   base, mtl, QuickCheck, HUnit, Streams
+ Ghc-options:     -fglasgow-exts
+ Exposed-Modules: Codec.ASN1,
+                  Codec.ASN1.BER,
+diff -ur Crypto-3.0.3.orig/PKCS8Example.hs Crypto-3.0.3/PKCS8Example.hs
+--- Crypto-3.0.3.orig/PKCS8Example.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/PKCS8Example.hs	2006-09-05 22:24:51.000000000 +0900
+@@ -12,7 +12,7 @@
+ import Numeric (
+    showHex
+    )
+-import NewBinary.Binary
++import Data.AltBinary hiding (decode)
+ import Codec.Utils (
+    toOctets
+    )
+diff -ur Crypto-3.0.3.orig/RSAEncryptionExample.hs Crypto-3.0.3/RSAEncryptionExample.hs
+--- Crypto-3.0.3.orig/RSAEncryptionExample.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/RSAEncryptionExample.hs	2006-09-05 22:25:58.000000000 +0900
+@@ -15,7 +15,7 @@
+ import Codec.ASN1.TLV
+ import Codec.ASN1.X509
+ import Codec.ASN1.BER
+-import NewBinary.Binary
++import Data.AltBinary hiding (decode)
+ import Control.Monad.State
+ 
+ randomSeed :: [Octet]
+diff -ur Crypto-3.0.3.orig/RSAVerifyExample.hs Crypto-3.0.3/RSAVerifyExample.hs
+--- Crypto-3.0.3.orig/RSAVerifyExample.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/RSAVerifyExample.hs	2006-09-05 22:26:07.000000000 +0900
+@@ -13,7 +13,7 @@
+ import Codec.ASN1.TLV
+ import Codec.ASN1.X509
+ import Codec.ASN1.BER
+-import NewBinary.Binary
++import Data.AltBinary hiding (decode)
+ import qualified Codec.ASN1.PKCS1v15 as V15
+ 
+ verifyWith certFile plainTextFile signedFile = 
+diff -ur Crypto-3.0.3.orig/X509Example.hs Crypto-3.0.3/X509Example.hs
+--- Crypto-3.0.3.orig/X509Example.hs	2006-04-15 15:48:40.000000000 +0900
++++ Crypto-3.0.3/X509Example.hs	2006-09-05 22:24:22.000000000 +0900
+@@ -6,7 +6,7 @@
+ import Data.Maybe
+ import Data.List
+ import Numeric
+-import NewBinary.Binary
++import Data.AltBinary hiding (decode)
+ import Codec.ASN1.BER
+ import Codec.ASN1
+ import Codec.ASN1.TLV

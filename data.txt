@@ -1,0 +1,4 @@
+CREATE TABLE test (id INT PRIMARY KEY, name TEXT, data BLOB, date DATETIME);
+INSERT INTO test VALUES (1, 'Satoshi Nakamura', 'abc', '2006-08-30 11:21:33'),
+                        (2, 'Arimitsu Ishii', 'def', '2007-09-30 11:21:33'),
+                        (3, '中村 智史', '', '2003-08-30 11:21:33');

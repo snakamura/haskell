@@ -1,0 +1,19 @@
+diff -ur HSQL.orig/MySQL/Database/HSQL/MySQL.hsc HSQL/MySQL/Database/HSQL/MySQL.hsc
+--- HSQL.orig/MySQL/Database/HSQL/MySQL.hsc	2005-12-12 16:27:28.000000000 -0500
++++ HSQL/MySQL/Database/HSQL/MySQL.hsc	2006-08-16 10:26:03.000000000 -0400
+@@ -43,6 +43,7 @@
+ #endif
+ 
+ foreign import #{CALLCONV} "HsMySQL.h mysql_init" mysql_init :: MYSQL -> IO MYSQL
++foreign import #{CALLCONV} "HsMySQL.h mysql_options" mysql_options :: MYSQL -> CInt -> CString -> IO CInt
+ foreign import #{CALLCONV} "HsMySQL.h mysql_real_connect" mysql_real_connect :: MYSQL -> CString -> CString -> CString -> CString -> CInt -> CString -> CInt -> IO MYSQL
+ foreign import #{CALLCONV} "HsMySQL.h mysql_close" mysql_close :: MYSQL -> IO ()
+ foreign import #{CALLCONV} "HsMySQL.h mysql_errno" mysql_errno :: MYSQL -> IO CInt
+@@ -81,6 +82,7 @@
+         -> IO Connection
+ connect server database user authentication = do
+ 	pMYSQL <- mysql_init nullPtr
++	withCString "hsql" $ mysql_options pMYSQL (#const MYSQL_READ_DEFAULT_GROUP)
+ 	pServer <- newCString server
+ 	pDatabase <- newCString database
+ 	pUser <- newCString user
