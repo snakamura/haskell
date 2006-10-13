@@ -1,0 +1,12 @@
+diff -ur fastcgi-2006.10.9.orig/Network/FastCGI.hsc fastcgi-2006.10.9/Network/FastCGI.hsc
+--- fastcgi-2006.10.9.orig/Network/FastCGI.hsc	2006-10-09 16:39:54.000000000 +0900
++++ fastcgi-2006.10.9/Network/FastCGI.hsc	2006-10-10 15:57:29.000000000 +0900
+@@ -37,7 +37,7 @@
+ 
+ import qualified Data.ByteString as BS
+ import qualified Data.ByteString.Base as BSB
+-import qualified Data.ByteString.Base as Lazy (LazyByteString(LPS))
++import qualified Data.ByteString.Lazy as Lazy (ByteString(LPS))
+ import qualified Data.ByteString.Lazy.Char8 as Lazy
+ 
+ -- For debugging
