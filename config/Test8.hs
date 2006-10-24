@@ -29,8 +29,8 @@ instance Monad m => Monad (ConfigReaderT m) where
 instance MonadTrans ConfigReaderT where
     lift = ConfigReaderT . lift
 
-instance MonadIO ConfigReader where
-    liftIO = lift
+instance MonadIO m => MonadIO (ConfigReaderT m) where
+    liftIO = lift . liftIO
 
 instance Monad m => MonadReader Config (ConfigReaderT m) where
     ask = ConfigReaderT $ ask

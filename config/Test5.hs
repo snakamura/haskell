@@ -20,14 +20,14 @@ loadConfig = return $ Config "Test5_.hs"
 
 type ConfigReaderT = ReaderT Config
 type ConfigReader = ConfigReaderT IO
-
+{-
 instance MonadError Exception ConfigReader where
     throwError = liftIO . throwIO
     catchError c h = tryCR c >>= either h return
 
 tryCR :: ConfigReader a -> ConfigReader (Either Exception a)
 tryCR cr = ReaderT $ \r -> try (runReaderT cr r)
-
+-}
 main :: IO ()
 main = do config <- loadConfig
           runReaderT echo config `catchDyn` (\e -> putStrLn $ "Error!!! " ++ e)
@@ -36,4 +36,4 @@ echo :: ConfigReader ()
 echo = do name <- asks configFile
           file <- liftIO $ B.readFile name
           liftIO $ B.hPut stdout file
-       `catchError` \_ -> throwError $ DynException $ toDyn "Exception occured."
+       `catchError` \_ -> throwError $ {-DynException $ toDyn-}userError "Exception occured."

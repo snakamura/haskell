@@ -300,3 +300,25 @@ patch -p1 < ../Crypto-3.0.3.patch
 runghc Setup.hs configure
 runghc Setup.hs build
 sudo runghc Setup.hs install
+
+
+★Haskell HTTP packageのインストール
+<http://www.haskell.org/http/>
+
+HXTをインストールするために必要
+
+tar zxf http-20060707.tar.gz
+cd http-20060707
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+
+
+★Haskell XML Toolbox 6.1のインストール
+<http://www.fh-wedel.de/~si/HXmlToolbox/>
+
+tar zxf HXT-6.1.tar.gz
+cd HXT-6.1
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
