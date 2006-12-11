@@ -322,3 +322,16 @@ cd HXT-6.1
 runghc Setup.lhs configure
 runghc Setup.lhs build
 sudo runghc Setup.lhs install
+
+
+★NewBinaryのインストール
+<http://www.n-heptane.com/nhlab/>
+
+tar zxf NewBinary-20061120.tar.gz
+mv NewBinary NewBinary-20061120
+cd NewBinary-20061120
+runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+
+NewBinaryを入れると、ArrayRef, Streamsを入れず、Cryptoにもパッチを当てずにCryptoがビルドできる
