@@ -1,4 +1,8 @@
-column n = reverse $ takeWhile (/= ' ') $ map c [0..]
+import Control.Monad
+import System.Environment
+
+main = liftM (read . head) getArgs >>= print . column
+
+column n = reverse $ takeWhile (/= ' ') $ map digit [0..]
  where
-     c 0 = cycle ['A'..'Z'] !! n
-     c m = (replicate (sum $ map (26^) [1..m]) ' ' ++ cycle (concatMap (replicate (26^m)) ['A'..'Z'])) !! n
+     digit d = (replicate (sum $ map (26^) [1..d]) ' ' ++ cycle (concatMap (replicate (26^d)) ['A'..'Z'])) !! n
