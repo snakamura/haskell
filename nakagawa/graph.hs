@@ -27,14 +27,14 @@ merge = Set.fold merge' Set.empty
 hasLink x y = hasLink' (sort x) (sort y)
  where
      hasLink' xss@(x:xs) yss@(y:ys) | x == y    = hasLink' xs ys
-                                    | otherwise = hasLink'' xs yss ||
-                                                  hasLink'' xs ys ||
-                                                  hasLink'' xss ys
+                                    | otherwise = hasLinkL xs yss ||
+                                                  xs == ys ||
+                                                  hasLinkR xss ys
      hasLink' []         _                      = True
-     hasLink'' (x:xs) (y:ys) | x == y    = hasLink'' xs ys
-                             | otherwise = False
-     hasLink'' _      []                 = True
-     hasLink'' []     _                  = True
+     hasLinkL xss@(x:xs) (y:ys) | x == y    = hasLinkL xs ys
+                                | otherwise = xss == ys
+     hasLinkL []         [_]                = True
+     hasLinkR = flip hasLinkL
 
 genEdges (word:words) =
     let l = [ [word, w] | w <- words, hasLink word w ]
