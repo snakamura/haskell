@@ -7,15 +7,10 @@ import qualified Data.Set as Set
 
 main = do
     words <- liftM lines getContents
-    print $ count $ genEdges words
+    print $ count $ gen words
 
---count :: Ord a => [(a, a)] -> Int
-count = Set.size . merge{-Edges-}
+count = Set.size . merge
 
---mergeEdges :: Ord a => [(a, a)] -> Set (Set a)
-mergeEdges = merge . Set.fromList . map (\ (x, y) -> Set.fromList [x, y])
-
---merge :: Ord a => Set (Set a) -> Set (Set a)
 merge = Set.fold merge' Set.empty
  where
      merge' h t | Set.null t = Set.singleton h
@@ -36,10 +31,7 @@ hasLink x y = hasLink' (sort x) (sort y)
      hasLinkL []         [_]                = True
      hasLinkR = flip hasLinkL
 
-genEdges (word:words) =
-    let l = [ [word, w] | w <- words, hasLink word w ]
-        s = if null l
-                then Set.singleton $ Set.singleton word
-                else Set.fromList $ map Set.fromList l
-    in Set.union s $ genEdges words
-genEdges [] = Set.empty
+gen (word:words) =
+    let s = Set.fromList $ word:[ w | w <- words, hasLink word w ]
+    in Set.insert s $ gen words
+gen [] = Set.empty
