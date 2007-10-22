@@ -1,5 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
+import Control.Arrow
 import Control.Monad (liftM)
 import Data.List (sort)
 import Data.Set (Set)
@@ -26,6 +27,10 @@ hasLink xss@(x:xs) yss@(y:ys) | x == y    = hasLink xs ys
      hasLinkL []         [_]                = True
      hasLinkR = flip hasLinkL
 
-gen (word:words) = let s = Set.fromList $ word:[ w | w <- words, hasLink word w ]
+hasLink2 xs ys = not $ null [ (x, y) | x <- f xs, y <- f ys, x == y ]
+ where
+     f s = map (flip splitAt s >>> second tail >>> uncurry (++)) [0..length s - 1]
+
+gen (word:words) = let s = Set.fromList $ word:[ w | w <- words, hasLink2 word w ]
                    in Set.insert s $ gen words
 gen [] = Set.empty
