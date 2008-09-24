@@ -28,3 +28,10 @@ countS coins n = do mem <- gets $ Map.lookup (n, length coins)
                                     v <- foldM f 0 usableCoins
                                     modify $ Map.insert (n, length coins) v
                                     return v
+
+
+valueW = ways [1, 2, 5, 10, 20, 50, 100, 200] !! 200
+
+ways []           = 1:repeat 0
+ways (coin:coins) = let w = zipWith (+) (ways coins) (replicate coin 0 ++ n)
+                    in w
