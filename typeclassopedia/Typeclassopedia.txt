@@ -808,3 +808,21 @@ Arrowライブラリ自身は二つのArrowインスタンスしか提供していません。両方とも既に見
  リスト38: (->)とKleisli mに対するArrowインスタンス
 
 
+===法則
+Arrowのインスタンスが満たさなくてはならない法則はたくさんあります[102,103,104]が、それをリスト39に示します。リスト39に示したバージョンの法則は、上の最初の二つの参考文献に述べられている法則とは少し違うことに注意してください。これは、法則の内のいくつかはCategoryの法則で既に定義されているからです（特にidが恒等アローであることと、(>>>)が結合性であるという要件に注意してください。）。ここに示した法則は、Categoryクラスを使った、Paterson[104]で示された法則に従っています。
+
+                         arrid = id
+                   arr (h . g) = arr g >>> arr h
+                 first (arr g) = arr (g *** id)
+               first (g >>> h) = first g >>> first h
+    first g >>> arr (id *** h) = arr (id *** h) >>> first g
+           first g >>> arr fst = arr fst >>> g
+ first (first g) >>> arr assoc = arr assoc >>> first g
+ 
+ assoc ((x, y), z) = (x, (y, z))
+ 
+ リスト39: Arrow法則
+
+アローを使ってプログラムを書くためにArrow法則を理解するするのは必須ではありませんので、Arrow法則についてそんなに心配することはありません。ArrowChoice、ArrowApply、そしてArrowLoopのインスタンスが満たさなくてはならない法則もいくつかあります。興味のある読者は、Paterson[104]を参照してください。
+
+
