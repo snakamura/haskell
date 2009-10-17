@@ -826,3 +826,278 @@ Arrowのインスタンスが満たさなくてはならない法則はたくさんあります[102,103,104]が
 アローを使ってプログラムを書くためにArrow法則を理解するするのは必須ではありませんので、Arrow法則についてそんなに心配することはありません。ArrowChoice、ArrowApply、そしてArrowLoopのインスタンスが満たさなくてはならない法則もいくつかあります。興味のある読者は、Paterson[104]を参照してください。
 
 
+===ArrowChoice
+Arrowクラスを使って構築した計算は、Applicativeクラスを使って構築した計算と同様、どちらかというと柔軟性がありません。つまり、計算の構造が初めから決まっていて、途中の結果によって複数の実行パスから選択することができません。ArrowChoiceクラスは正にこの能力を提供します。リスト40にArrowChoiceクラスを示します。
+
+ class Arrow (~>) => ArrowChoice (~>) where
+   left  :: (b ~> c) -> (Either b d ~> Either c d)
+   right :: (b ~> c) -> (Either d b ~> Either d c)
+   (+++) :: (b ~> c) -> (b' ~> c') -> (Either b b' ~> Either c c')
+   (|||) :: (b ~> d) -> (c' ~> d) -> (Either b c ~> d)
+ 
+ リスト40: ArrowChoice型クラス
+
+ArrowChoiceをArrowと比較すると、left、right、(+++)、(|||)と、first、second、(***)、(&&&)の間に明らかな相似形を見ることができます。実際、それらは双対になります。first、second、(***)と(&&&)は、すべて積型（タプル）に対する操作で、left、right、(+++)と(|||)は対応する操作を和型に対して提供します。一般的に、これらの操作は、LeftかRightによってタグ付けされた入力に対して働き、これらのタグによってどう動作するかを選択するアローを作成します。
+
+*もしgがbからcへのアローなら、left gはEither b dからEither c dへのアローです。Leftでタグ付けされた入力に対しては、left gはgの振る舞いをします。Rightでタグ付けされた入力に対しては、恒等として振舞います。
+
+*right関数はもちろんleftの反対です。right gアローは、Rightでタグ付けされた入力に対してgの振る舞いをします。
+
+*(+++)演算子は「多重化」をします。g +++ hは、Leftでタグ付けされた入力に対してgの振る舞いをし、Rightでタグ付けされた入力に対してhの振る舞いをします。タグは保存されます。(+++)演算子は、(***)が二つのアローの積であるのと同様、二つのアローの和（だから+）です。
+
+*(|||)演算子は「併合」または「ファンイン」です。アローg ||| hは、Leftでタグ付けされた入力に対してgの振る舞いをし、Rightでタグ付けされた入力に対してhの振る舞いをします。しかし、タグは捨て去られます（だから、gとhは同じ出力型を持っていなくてはなりません）。g ||| hは入力に対してg「または」hを実行する、と覚えると良いでしょう。
+
+ArrowChoiceクラスは、途中の結果によって有限の数の実行パスから計算を選択することを許可します。可能性のある実行パスは前もって知られていなくてはいけず、(+++)と(|||)で構築されていなくてはいけません。しかし、時にはもっと柔軟性が必要なことがあります。途中の結果からアローを計算し、その計算されたアローを使って計算を続けたいことがあるのです。これが、ArrowApplyによってもたらされる力です。
+
+
+===ArrowApply
+ArrowApply型クラスをリスト41に示します。
+
+ class Arrow (~>) => ArrowApply (~>) where
+   app :: (b ~> c, b) ~> c
+ 
+ リスト41: ArrowApply型クラス
+
+もし、何らかの事前の計算の出力としてアローを計算していたとしたら、appを使うことで、そのアローを入力に対して適用し、その出力をappの出力とすることができます。練習として、別の「カリー化された」バージョンであるapp2 :: b ~> ((b ~> c) ~> c)を実装してみるとよいでしょう。
+
+新しい計算を計算することができるというこの概念にはなじみがあるかもしれません。これは、正にモナドの結合演算子である(>>=)が行っていることです。ArrowApplyとMonadが全く同等の表現力を持つことはそれほど驚きではありません。特に、Kleisli mはArrowApplyのインスタンスにすることができ、ArrowApplyのあらゆるインスタンスは（ArrowMonadというnewtypeラッパーを使って）Monadにすることができます。練習として、リスト42に示すこれらのインスタンスを実装してみましょう。
+
+ instance Monad m => ArrowApply (Kleisli m) where
+   app = -- 練習
+ 
+ newtype ArrowApply a => ArrowMonad a b = ArrowMonad (a () b)
+ 
+ instance ArrowApply a => Monad (ArrowMonad a) where
+   return               = -- 練習
+   (ArrowMonad a) >>= k = -- 練習
+ 
+ リスト42: ArrowApplyとMonadの同等性
+
+
+===ArrowLoop
+リスト43にArrowLoop型クラスを示します。この型クラスは結果を計算するのに再帰を使うことのできるアローを表現し、（以下で述べる）アロー記法のrec構造を脱糖するのに使われます。
+
+それ自体、loopメソッドの型からはたいしたことはわからないように見えます。しかし、その意図は、一緒に示されたtrace関数の一般化にあるのです。最初のアローの出力のdの成分が自身の入力として戻されています。言い換えると、loop gというアローはgに対する入力の二番目の成分を「固定する」ことで得られます。
+
+ class Arrow a => ArrowLoop a where
+   loop :: a (b, d) (c, d) -> a b c
+ 
+ trace :: ((b, d) -> (c, d)) -> b -> c
+ trace f b = let (c, d) = f (b, d) in c
+ 
+ リスト43: ArrowLoop型クラス
+
+trace関数が何をするのか理解するのは少し難しいかもしれません。なぜdがletの左側と右側の両方に現れるのでしょう?これが、Haskellの遅延性の働きです。完全な説明をするスペースがありませんので、興味のある読者は標準のfix関数を勉強し、Patersonのアローのチュートリアル[104]を読んでください。
+
+
+===アロー記法
+アロー結合子を直接使ってプログラムを書くのは、特に沢山の途中の結果を同時に参照しなくてはならない場合には、苦痛です。アロー結合子しかなければ、そのような途中の結果はネストされたタプルの中に保持されなくてはなりません。さらに、どの途中結果がどのコンポーネントにあるか覚えて、入れ替えたり、関連付けしなおしたり、必要に応じてタプルの形を変化させるのはプログラマにゆだねられています。この問題は、GHCによってサポートされている特別なアロー記法によって解決されます。これは、モナドのdo記法と似ていて、アローの計算を構築するさいに、途中の結果に名前を割り当てることができるようにします。リスト44に、Paterson[104]から取ったアロー記法を使った例を示します。このアローは、リセット線を持つ再帰的に定義されたカウンター回路を表現することを意図しています。
+
+アロー記法について完全な説明をするスペースがここにはありません。興味のある読者は、この記法を紹介するPatersonの論文[105]や、簡単にしたバージョンを紹介する彼のチュートリアル[104]を参照してください。
+
+ class ArrowLoop (~>) => ArrowCircuit (~>) where
+   delay :: b -> (b ~> b)
+ 
+ counter :: ArrowCircuit (~>) => Bool ~> Int
+ counter = proc reset -> do
+             rec output <- idA     -< if reset then 0 else next
+                 next   <- delay 0 -< output + 1
+             idA -< output
+ 
+ リスト44: アロー記法を使ったアローの例
+
+
+===更なる読み物
+アローを学ぶ上ですばらしい出発点となるのは、Patersonによってまとめられたウェブページ[101]で、このページには紹介と沢山の参考文献が含まれています。アローに関する重要ないくつかの論文としては、アローを紹介するHughesのオリジナルの論文であるGeneralising Monads to Arrows[102]と、アロー記法に関するPatersonの論文[105]が挙げられます。HughesとPatersonは後により広い人々に向けてわかりやすいチュートリアルを書きました[104,106]。
+
+HughesのArrowクラスを定義した目的はMonadを一般化することで、Arrowは力としては「ApplicativeとMonadの間」に位置すると言われてきましたが、それらは直接比較することはできません。Lindley、WadlerとYallop[107]が分析するまで、正確な関連性についてはいくつかの混乱がありました。彼らは、ラムダ計算論に基づいてアローの計算論を発明しましたが、それはアロー法則の表現を驚くべきほど単純にしました[103]。
+
+Arrowのいくつかの例としては、Yampa[108]、the Haskell XML Toolkit[109]、そして関数型GUIライブラリであるGrapefruit[110]あ挙げられます。
+
+アローへのいくつかの拡張が研究されています。例えば、一方方向ではなく両方向の計算のためのAlimarineらのBiArrow[111]などがあります。
+
+Arrowに関する沢山の論文へのリンクがHaskell wiki[69]にあります。
+
+
+==Comonad
+私たちが研究する最後の型クラスはComonadです。ComonadクラスはMonadの圏的双対です。つまり、ComonadはMonadに似ていますが、すべての関数の矢印がひっくり返っています。この型クラスは実際には標準Haskellライブラリには含まれていませんが、最近いくつかの興味深い利用が見られるため、完全を期してここに含めました。
+
+
+===定義
+リスト45にcategory-extrasライブラリ[2]のControl.Comonadモジュールで定義されたComonad型クラスを示します。
+
+ class Functor f => Copointed f where
+   extract :: f a -> a
+ 
+ class Copointed w => Comonad w where
+   duplicate :: w a -> w (w a)
+   extend :: (w a -> b) -> w a -> w b
+ 
+ リスト45: Comonad型クラス
+
+お分かりのように、extractはreturnの双対で、duplicateはjoinの双対、extendは（引数の順番が違いますが）(>>=)の双対です。Comonadの定義は少し冗長です（結局、Monadクラスはjoinを必要としません）が、これはComonadがfmap、extractと、duplicateまたはextendのいずれかによって定義できるからです。それぞれは、もう一方を使ったデフォルトの実装を持っています。
+
+リスト46にComonadのインスタンスの原型的な例を示します。
+
+ -- 無限の遅延ストリーム
+ data Stream a = Cons a (Stream s)
+ 
+ instance Functor Stream where
+   fmap g (Cons x xs) = Cons (g x) (fmap g xs)
+ 
+ instance Copointed Stream where
+   extract (Cons x _) = x
+ 
+ -- 'duplicate'はリスト関数の'tails'に似ています
+ -- 'extend'はn番目の要素が元のストリームの
+ -- n番目よりも前のすべての関数として計算されるように、
+ -- 元のストリームから新しいストリームを計算します。
+ instance Comonad Stream where
+   duplicate s@(Cons x xs) = Cons s (duplicate xs)
+   extend g s@(Cons x xs)  = Cons (g s) (extend g xs)
+                        -- = fmap g (duplicate s)
+ 
+ リスト46: StreamのComonadインスタンス
+
+===更なる読み物
+Dan Piponiはブログの記事でセルオートマトンがどのようにコモナドと関係するのかを説明しています[112]。別のブログ記事では、Conal Elliottが関数型リアクティブプログラミングのコモナド的な定式化について研究しました[113]。Sterling CloverのComonads in everyday lifeというブログ記事[114]は、コモナドとジッパーの間の関係と、コモナドがどのようにウェブサイトのメニューシステムをデザインするのに使われうるのかについて説明しています。
+
+UustaluとVeneはコモナドと関数型言語に関するアイディアを研究する沢山の論文を書いています[115,116,117,118,119]。
+
+
+==謝辞
+A special thanks to all of those who taught me about standard Haskell type classes and helped me develop good intuition for them, particularly Jules Bean (quicksilver), Derek Elkins (ddarius), Conal Elliott (conal), Cale Gibbard (Cale), David House, Dan Piponi (sigfpe), and Kevin Reid (kpreid).
+
+I also thank the many people who provided a mountain of helpful feedback and suggestions on a first draft of this article: David Amos, Kevin Ballard, Reid Barton, Doug Beardsley, Joachim Breitner, Andrew Cave, David Christiansen, Gregory Collins, Mark Jason Dominus, Conal Elliott, Yitz Gale, George Giorgidze, Steven Grady, Travis Hartwell, Steve Hicks, Philip H¨olzenspies, Edward Kmett, Eric Kow, Serge Le Huitouze, Felipe Lessa, Stefan Ljungstrand, Eric Macaulay, Rob MacAulay, Simon Meier, Eric Mertens, Tim Newsham, Russell O’Connor, Conrad Parker, Walt Rorie-Baety, Colin Ross, Tom Schrijvers, Aditya Siram, C. Smith, Martijn van Steenbergen, Joe Thornber, Jared Updike, Rob Vollmert, Andrew Wagner, Louis Wasserman, and Ashley Yakeley, as well as a few only known to me by their IRC nicks: b jonas, maltem, tehgeekmeister, and ziman. I have undoubtedly omitted a few inadvertently, which in no way diminishes my gratitude.
+
+Finally, I would like to thank Wouter Swierstra for his fantastic work editing the Monad.Reader, and my wife Joyia for her patience during the process of writing the Typeclassopedia.
+
+
+==著者について
+Brent Yorgey [120, 121] is a first-year Ph.D. student in the programming languages group at the University of Pennsylvania [122]. He enjoys teaching, creating EDSLs, playing Bach fugues, musing upon category theory, and cooking tasty lambdatreats for the denizens of #haskell.
+
+
+==参考文献
+[1] Brent Yorgey. Abstraction, intuition, and the "monad tutorial fallacy". http://byorgey.wordpress.com/2009/01/12/abstraction-intuition-and-the-monad-tutorial-fallacy/.
+[2] Edward A. Kmett, Dave Menendez, and Iavor Diatchki. The category-extras
+library. http://hackage.haskell.org/cgi-bin/hackage-scripts/package/category-extras.
+[3] Simon Peyton Jones (ed.). Haskell 98 language and libraries revised report. J. Funct. Program., 13(1) (2003). http://haskell.org/onlinereport/.
+[4] Cordelia V. Hall, Kevin Hammond, Simon L. Peyton Jones, and Philip L. Wadler. Type classes in haskell. ACM Trans. Program. Lang. Syst., 18(2):pages 109-138 (1996).
+[5] Simon Peyton Jones, Mark Jones, and Erik Meijer. Type classes: an exploration of the design space. In Proceedings of the 1997 Haskell Workshop. ACM (1997).
+[6] Paul Hudak, John Hughes, Simon Peyton Jones, and Philip Wadler. A history of haskell: being lazy with class. In HOPL III: Proceedings of the third ACM SIGPLAN conference on History of programming languages, pages 12-1-12-55. ACM, New York, NY, USA (2007).
+[7] Functor documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Prelude.html#t%3AFunctor.
+[8] The containers library. http://hackage.haskell.org/packages/archive/containers/0.2.0.0/doc/html/index.html.
+[9] Haskell wikibook: Category theory. http://en.wikibooks.org/wiki/Haskell/Category_theory.
+[10] Philip Wadler. Theorems for free! In FPCA ’89: Proceedings of the fourth international conference on functional programming languages and computer architecture, pages 347-359. ACM, New York, NY, USA (1989).
+[11] Applicative documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Applicative.html.
+[12] Conor McBride and Ross Paterson. Applicative programming with effects. J. Funct. Program., 18(1):pages 1-13 (2008). http://www.soi.city.ac.uk/~ross/papers/Applicative.html.
+[13] Philip Wadler. How to replace failure by a list of successes. In Proc. of a conference on Functional programming languages and computer architecture, pages 113-128. Springer-Verlag New York, Inc., New York, NY, USA (1985).
+[14] Conal Elliott. Functional Images. In Jeremy Gibbons and Oege de Moor (editors), The Fun of Programming. "Cornerstones of Computing" series, Palgrave (March 2003). http://conal.net/papers/functional-images/.
+[15] Conal Elliott. Simply efficient functional reactivity. Technical Report 2008-01, LambdaPix (2008). http://conal.net/papers/simply-reactive/.
+[16] Conal Elliott. Posts with tag "applicative-functor". http://conal.net/blog/tag/applicative-functor.
+[17] Conal Elliott. The TypeCompose library. http://haskell.org/haskellwiki/TypeCompose.
+[18] Daan Leijen. Parsec. http://legacy.cs.uu.nl/daan/parsec.html.
+[19] Daan Leijen and Erik Meijer. Parsec: Direct style monadic parser combinators for the real world. Technical Report UU-CS-2001-35, Departement of Computer Science, Universiteit Utrecht (2001). http://legacy.cs.uu.nl/daan/download/papers/parsec-paper.pdf.
+[20] Bryan O’Sullivan. The basics of applicative functors, put to practical work. http://www.serpentine.com/blog/2008/02/06/the-basics-of-applicative-functors-put-to-practical-work/.
+[21] Chris Done. Applicative and ConfigFile, HSQL. http://chrisdone.com/blog/html/2009-02-10-applicative-configfile-hsql.html.
+[22] Ezra Cooper, Sam Lindley, Philip Wadler, and Jeremy Yallop. An idiom’s guide to formlets. Technical report, University of Edinburgh (2008). http://groups.inf.ed.ac.uk/links/formlets/.
+[23] Monad documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Prelude.html#9.
+[24] The monad transformer library (mtl). http://hackage.haskell.org/cgi-bin/hackage-scripts/package/mtl.
+[25] Identity documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-Identity.html.
+[26] Dan Piponi. The Trivial Monad. http://blog.sigfpe.com/2007/04/trivial-monad.html.
+[27] Control.Monad.Reader documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-Reader.html.
+[28] Control.Monad.Writer documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-Writer-Lazy.html.
+[29] Control.Monad.State documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-State-Lazy.html.
+[30] Control.Monad.Cont documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-Cont.html.
+[31] Dan Piponi. The Mother of all Monads. http://blog.sigfpe.com/2008/12/mother-of-all-monads.html.
+[32] Control.Monad documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Monad.html.
+[33] Henk-Jan van Tuyl. A tour of the Haskell Monad functions. http://members.chello.nl/hjgtuyl/tourdemonad.html.
+[34] Jeff Heard and Wren Thornton. The IfElse package. http://hackage.haskell.org/cgi-bin/hackage-scripts/package/IfElse.
+[35] Monad laws. http://haskell.org/haskellwiki/Monad_laws.
+[36] Control.Monad.Error documentation. http://hackage.haskell.org/packages/archive/mtl/1.1.0.2/doc/html/Control-Monad-Error.html.
+[37] Martin Grabm¨uller. Monad Transformers Step by Step (October 2006). http://user.cs.tu-berlin.de/~magr/pub/Transformers.en.html. Draft paper.
+[38] Cale Gibbard. How To Use Monad Transformers. http://cale.yi.org/index.php/How_To_Use_Monad_Transformers.
+[39] Dan Piponi. Grok Haskell Monad Transformers. http://blog.sigfpe.com/2006/05/grok-haskell-monad-transformers.html.
+[40] Levent Erkok. Value recursion in monadic computations. Ph.D. thesis (2002). Adviser-Launchbury" John.
+[41] Philip Wadler. The essence of functional programming. In POPL ’92: Proceedings of the 19th ACM SIGPLAN-SIGACT symposium on Principles of programming languages, pages 1-14. ACM, New York, NY, USA (1992). http://homepages.inf.ed.ac.uk/wadler/topics/monads.html.
+[42] Mark P. Jones. Functional programming with overloading and higher-order polymorphism. In Advanced Functional Programming, First International Spring School on Advanced Functional Programming Techniques-Tutorial Text, pages 97-136. Springer-Verlag, London, UK (1995). http://web.cecs.pdx.edu/~mpj/pubs/springschool.html.
+[43] Jeff Newbern. All About Monads. http://www.haskell.org/all_about_monads/html/.
+[44] Cale Gibbard. Monads as containers. http://haskell.org/haskellwiki/Monads_as_Containers.
+[45] Eric Kow. Understanding monads. http://en.wikibooks.org/w/index.php?title=Haskell/Understanding_monads&oldid=933545.
+[46] Andrea Rossato. The Monadic Way. http://haskell.org/haskellwiki/The_Monadic_Way.
+[47] Dan Piponi. You Could Have Invented Monads! (And Maybe You Already Have.). http://blog.sigfpe.com/2006/08/you-could-have-invented-monads-and.html.
+[48] Andrew Pimlott. there’s a monster in my Haskell! http://www.haskell.org/pipermail/haskell-cafe/2006-November/019190.html.
+[49] Karsten Wagner. Understanding Monads. For real. http://kawagner.blogspot.com/2007/02/understanding-monads-for-real.html.
+[50] Eric Kidd. Monads in 15 minutes: Backtracking and Maybe. http://www.randomhacks.net/articles/2007/03/12/monads-in-15-minutes.
+[51] Cale Gibbard. Monads as computation. http://haskell.org/haskellwiki/Monads_as_computation.
+[52] Richard Smith. Practical Monads. http://metafoo.co.uk/practical-monads.txt.
+[53] Cale Gibbard. Introduction to IO. http://www.haskell.org/haskellwiki/Introduction_to_IO.
+[54] Monad tutorials timeline. http://haskell.org/haskellwiki/Monad_tutorials_timeline.
+[55] Don Stewart and Eric Kow. think of a monad... http://koweycode.blogspot.com/2007/01/think-of-monad.html.
+[56] C. S. Gordon. Monads! (and Why Monad Tutorials Are All Awful). http://ahamsandwich.wordpress.com/2007/07/26/monads-and-why-monad-tutorials-are-all-awful/.
+[57] Dan Piponi. Monads, a Field Guide. http://blog.sigfpe.com/2006/10/monads-field-guide.html.
+[58] Tim Newsham. What’s a Monad? http://www.thenewsh.com/~newsham/haskell/monad.html.
+[59] Blog articles/Monads. http://haskell.org/haskellwiki/Blog_articles/Monads.
+[60] Eric Kidd. How to make Data.Set a monad. http://www.randomhacks.net/articles/2007/03/15/data-set-monad-haskell-macros.
+[61] Ganesh Sittampalam and Peter Gavin. The rmonad library. http://hackage.haskell.org/cgi-bin/hackage-scripts/package/rmonad.
+[62] Do notation considered harmful. http://haskell.org/haskellwiki/Do_notation_considered_harmful.
+[63] Robert Atkey. Parameterised Notions of Computation. J. Funct. Prog. (2008). http://homepages.inf.ed.ac.uk/ratkey/paramnotions-jfp.pdf.
+[64] Dan Piponi. Beyond Monads. http://blog.sigfpe.com/2009/02/beyond-monads.html.
+[65] Dan Piponi. From Monoids to Monads. http://blog.sigfpe.com/2008/11/from-monoids-to-monads.html.
+[66] Mark Dominus. Triples and Closure. http://blog.plover.com/math/monad-closure.html.
+[67] Derek Elkins. Calculating monads with category theory. The Monad.Reader, (13) (2009).
+[68] Christoph L¨uth and Neil Ghani. Composing monads using coproducts. SIGPLAN Not., 37(9):pages 133-144 (2002).
+[69] Research papers: Monads and Arrows. http://haskell.org/haskellwiki/Research_papers/Monads_and_arrows.
+[70] Monoid documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Data-Monoid.html.
+[71] haskell-cafe thread: Comments from OCaml Hacker Brian Hurt. http://thread.gmane.org/gmane.comp.lang.haskell.cafe/50590.
+[72] Wouter Swierstra. Reply to "Looking for pointfree version". http://thread.gmane.org/gmane.comp.lang.haskell.cafe/52416.
+[73] Cale Gibbard. Comment on "Monoids? In my programming language?". http://www.reddit.com/r/programming/comments/7cf4r/monoids_in_my_programming_language/c06adnx.
+[74] Alternative documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Applicative.html#2.
+[75] MonadPlus documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Monad.html#t%3AMonadPlus.
+[76] Douglas M. Auclair. MonadPlus: What a Super Monad! The Monad.Reader, (11):pages 39-48 (August 2008). http://www.haskell.org/sitewiki/images/6/6a/TMR-Issue11.pdf.
+[77] MonadPlus reform proposal. http://www.haskell.org/haskellwiki/MonadPlus_reform_proposal.
+[78] ArrowZero and ArrowPlus documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Arrow.html#t%3AArrowZero.
+[79] Brian Hurt. Random thoughts on haskell. http://enfranchisedmind.com/blog/2009/01/15/random-thoughts-on-haskell/.
+[80] Dan Piponi. Haskell Monoids and their Uses. http://blog.sigfpe.com/2009/01/haskell-monoids-and-their-uses.html.
+[81] Heinrich Apfelmus. Monoids and Finger Trees. http://apfelmus.nfshost.com/monoid-fingertree.html.
+[82] Ralf Hinze and Ross Paterson. Finger trees: a simple general-purpose data structure. J. Funct. Program., 16(2):pages 197-217 (2006). http://www.soi.city.ac.uk/%7Eross/papers/FingerTree.html.
+[83] Dan Piponi. Fast incremental regular expression matching with monoids. http://blog.sigfpe.com/2009/01/fast-incremental-regular-expression.html.
+[84] Dan Piponi. Beyond Regular Expressions: More Incremental String Matching. http://blog.sigfpe.com/2009/01/beyond-regular-expressions-more.html.
+[85] David F. Place. How to Refold a Map. The Monad.Reader, (11):pages 5-14(August 2008). http://www.haskell.org/sitewiki/images/6/6a/TMR-Issue11.pdf.
+[86] Brent Yorgey. Collecting unstructured information with the monoid of partial knowledge. http://byorgey.wordpress.com/2008/04/17/collecting-unstructured-information-with-the-monoid-of-partial-knowledge/.
+[87] Chung-Chieh Shan and Dylan Thurston. Word numbers, part 1: Billion approaches. http://conway.rutgers.edu/~ccshan/wiki/blog/posts/WordNumbers1/.
+[88] Chung-Chieh Shan and Dylan Thurston. Word numbers, part 2. http://conway.rutgers.edu/~ccshan/wiki/blog/posts/WordNumbers2/.
+[89] Chung-Chieh Shan and Dylan Thurston. Word numbers, part 3: Binary search. http://conway.rutgers.edu/~ccshan/wiki/blog/posts/WordNumbers3/.
+[90] Chung-Chieh Shan and Dylan Thurston. Word numbers, part 4: Sort the words, sum the numbers. http://conway.rutgers.edu/~ccshan/wiki/blog/posts/WordNumbers4/.
+[91] Foldable documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Data-Foldable.html.
+[92] Janis Voigtl¨ander. Bidirectionalization for free! (pearl). In POPL ’09: Proceedings of the 36th annual ACM SIGPLAN-SIGACT symposium on Principles of programming languages, pages 165-176. ACM, New York, NY, USA (2009).
+[93] Traversable documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Data-Traversable.html.
+[94] Jeremy Gibbons and Bruno C. d. S. Oliveira. The essence of the Iterator pattern. Submitted for publication (2007). http://www.comlab.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf.
+[95] Category documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Category.html.
+[96] Steve Awodey. Category Theory. Clarendon Press (2006).
+[97] Benjamin C. Pierce. Basic category theory for computer scientists. MIT Press, Cambridge, MA, USA (1991).
+[98] Michael Barr and Charles Wells. Category Theory. In Lecture Notes of the 11th European Summer School in Logic, Language and Information (ESSLLI). Utrecht University (1999). http://folli.loria.fr/cds/1999/esslli99/courses/barr-wells.html.
+[99] Benjamin Russell. Motivating Category Theory for Haskell for Non-mathematicians. http://dekudekuplex.wordpress.com/2009/01/19/motivating-learning-category-theory-for-non-mathematicians/.
+[100] Arrow documentation. http://haskell.org/ghc/docs/latest/html/libraries/base/Control-Arrow.html.
+[101] Ross Paterson. Arrows: A general interface to computation. http://www.haskell.org/arrows/.
+[102] John Hughes. Generalising monads to arrows. Sci. Comput. Program., 37(1-3):pages 67-111 (2000).
+[103] Sam Lindley, Philip Wadler, and Jeremy Yallop. The arrow calculus. Submitted to ICFP (2008). http://homepages.inf.ed.ac.uk/wadler/papers/arrows/arrows.pdf.
+[104] Ross Paterson. Programming with Arrows. In Jeremy Gibbons and Oege de Moor (editors), The Fun of Programming, pages 201-222. "Cornerstones of Computing" series, Palgrave (March 2003). http://www.soi.city.ac.uk/~ross/papers/fop.html.
+[105] Ross Paterson. A new notation for arrows. In ICFP ’01: Proceedings of the sixth ACM SIGPLAN international conference on Functional programming, pages 229-240. ACM, New York, NY, USA (2001).
+[106] John Hughes. Programming with Arrows. In Varmo Vene and Tarmo Uustalu (editors), 5th Internaltional Summer School on Advanced Functional Programming, pages 73-129. Number 3622 in LNCS, Springer (2005).
+[107] Sam Lindley, Philip Wadler, and Jeremy Yallop. Idioms are oblivious, arrows are meticulous, monads are promiscuous. In Proceedings of the workshop on Mathematically Structured Functional Programming (MSFP) (2008). http://homepages.inf.ed.ac.uk/wadler/papers/arrows-and-idioms/arrows-and-idioms.pdf.
+[108] Antony Courtney, Paul Hudak, Henrik Nilsson, and John Peterson. Yampa: Functional Reactive Programming with Arrows. Yampa:FunctionalReactiveProgrammingwithArrows.
+[109] Haskell XML Toolbox. http://www.fh-wedel.de/~si/HXmlToolbox/.
+[110] Wolfgang Jeltsch. Grapefruit. http://haskell.org/haskellwiki/Grapefruit.
+[111] Artem Alimarine, Sjaak Smetsers, Arjen van Weelden, Marko van Eekelen, and Rinus Plasmeijer. There and back again: arrows for invertible programming. In Haskell ’05: Proceedings of the 2005 ACM SIGPLAN workshop on Haskell, pages 86-97. ACM, New York, NY, USA (2005).
+[112] Dan Piponi. Evaluating cellular automata is comonadic. http://blog.sigfpe.com/2006/12/evaluating-cellular-automata-is.html.
+[113] Conal Elliott. Functional interactive behavior. http://conal.net/blog/posts/functional-interactive-behavior/.
+[114] Sterling Clover. Comonads in everyday life. http://fmapfixreturn.wordpress.com/2008/07/09/comonads-in-everyday-life/.
+[115] Tarmo Uustalu and Varmo Vene. Comonadic notions of computation. Electron. Notes Theor. Comput. Sci., 203(5):pages 263-284 (2008).
+[116] Tarmo Uustalu and Varmo Vene. The dual of substitution is redecoration. In Trends in functional programming, pages 99-110. Intellect Books, Exeter, UK (2002).
+[117] Venanzio Capretta, Tarmo Uustalu, and Varmo Vene. Recursive coalgebras from comonads. Inf. Comput., 204(4):pages 437-468 (2006).
+[118] Tarmo Uustalu, Varmo Vene, and Alberto Pardo. Recursion schemes from comonads. Nordic J. of Computing, 8(3):pages 366-390 (2001).
+[119] Tarmo Uustalu and Varmo Vene. The Essence of Dataflow Programming. In Central European Functional Programming School, pages 135-167 (2006).
+[120] Brent Yorgey. blog :: Brent -> [String]. http://byorgey.wordpress.com/.
+[121] Brent Yorgey. http://www.cis.upenn.edu/~byorgey/.
+[122] University of Pennsylvania programming languages research group. http://www.cis.upenn.edu/~plclub/.
