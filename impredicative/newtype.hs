@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE PolymorphicComponents #-}
 
 newtype MaybeWrapper = MaybeWrapper (forall a. Maybe ([a] -> a))
 
