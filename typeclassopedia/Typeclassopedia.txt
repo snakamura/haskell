@@ -485,7 +485,7 @@ do記法を避けるべき妥当な理由が沢山あります。人によって
 ===定義
 リスト24に（Data.Monoidで定義される）Monoid型クラス[70]の定義を示します。
 
- class Monoid where
+ class Monoid a where
    mempty  :: a
    mappend :: a -> a -> a
    
