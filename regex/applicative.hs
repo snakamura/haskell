@@ -97,3 +97,78 @@ charOf = tokenOf
 
 isAtomChar :: Char -> Bool
 isAtomChar = flip notElem "|()*?"
+
+
+
+data NFAState a = NFAState { runNFA :: [a] -> [(NFAState a, [a])] }
+                | NFAEndState
+
+
+compile :: Regex -> NFAState Char
+compile (Regex branch) = compileBranch NFAEndState branch
+
+compileBranch :: NFAState Char -> Branch -> NFAState Char
+compileBranch next branch = NFAState $ newState
+  where
+    newState s = zip (compileBranch' branch) (cycle [s])
+    compileBranch' []   = [next]
+    compileBranch' seqs = map (compileSeq next) seqs
+
+compileSeq ::NFAState Char -> Seq -> NFAState Char
+compileSeq next (piece:seq) = compilePiece (compileSeq next seq) piece
+compileSeq next []          = next
+
+compilePiece :: NFAState Char -> Piece -> NFAState Char
+compilePiece next (a, None)     = compileAtom next a
+compilePiece next (a, Optional) = NFAState $ newState
+  where
+    newState s = [(compileAtom next a, s), (next, s)]
+compilePiece next (a, Repeat)   = NFAState $ newState
+  where
+    newState s = [(compileAtom (NFAState newState) a, s), (next, s)]
+
+compileAtom :: NFAState Char -> Atom -> NFAState Char
+compileAtom next (CharAtom char) = NFAState $ newState
+  where
+    newState (c:cs) | c == char = [(next, cs)]
+    newState _                  = []
+compileAtom next (Group branch) = compileBranch next branch
+
+
+match :: String -> String -> Maybe Bool
+match regex s = parse regex >>= Just . flip matchRegex s
+
+matchRegex :: Regex -> String -> Bool
+matchRegex = matchNFA . compile
+
+matchNFA :: NFAState Char -> String -> Bool
+matchNFA nfa = or . matchNFA' nfa
+  where
+    matchNFA' :: NFAState Char -> String -> [Bool]
+    matchNFA' NFAEndState [] = [True]
+    matchNFA' NFAEndState _  = [False]
+    matchNFA' nfa         s  = let next = runNFA nfa s
+                               in concatMap (uncurry matchNFA') next
+
+searchNFA :: NFAState Char -> String -> Bool
+searchNFA nfa = or . concatMap (searchNFA' nfa) . takeWhile (not . null) . iterate tail
+  where
+    searchNFA' :: NFAState Char -> String -> [Bool]
+    searchNFA' NFAEndState _ = [True]
+    searchNFA' nfa         s = let next = runNFA nfa s
+                               in concatMap (uncurry searchNFA') next
+
+
+grep :: String -> [FilePath] -> IO ()
+grep regex paths = case parse regex of
+                     Just regex -> mapM_ (flip grepNFA $ compile regex) paths
+                     Nothing    -> putStrLn $ "Invalid pattern: `" ++ regex ++ "'"
+
+grepNFA :: FilePath -> NFAState Char -> IO ()
+grepNFA path nfa = catch (readFile path >>= mapM_ (uncurry printLine) . matchedLines . lines)
+                         (\e -> putStrLn $ "File not found: " ++ path ++ " (" ++ show e ++ ")")
+  where
+    matchedLines :: (Enum a, Num a) => [String] -> [(String, a)]
+    matchedLines l = [ (s, n) | (s, n) <- zip l [1..], searchNFA nfa s ]
+    printLine :: Show a => String -> a -> IO ()
+    printLine s n = putStrLn (path ++ ":" ++ show n ++ ":" ++ s)
