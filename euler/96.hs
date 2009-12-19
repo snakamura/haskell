@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.Monoid
 import System.IO
 
+main = value
 
 value =
   do tables <- liftM (map solve . loadTables) $ readFile "96.txt"
@@ -42,7 +43,6 @@ isEmptyCandidate _               = False
 
 
 type Table = Array (Int, Int) Value
-type WorkTable = Array (Int, Int) (Maybe Value)
 type Bounds = ((Int, Int), (Int, Int))
 type Index = (Int, Int)
 
@@ -84,11 +84,42 @@ fill table = case fill1 table of
                     | next == table -> Just (next, False)
                     | otherwise     -> fill next
 
-fill1 :: Table -> Table
-fill1 table = fmap fromJust $ foldr f emptyWorkTable (indices table)
+fill1 = fill1ST
+
+fill1Pure :: Table -> Table
+fill1Pure table = fmap fromJust $ foldr f emptyWorkTable (indices table)
   where
     f index workTable = workTable // [(index, Just $ candidates table workTable index)]
     emptyWorkTable = array (bounds table) $ zip (indices table) (repeat Nothing)
+    candidates table workTable index =
+      case table ! index of
+        Fixed x -> Fixed x
+        Candidates v -> let indices = relevantIndices (bounds table) index
+                            values = nub $ concatMap fixedValue indices
+                        in makeValue $ v \\ values
+        where
+          fixedValue index = case fromMaybe (table ! index) $ workTable ! index of
+                               Fixed x -> [x]
+                               _       -> []
+
+fill1ST :: Table -> Table
+fill1ST table = fmap fromJust $ runSTArray $
+  do workTable <- newArray (bounds table) Nothing
+     forM_ (indices table) $ \index ->
+       candidates workTable index >>= writeArray workTable index . Just
+     return workTable
+    where
+      candidates workTable index =
+        case table ! index of
+          Fixed x -> return $ Fixed x
+          Candidates v -> do let indices = relevantIndices (bounds table) index
+                             values <- liftM (nub . concat) $ mapM fixedValue indices
+                             return $ makeValue $ v \\ values
+          where
+            fixedValue index = do v <- readArray workTable index
+                                  return $ case fromMaybe (table ! index) v of
+                                             Fixed x -> [x]
+                                             _       -> []
 
 tryFill :: Table -> [Table]
 tryFill table =
@@ -98,24 +129,8 @@ tryFill table =
                                Candidates l = table ! index
                            in concatMap (\x -> tryFill $ table // [(index, Fixed x)]) l
     Nothing             -> []
-
-firstUnfixedIndex :: Table -> Maybe Index
-firstUnfixedIndex table = fmap fst $ find (not . isFixed . snd) $ assocs table
-
-candidates :: Table -> WorkTable -> Index -> Value
-candidates table workTable index =
-  case table ! index of
-    Fixed x -> Fixed x
-    Candidates v -> let indices = relevantIndices (bounds table) index
-                        values = nub $ concatMap fixedValue indices
-                    in makeValue $ v \\ values
-    where
-      fixedValue index = case workTable ! index of
-                           Just (Fixed x) -> [x]
-                           Just _         -> []
-                           Nothing -> case table ! index of
-                             Fixed x -> [x]
-                             _       -> []
+  where
+    firstUnfixedIndex table = fmap fst $ find (not . isFixed . snd) $ assocs table
 
 relevantIndices :: Bounds -> Index -> [Index]
 relevantIndices bounds index = 
