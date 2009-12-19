@@ -1,12 +1,9 @@
-import Control.Arrow
 import Control.Monad
 import Data.Array
 import Data.Array.ST
-import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Monoid
-import System.IO
 
 main = value
 
@@ -49,7 +46,7 @@ type Index = (Int, Int)
 solveFile :: String -> IO ()
 solveFile path =
   do table <- liftM readTable $ readFile path
-     mapM_ (putStrLn . showTable) $ tryFill table
+     putStr $ showTable $ solve table
 
 readTable :: String -> Table
 readTable table =
