@@ -42,7 +42,9 @@ isEmptyCandidate _               = False
 
 
 type Table = Array (Int, Int) Value
+type WorkTable = Array (Int, Int) (Maybe Value)
 type Bounds = ((Int, Int), (Int, Int))
+type Index = (Int, Int)
 
 solveFile :: String -> IO ()
 solveFile path =
@@ -73,73 +75,54 @@ isSolved :: Table -> Bool
 isSolved table = all isFixed $ elems table
 
 isFailed :: Table -> Bool
-isFailed table = all isEmptyCandidate $ elems table
+isFailed table = any isEmptyCandidate $ elems table
 
-fill :: Table -> Table
-fill table = let next = fill1 table
-             in if isSolved next || isFailed next || next == table then
-                  next
-                else
-                  fill next
+fill :: Table -> Maybe (Table, Bool)
+fill table = case fill1 table of
+               next | isSolved next -> Just (next, True)
+                    | isFailed next -> Nothing
+                    | next == table -> Just (next, False)
+                    | otherwise     -> fill next
 
 fill1 :: Table -> Table
-fill1 table = listArray (bounds table) $ map (candidates table) (indices table)
+fill1 table = fmap fromJust $ foldr f emptyWorkTable (indices table)
+  where
+    f index workTable = workTable // [(index, Just $ candidates table workTable index)]
+    emptyWorkTable = array (bounds table) $ zip (indices table) (repeat Nothing)
 
 tryFill :: Table -> [Table]
 tryFill table =
   case fill table of
-    table | isSolved table && isValid table -> [table]
-          | isSolved table -> []
-          | isFailed table -> []
-          | otherwise      -> let index = fromJust $ firstUnfixedIndex table
-                                  Candidates l = table ! index
-                              in concatMap (\x -> tryFill $ table // [(index, Fixed x)]) l
+    Just (table, True)  -> [table]
+    Just (table, False) -> let index = fromJust $ firstUnfixedIndex table
+                               Candidates l = table ! index
+                           in concatMap (\x -> tryFill $ table // [(index, Fixed x)]) l
+    Nothing             -> []
 
-isValid :: Table -> Bool
-isValid table = all (isValidCell table) $ indices table
-
-isValidCell :: Table -> (Int, Int) -> Bool
-isValidCell table index = let indices = [rowIndices (bounds table) index,
-                                         columnIndices (bounds table) index,
-                                         boxIndices index]
-                              values = map f indices
-                          in all isValidBlock values
-                           where
-                             f indices = let values = map (table !) indices
-                                         in map v values
-                             v (Fixed x) = x
-
-isValidBlock :: [Int] -> Bool
-isValidBlock block = sort block == [1..9]
-
-
-firstUnfixedIndex :: Table -> Maybe (Int, Int)
+firstUnfixedIndex :: Table -> Maybe Index
 firstUnfixedIndex table = fmap fst $ find (not . isFixed . snd) $ assocs table
 
-candidates :: Table -> (Int, Int) -> Value
-candidates table index = 
+candidates :: Table -> WorkTable -> Index -> Value
+candidates table workTable index =
   case table ! index of
     Fixed x -> Fixed x
     Candidates v -> let indices = relevantIndices (bounds table) index
                         values = nub $ concatMap fixedValue indices
                     in makeValue $ v \\ values
     where
-      fixedValue index = case table ! index of
-                           Fixed x -> [x]
-                           _       -> []
+      fixedValue index = case workTable ! index of
+                           Just (Fixed x) -> [x]
+                           Just _         -> []
+                           Nothing -> case table ! index of
+                             Fixed x -> [x]
+                             _       -> []
 
-relevantIndices :: ((Int, Int), (Int, Int)) -> (Int, Int) -> [(Int, Int)]
-relevantIndices bounds index@(r, c) = 
-  delete index $ nub $ ((columnIndices bounds) `mappend` (rowIndices bounds) `mappend` boxIndices) index
-
-rowIndices :: Bounds -> (Int, Int) -> [(Int, Int)]
-rowIndices ((lr, _), (ur, _)) (_, c) = map (\r -> (r, c)) $ [lr..ur]
-
-columnIndices :: Bounds -> (Int, Int) -> [(Int, Int)]
-columnIndices ((_, lc), (_, uc)) (r, _) = map (\c -> (r, c)) $ [lc..uc]
-
-boxIndices :: (Int, Int) -> [(Int, Int)]
-boxIndices index@(r, c) =
-  [ (row, column) | row <- indices r, column <- indices c ]
+relevantIndices :: Bounds -> Index -> [Index]
+relevantIndices bounds index = 
+  delete index $ nub $ (columnIndices bounds `mappend` rowIndices bounds `mappend` boxIndices) index
     where
-      indices n = take 3 [n - (n `mod` 3)..]
+      rowIndices ((lr, _), (ur, _)) (_, c) = map (\r -> (r, c)) $ [lr..ur]
+      columnIndices ((_, lc), (_, uc)) (r, _) = map (\c -> (r, c)) $ [lc..uc]
+      boxIndices index@(r, c) = [ (row, column) | row <- indices r, column <- indices c ]
+        where
+          indices n = take 3 [n - (n `mod` 3)..]
