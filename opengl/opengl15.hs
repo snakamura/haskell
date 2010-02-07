@@ -26,7 +26,7 @@ display program =
      bindBuffer ArrayBuffer $= Just buffer
      vertexAttribPointer positionLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (5*sizeOf(0 :: GLfloat))) nullPtr)
      vertexAttribArray positionLoc $= Enabled
-     vertexAttribPointer colorLoc $= (ToFloat, VertexArrayDescriptor 3 Float (toEnum (5*sizeOf(0 :: GLfloat))) (plusPtr nullPtr (2*sizeOf(0 :: GLfloat))))
+     vertexAttribPointer colorLoc $= (ToFloat, VertexArrayDescriptor 3 Float (toEnum (5*sizeOf(0 :: GLfloat))) (intPtrToPtr (toEnum (2*sizeOf(0 :: GLfloat)))))
      vertexAttribArray colorLoc $= Enabled
      drawArrays Triangles 0 6
      flush
