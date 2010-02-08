@@ -12,17 +12,17 @@ main =
      clearColor $= Color4 1.0 1.0 1.0 0.0
      program <- join $ liftM2 createProgram (createShader vertexShaderSource) 
                                             (createShader fragmentShaderSource)
-     displayCallback $= display program
-     mainLoop
-
-display program =
-  do clear [ColorBuffer]
-     currentProgram $= Just program
+     positionLoc <- get $ attribLocation program "a_position"
+     colorLoc <- get $ attribLocation program "a_color"
      buffer <- createBuffer ([ 0.0,  0.9, 1.0, 0.0, 0.0,
                               -0.9, -0.9, 0.0, 1.0, 0.0,
                                0.9, -0.9, 0.0, 0.0, 1.0] :: [GLfloat])
-     positionLoc <- get $ attribLocation program "a_position"
-     colorLoc <- get $ attribLocation program "a_color"
+     displayCallback $= display program positionLoc colorLoc buffer
+     mainLoop
+
+display program positionLoc colorLoc buffer =
+  do clear [ColorBuffer]
+     currentProgram $= Just program
      bindBuffer ArrayBuffer $= Just buffer
      vertexAttribPointer positionLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (5*sizeOf(0 :: GLfloat))) nullPtr)
      vertexAttribArray positionLoc $= Enabled
