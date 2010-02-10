@@ -22,7 +22,7 @@ display program =
      withStorableArray positions $ \ptr ->
        do vertexAttribPointer loc $= (ToFloat, VertexArrayDescriptor 2 Float 0 ptr)
           vertexAttribArray loc $= Enabled
-          drawArrays Triangles 0 6
+          drawArrays Triangles 0 3
      flush
 
 vertexShaderSource = "attribute vec4 a_position;  \
