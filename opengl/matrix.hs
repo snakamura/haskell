@@ -16,15 +16,16 @@ import Control.Monad
 import Data.Array.Storable
 import Data.List
 import Foreign.Ptr
+import Foreign.Storable
 import Graphics.Rendering.OpenGL hiding (
   Matrix, frustum, newMatrix, ortho, perspective, rotate, scale, translate, withMatrix)
 
-newtype Matrix = Matrix (StorableArray Int GLfloat)
+newtype Matrix e = Matrix (StorableArray Int e)
 
-identity :: IO Matrix
+identity :: (Storable e, Num e) => IO (Matrix e)
 identity = newMatrix [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 
-multiply :: Matrix -> Matrix -> IO ()
+multiply :: (Storable e, Num e) => Matrix e -> Matrix e -> IO ()
 multiply (Matrix t) (Matrix m) =
   forM_ [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]] $ \v ->
     do [t0, t1, t2, t3] <- mapM (readArray t) v
@@ -32,12 +33,12 @@ multiply (Matrix t) (Matrix m) =
          do [m0, m1, m2, m3] <- mapM (readArray m) [i .. i + 3]
             writeArray t n $ t0*m0 + t1*m1 + t2*m2 + t3*m3
 
-translate :: Matrix -> GLfloat -> GLfloat -> GLfloat -> IO ()
+translate :: (Storable e, Num e) => Matrix e -> e -> e -> e -> IO ()
 translate m x y z =
   do t <- newMatrix [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
      multiply m t
 
-rotate :: Matrix -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+rotate :: (Storable e, Floating e) => Matrix e -> e -> e -> e -> e -> IO ()
 rotate m angle x y z =
   do let mag = sqrt $ x*x + y*y + z*z
          nx = x/mag
@@ -63,12 +64,12 @@ rotate m angle x y z =
                      1]
      multiply m t
 
-scale :: Matrix -> GLfloat -> GLfloat -> GLfloat -> IO ()
+scale :: (Storable e, Num e) => Matrix e -> e -> e -> e -> IO ()
 scale m x y z =
   do t <- newMatrix [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]
      multiply m t
 
-ortho :: Matrix -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+ortho :: (Storable e, Floating e) => Matrix e -> e -> e -> e -> e -> e -> e -> IO ()
 ortho m left right bottom top near far =
   do t <- newMatrix [2/(right - left), 
                      0, 
@@ -88,7 +89,7 @@ ortho m left right bottom top near far =
                      1]
      multiply m t
 
-frustum :: Matrix -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+frustum :: (Storable e, Floating e) => Matrix e -> e -> e -> e -> e -> e -> e -> IO ()
 frustum m left right bottom top near far =
   do t <- newMatrix [2*near/(right - left),
                      0,
@@ -108,7 +109,7 @@ frustum m left right bottom top near far =
                      0]
      multiply m t
 
-perspective :: Matrix -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+perspective :: (Storable e, Floating e) => Matrix e -> e -> e -> e -> e -> IO ()
 perspective m fovy aspect near far =
   do t <- newMatrix [(1/tan(fovy*pi/180/2))/aspect,
                      0,
@@ -128,13 +129,13 @@ perspective m fovy aspect near far =
                      0]
      multiply m t
 
-newMatrix :: [GLfloat] -> IO Matrix
+newMatrix :: Storable e => [e] -> IO (Matrix e)
 newMatrix = liftM Matrix . newListArray (0, 15)
 
-withMatrix :: Matrix -> (Ptr GLfloat -> IO a) -> IO a
+withMatrix :: Storable e => Matrix e -> (Ptr e -> IO a) -> IO a
 withMatrix (Matrix m) = withStorableArray m
 
-showMatrix :: Matrix -> IO String
+showMatrix :: (Storable e, Show e) => Matrix e -> IO String
 showMatrix (Matrix m) =
   do elems <- getElems m
      return $ intercalate "," $ map show elems
