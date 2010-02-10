@@ -15,25 +15,27 @@ main =
      program <- join $ liftM2 createProgram (createShader vertexShaderSource) 
                                             (createShader fragmentShaderSource)
      texture <- createTexture "texture.rgb" 256 256
+     textureLoc <- get $ uniformLocation program "u_texture"
      positionLoc <- get $ attribLocation program "a_position"
-     textureLoc <- get $ attribLocation program "a_texCoord"
+     texCoordLoc <- get $ attribLocation program "a_texCoord"
      buffer <- createBuffer ([ 0.9,  0.9, 1.0, 0.0,
                                0.9, -0.9, 1.0, 1.0,
                               -0.9, -0.9, 0.0, 1.0,
                               -0.9,  0.9, 0.0, 0.0] :: [GLfloat])
-     displayCallback $= display program positionLoc textureLoc buffer texture
+     displayCallback $= display program textureLoc positionLoc texCoordLoc buffer texture
      mainLoop
 
-display program positionLoc textureLoc buffer texture =
+display program textureLoc positionLoc texCoordLoc buffer texture =
   do clear [ColorBuffer]
      currentProgram $= Just program
      bindBuffer ArrayBuffer $= Just buffer
      textureBinding Texture2D $= Just texture
      textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+     uniform textureLoc $= TexCoord1 (0 :: GLuint)
      vertexAttribPointer positionLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (4*sizeOf(0 :: GLfloat))) (intPtrToPtr 0))
      vertexAttribArray positionLoc $= Enabled
-     vertexAttribPointer textureLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (4*sizeOf(0 :: GLfloat))) (intPtrToPtr (toEnum (2*sizeOf(0 :: GLfloat)))))
-     vertexAttribArray textureLoc $= Enabled
+     vertexAttribPointer texCoordLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (4*sizeOf(0 :: GLfloat))) (intPtrToPtr (toEnum (2*sizeOf(0 :: GLfloat)))))
+     vertexAttribArray texCoordLoc $= Enabled
      drawArrays TriangleFan 0 4
      flush
 
