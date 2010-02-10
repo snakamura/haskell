@@ -39,16 +39,16 @@ display program mvpLoc textureLoc positionLoc texCoordLoc buffer texture sizeRef
      bindBuffer ArrayBuffer $= Just buffer
      modelViewMatrix <- M.identity
 --     M.translate modelViewMatrix 0.0 0.5 0.0
---     M.rotate modelViewMatrix 30 0.0 0.0 1.0
+     M.rotate modelViewMatrix 20 0.0 0.0 1.0
 --     M.scale modelViewMatrix 0.5 0.5 0.5
      projectionMatrix <- M.identity
      Size w h <- readIORef sizeRef
---     M.ortho projectionMatrix (negate $ fromIntegral w/500) 
---                              (fromIntegral w/500) 
---                              (negate $ fromIntegral h/500) 
---                              (fromIntegral h/500) 
---                              (-1.0) 
---                              1.0
+--     M.ortho projectionMatrix (negate $ fromIntegral w/256)
+--                              (fromIntegral w/256)
+--                              (negate $ fromIntegral h/256)
+--                              (fromIntegral h/256)
+--                              (-10.0)
+--                              10.0
      M.perspective projectionMatrix 90 (fromIntegral w/fromIntegral h) (1.0) 10.0
 --     M.frustum projectionMatrix (-1.0) 1.0 (-1.0) 1.0 1.0 5.0
      M.translate projectionMatrix 0.0 0.0 (-2.0)
