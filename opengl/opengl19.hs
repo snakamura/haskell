@@ -94,17 +94,17 @@ timer counterRef =
      postRedisplay Nothing
      addTimerCallback 60 $ timer counterRef
 
-vertexShaderSource = "const float PI = 3.1415926535;                            \
-                     \uniform float u_counter;                                  \
-                     \uniform mat4 u_mvp;                                       \
-                     \attribute vec4 a_position;                                \
-                     \attribute vec2 a_texCoord;                                \
-                     \varying vec2 v_texCoord;                                  \
-                     \void main() {                                             \
-                     \  vec4 pos = a_position;                                  \
+vertexShaderSource = "const float PI = 3.1415926535;                                          \
+                     \uniform float u_counter;                                                \
+                     \uniform mat4 u_mvp;                                                     \
+                     \attribute vec4 a_position;                                              \
+                     \attribute vec2 a_texCoord;                                              \
+                     \varying vec2 v_texCoord;                                                \
+                     \void main() {                                                           \
+                     \  vec4 pos = a_position;                                                \
                      \  pos.z = sin((pos.x - mod(u_counter, 128.0)/20.0)*PI*4)*(pos.x + 1.0); \
-                     \  gl_Position = u_mvp*pos;                                \
-                     \  v_texCoord = a_texCoord;                                \
+                     \  gl_Position = u_mvp*pos;                                              \
+                     \  v_texCoord = a_texCoord;                                              \
                      \}"
 
 fragmentShaderSource = "uniform sampler2D u_texture;                       \
