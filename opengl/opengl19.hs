@@ -13,7 +13,7 @@ import qualified Matrix as M
 
 main =
   do (progName, _) <- getArgsAndInitialize
-     initialDisplayMode $= [RGBAMode]
+     initialDisplayMode $= [RGBAMode, DoubleBuffered]
      window <- createWindow "Window"
      clearColor $= Color4 1.0 1.0 1.0 0.0
      texture Texture2D $= Enabled
@@ -24,6 +24,7 @@ main =
      program <- join $ liftM2 createProgram (createShader vertexShaderSource) 
                                             (createShader fragmentShaderSource)
      texture <- createTexture "texture.rgb" 256 256
+     counterLoc <- get $ uniformLocation program "u_counter"
      mvpLoc <- get $ uniformLocation program "u_mvp"
      textureLoc <- get $ uniformLocation program "u_texture"
      positionLoc <- get $ attribLocation program "a_position"
@@ -37,28 +38,31 @@ main =
                                     t = 1.0 - 2*y/n
                                     r = -1.0 + 2*(x + 1)/n
                                     b = 1.0 - 2*(y + 1)/n
-                                    zl = sin(2*pi/(n/w)*x)*(2*x/n)
-                                    zr = sin(2*pi/(n/w)*(x + 1))*(2*(x + 1)/n)
                                     tl = x/n
                                     tt = y/n
                                     tr = (x + 1)/n
                                     tb = (y + 1)/n
-                                return [l, t, zl, tl, tt,
-                                        l, b, zl, tl, tb,
-                                        r, t, zr, tr, tt,
-                                        r, t, zr, tr, tt,
-                                        l, b, zl, tl, tb,
-                                        r, b, zr, tr, tb]
+                                return [l, t, tl, tt,
+                                        l, b, tl, tb,
+                                        r, t, tr, tt,
+                                        r, t, tr, tt,
+                                        l, b, tl, tb,
+                                        r, b, tr, tb]
      buffer <- createBuffer vertices
      sizeRef <- newIORef $ Size 0 0
-     displayCallback $= display (fromIntegral (length vertices `div` 5)) program mvpLoc textureLoc positionLoc texCoordLoc buffer texture sizeRef
+     counterRef <- newIORef 0
+     displayCallback $= display (fromIntegral (length vertices `div` 4)) program counterLoc mvpLoc textureLoc positionLoc texCoordLoc buffer texture sizeRef counterRef
      reshapeCallback $= Just (reshape sizeRef)
+     timer counterRef
      mainLoop
 
-display count program mvpLoc textureLoc positionLoc texCoordLoc buffer texture sizeRef =
+display count program counterLoc mvpLoc textureLoc positionLoc texCoordLoc buffer texture sizeRef counterRef =
   do clear [ColorBuffer]
      currentProgram $= Just program
+     counter <- readIORef counterRef
      bindBuffer ArrayBuffer $= Just buffer
+--     uniform counterLoc $= TexCoord1 (counter :: GLint)
+     glUniform1f (extractUniformLoc counterLoc) counter
      modelViewMatrix <- M.identity
      M.rotate modelViewMatrix 20 0.0 1.0 0.0
      M.scale modelViewMatrix 1.0 1.0 0.05
@@ -74,24 +78,33 @@ display count program mvpLoc textureLoc positionLoc texCoordLoc buffer texture s
      textureBinding Texture2D $= Just texture
      textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
      uniform textureLoc $= TexCoord1 (0 :: GLuint)
-     vertexAttribPointer positionLoc $= (ToFloat, VertexArrayDescriptor 3 Float (toEnum (5*sizeOf(0 :: GLfloat))) (intPtrToPtr 0))
+     vertexAttribPointer positionLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (4*sizeOf(0 :: GLfloat))) (intPtrToPtr 0))
      vertexAttribArray positionLoc $= Enabled
-     vertexAttribPointer texCoordLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (5*sizeOf(0 :: GLfloat))) (intPtrToPtr (toEnum (3*sizeOf(0 :: GLfloat)))))
+     vertexAttribPointer texCoordLoc $= (ToFloat, VertexArrayDescriptor 2 Float (toEnum (4*sizeOf(0 :: GLfloat))) (intPtrToPtr (toEnum (2*sizeOf(0 :: GLfloat)))))
      vertexAttribArray texCoordLoc $= Enabled
      drawArrays Triangles 0 count
-     flush
+     swapBuffers
 
 reshape sizeRef size@(Size w h) =
   do viewport $= (Position 0 0, size)
      writeIORef sizeRef size
 
-vertexShaderSource = "uniform mat4 u_mvp;               \
-                     \attribute vec4 a_position;        \
-                     \attribute vec2 a_texCoord;        \
-                     \varying vec2 v_texCoord;          \
-                     \void main() {                     \
-                     \  gl_Position = u_mvp*a_position; \
-                     \  v_texCoord = a_texCoord;        \
+timer counterRef =
+  do modifyIORef counterRef (+1)
+     postRedisplay Nothing
+     addTimerCallback 60 $ timer counterRef
+
+vertexShaderSource = "const float PI = 3.1415926535;                            \
+                     \uniform float u_counter;                                  \
+                     \uniform mat4 u_mvp;                                       \
+                     \attribute vec4 a_position;                                \
+                     \attribute vec2 a_texCoord;                                \
+                     \varying vec2 v_texCoord;                                  \
+                     \void main() {                                             \
+                     \  vec4 pos = a_position;                                  \
+                     \  pos.z = sin((pos.x - mod(u_counter, 128.0)/20.0)*PI*4)*(pos.x + 1.0); \
+                     \  gl_Position = u_mvp*pos;                                \
+                     \  v_texCoord = a_texCoord;                                \
                      \}"
 
 fragmentShaderSource = "uniform sampler2D u_texture;                       \
