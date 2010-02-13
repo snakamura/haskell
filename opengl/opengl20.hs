@@ -23,7 +23,6 @@ main =
      positionLoc <- get $ attribLocation program "a_position"
      let vertices :: [GLfloat]
          vertices = concat $ do let n = 32
-                                    w = 4
                                 x <- [0 .. n - 1]
                                 y <- [0 .. n - 1]
                                 let l = -1.0 + 2*x/n
