@@ -9,7 +9,7 @@ import Key
 $(sequence [dataD (cxt [])
                   (mkName "Config")
                   []
-                  [recC (mkName "Config") (map (\(n, t, _, _) -> varStrictType (mkName n) (strictType notStrict t)) keys)]
+                  [recC (mkName "Config") (map (\(n, t, _, _) -> varStrictType (mkName n) (strictType isStrict t)) keys)]
                   [''Show]])
 
 main = do config <- liftM parse $ readFile "config"
@@ -17,7 +17,7 @@ main = do config <- liftM parse $ readFile "config"
 
 parse :: String -> Config
 parse s = let values = catMaybes $ map parseLine $ lines s
-          in $(foldl appE (conE (mkName "Config")) (map (\(n, _, f, d) -> [|fromMaybe $d $ lookup n values >>= $f |]) keys))
+          in $(foldl appE (conE (mkName "Config")) (map (\(n, _, f, d) -> [|fromMaybe $d $ lookup n values >>= $f|]) keys))
 
 parseLine :: String -> Maybe (String, String)
 parseLine ""      = Nothing
