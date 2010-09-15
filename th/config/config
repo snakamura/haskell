@@ -1,0 +1,5 @@
+# Comment
+name=Test
+value=36
+list=foo,bar,baz
+tuple=("key", 5)
