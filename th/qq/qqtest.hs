@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+
 import QQ
 
 main = do putStrLn [$q|abc|]
