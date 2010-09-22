@@ -5,9 +5,9 @@ import Data.Generics
 class X a where
     x :: a -> String
     x {| Unit    |} _         = "U"
-    x {| p :*: q |} (a :*: b) = x a ++ "*" ++ x b
-    x {| p :+: q |} (Inl a)   = "L" ++ x a
-    x {| p :+: q |} (Inr a)   = "R" ++ x a
+    x {| p :*: q |} (a :*: b) = "(" ++ x a ++ "*" ++ x b ++ ")"
+    x {| p :+: q |} (Inl a)   = "(L" ++ x a ++ ")"
+    x {| p :+: q |} (Inr a)   = "(R" ++ x a ++ ")"
 
 
 instance X Int where
@@ -29,8 +29,11 @@ data U = U
 instance X U
 
 
-data V = V0
-       | V1 Int
-       | V2 Int Int
+data V a b = V0
+           | V1 a
+           | V2 a b
 
-instance X V
+instance (X a, X b) => X (V a b)
+
+
+instance X a => X [a]
