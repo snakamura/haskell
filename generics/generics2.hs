@@ -28,3 +28,9 @@ instance Bin a => Bin [a]
 newtype X = X Int deriving Show
 
 instance Bin X
+
+data Y = Y1
+       | Y2
+  deriving Show
+
+instance Bin Y
