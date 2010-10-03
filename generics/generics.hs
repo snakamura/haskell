@@ -6,8 +6,8 @@ class X a where
     x :: a -> String
     x {| Unit    |} _         = "U"
     x {| p :*: q |} (a :*: b) = "(" ++ x a ++ "*" ++ x b ++ ")"
-    x {| p :+: q |} (Inl a)   = "(L" ++ x a ++ ")"
-    x {| p :+: q |} (Inr a)   = "(R" ++ x a ++ ")"
+    x {| p :+: q |} (Inl a)   = "L(" ++ x a ++ ")"
+    x {| p :+: q |} (Inr a)   = "R(" ++ x a ++ ")"
 
 
 instance X Int where

@@ -47,11 +47,11 @@ instance (X a, X b) => X (a :*: b) where
     x (a :*: b) = "(" ++ x a ++ "*" ++ x b ++ ")"
 
 instance (X a, X b) => X (a :+: b) where
-    x (L a) = "(L" ++ x a ++ ")"
-    x (R a) = "(R" ++ x a ++ ")"
+    x (L a) = "L(" ++ x a ++ ")"
+    x (R a) = "R(" ++ x a ++ ")"
 
 instance X a => X (V a) where
-    x (V a) = "(V" ++ x a ++ ")"
+    x (V a) = "V(" ++ x a ++ ")"
 
 
 instance X Int where
