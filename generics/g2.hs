@@ -88,3 +88,15 @@ instance R a => R [a] where
 instance (R a, Bin a) => Bin [a] where
     toBin = toBin . from
     fromBin = fromBin >>> first to
+
+
+data K a = K a
+
+instance R a => R (K a) where
+    type S (K a) = V a
+    from (K a) = V a
+    to (V a) = K a
+
+instance (R a, Bin a) => Bin (K a) where
+    toBin = toBin . from
+    fromBin = fromBin >>> first to
