@@ -1,0 +1,17 @@
+{
+  "name": "Web Game Solver",
+  "version": "1.0",
+  "description": "Web Game Solver for devquiz 2011",
+  "content_scripts": [
+    {
+      "matches": [
+        "http://gdd-2011-quiz-japan.appspot.com/webgame/problem*"
+      ],
+      "js": [
+        "solver.js"
+      ]
+    }
+  ],
+  "permissions": [
+  ]
+}
