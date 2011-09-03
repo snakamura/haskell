@@ -6,17 +6,19 @@ import Control.Monad (forM, liftM)
 import Control.Monad.State (MonadState, evalState, get, modify, put, runState)
 import Data.Array (Array)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
-import Data.List (sort, tails)
+import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (isJust)
+import Data.Maybe (fromJust)
+import Data.Ord (comparing)
+import Data.PQueue.Min (MinQueue)
+import qualified Data.PQueue.Min as PQ
 import Data.Sequence (Seq, ViewL((:<)), (><))
 import qualified Data.Sequence as Seq
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Debug.Trace
-import System.IO (interact)
 
 data Input = Input {
     hands :: Hands,
@@ -53,7 +55,7 @@ main :: IO ()
 main = interact (writeOutput . solve . readInput)
 
 solve :: Input -> [Moves]
-solve (Input hands boards) = map (solveBoardQ) boards
+solve (Input hands boards) = map solveBoardPQB boards
 
 solveBoard :: Board -> [Moves]
 solveBoard board = solveBoard' board Set.empty
@@ -120,11 +122,58 @@ solveBoardQB' =
              | d == direction ->
                  do put (newQueue, cache)
                     solveBoardQB'
-             | otherwise -> return $ reverse m ++ moves
+             | direction == FORWARD -> return $ reverse m ++ moves
+             | direction == BACKWARD -> return $ reverse moves ++ m
          Nothing ->
                do let items = [ ItemB b (m:moves) direction | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
                   put (newQueue >< Seq.fromList items, Map.insert board (ItemB board moves direction) cache)
                   solveBoardQB'
+
+data ItemPQB = ItemPQB Board Moves Direction Board Int
+
+makeItemPQB :: Board -> Moves -> Direction -> Board -> ItemPQB
+makeItemPQB b m d g = ItemPQB b m d g (length m + distance b g)
+
+priority :: ItemPQB -> Int
+priority (ItemPQB _ _ _ _ p) = p
+
+instance Eq ItemPQB where
+    i1 == i2 = priority i1 == priority i2
+
+instance Ord ItemPQB where
+    compare i1 i2 = compare (priority i1) (priority i2)
+
+solveBoardPQB :: Board -> Moves
+solveBoardPQB board = let goal = goalBoard board
+                          (moves, (_, cache)) = runState solveBoardPQB' (PQ.fromList [makeItemPQB board [] FORWARD goal, makeItemPQB goal [] BACKWARD board], Map.empty)
+                      in trace (show $ Map.size cache) $ reverse moves
+
+solveBoardPQB' :: MonadState (MinQueue ItemPQB, Map Board ItemPQB) m => m Moves
+solveBoardPQB' =
+    do (queue, cache) <- get
+       let (item@(ItemPQB board moves direction goal _), newQueue) = PQ.deleteFindMin queue -- Assume non-empty queue
+       case trace (printBoard board) $ (Map.lookup board cache, direction) of
+         (_, FORWARD) | isGoalBoard board -> return moves
+         (Just (ItemPQB _ m d _ _), direction) | d == direction ->
+                                                   do put (newQueue, cache)
+                                                      solveBoardPQB'
+         (Just (ItemPQB _ m _ _ _), FORWARD) -> return $ reverse (map reverseMove m) ++ moves
+         (Just (ItemPQB _ m _ _ _), BACKWARD) -> return $ reverse (map reverseMove moves) ++ m
+         (Nothing, _) ->
+               do let items = [ makeItemPQB b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                  put (foldr PQ.insert newQueue items, Map.insert board item cache)
+                  solveBoardPQB'
+    where
+      reverseMove L = R
+      reverseMove R = L
+      reverseMove U = D
+      reverseMove D = U
+
+distance :: Board -> Board -> Int
+distance b1 b2 = sum $ zipWith f (indices b1) (indices b2)
+    where
+      indices (Board panel _) = map snd $ sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
+      f (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
 isGoalBoard :: Board -> Bool
 isGoalBoard (Board panel _) =
@@ -137,7 +186,7 @@ goalBoard (Board panels _) =
     where
       fill []            _               = []
       fill (Wall:panels) goalPanels      = Wall:fill panels goalPanels
-      fill (p:panels)    (gp:goalPanels) = gp:fill panels goalPanels
+      fill (_:panels)    (gp:goalPanels) = gp:fill panels goalPanels
 
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx) m
@@ -199,5 +248,9 @@ printPanel Wall      = '='
 printPanel Empty     = '0'
 
 
+trace :: String -> a -> a
 --trace = Debug.Trace.trace
 trace _ a = a
+
+play :: Board -> Moves -> Board
+play = foldl (\b m -> trace (printBoard b) $ fromJust $ move b m)
