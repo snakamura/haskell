@@ -3,12 +3,14 @@
 module Main (main) where
 
 import Control.Monad (forM, liftM)
-import Control.Monad.State (MonadState, evalState, get, modify)
+import Control.Monad.State (MonadState, evalState, get, modify, put)
 import Data.Array (Array)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.List (tails)
 import Data.List.Split (sepBy)
 import Data.Maybe (isJust)
+import Data.Sequence (Seq, ViewL((:<)), (><))
+import qualified Data.Sequence as Seq
 import Data.Set (Set)
 import qualified Data.Set as Set
 import System.IO (interact)
@@ -48,11 +50,10 @@ main :: IO ()
 main = interact (writeOutput . solve . readInput)
 
 solve :: Input -> [Moves]
-solve (Input hands boards) = map (head . solveBoard) boards
+solve (Input hands boards) = map (solveBoardQ) boards
 
 solveBoard :: Board -> [Moves]
---solveBoard board = solveBoard' board Set.empty
-solveBoard board = evalState (solveBoardM' board) Set.empty
+solveBoard board = solveBoard' board Set.empty
 
 solveBoard' :: Board -> Set Board -> [Moves]
 solveBoard' board@(Board panels emptyIx) cache
@@ -62,16 +63,39 @@ solveBoard' board@(Board panels emptyIx) cache
         let nextBoards = [ (m, b) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
         in concatMap (\(c, b) -> map (c:) $ solveBoard' b (Set.insert board cache)) nextBoards
 
+solveBoardM :: Board -> [Moves]
+solveBoardM board = evalState (solveBoardM' board) Set.empty
+
 solveBoardM' :: MonadState (Set Board) m => Board -> m [Moves]
 solveBoardM' board@(Board panels emptyIx) =
     do cache <- get
        case () of
          _ | Set.member board cache -> return []
-         _ | isBoardSorted board -> return [[]]
-         _ -> do modify (Set.insert board) 
-                 let nextBoards = [ (m, b) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                 liftM concat $ forM nextBoards $ \(m, b) ->
-                     liftM (map (m:)) $ solveBoardM' b
+           | isBoardSorted board -> return [[]]
+           | otherwise ->
+               do modify (Set.insert board) 
+                  let nextBoards = [ (m, b) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                  liftM concat $ forM nextBoards $ \(m, b) ->
+                      liftM (map (m:)) $ solveBoardM' b
+
+data Item = Item Board Moves
+
+solveBoardQ :: Board -> Moves
+solveBoardQ board = reverse $ evalState solveBoardQ' (Seq.singleton (Item board []), Set.empty)
+
+solveBoardQ' :: MonadState (Seq Item, Set Board) m => m Moves
+solveBoardQ' =
+    do (queue, cache) <- get
+       let (Item board moves) :< newQueue = Seq.viewl queue -- Assume non-empty queue
+       case () of
+         _ | Set.member board cache ->
+               do put (newQueue, cache)
+                  solveBoardQ'
+           | isBoardSorted board -> return moves
+           | otherwise ->
+               do let items = [ Item b (m:moves) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                  put (newQueue >< Seq.fromList items, Set.insert board cache)
+                  solveBoardQ'
 
 isBoardSorted :: Board -> Bool
 isBoardSorted (Board panel _) =
@@ -79,15 +103,14 @@ isBoardSorted (Board panel _) =
 
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx) m
-    | not $ isValidMove m = Nothing
-    | otherwise           =
-        let nextEmptyIx = moveIx emptyIx m
-        in Just $ Board (panels // [(nextEmptyIx, Empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
+    | isValidMove = Just $ Board (panels // [(nextEmptyIx, Empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
+    | otherwise   = Nothing
     where
+      nextEmptyIx@(nextRow, nextColumn) = moveIx emptyIx m
       ((minRow, minColumn), (maxRow, maxColumn)) = bounds panels
-      isValidMove m = let (nextRow, nextColumn) = moveIx emptyIx m
-                      in minRow <= nextRow && nextRow <= maxRow &&
-                         minColumn <= nextColumn && nextColumn <= maxColumn
+      isValidMove = minRow <= nextRow && nextRow <= maxRow &&
+                    minColumn <= nextColumn && nextColumn <= maxColumn &&
+                    panels ! (nextRow, nextColumn) /= Wall
 
 moveIx :: (Int, Int) -> Move -> (Int, Int)
 moveIx (r, c) L = (r, c - 1)
