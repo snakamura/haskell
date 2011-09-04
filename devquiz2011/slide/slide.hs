@@ -10,7 +10,7 @@ import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
@@ -55,7 +55,7 @@ main :: IO ()
 main = interact (writeOutput . solve . readInput)
 
 solve :: Input -> [Moves]
-solve (Input hands boards) = map solveBoardPQB boards
+solve (Input hands boards) = map (fromMaybe [] . solveBoardD) boards
 
 solveBoard :: Board -> [Moves]
 solveBoard board = solveBoard' board Set.empty
@@ -134,46 +134,126 @@ data ItemPQB = ItemPQB Board Moves Direction Board Int
 makeItemPQB :: Board -> Moves -> Direction -> Board -> ItemPQB
 makeItemPQB b m d g = ItemPQB b m d g (length m + distance b g)
 
-priority :: ItemPQB -> Int
-priority (ItemPQB _ _ _ _ p) = p
+priorityPQB :: ItemPQB -> Int
+priorityPQB (ItemPQB _ _ _ _ p) = p
 
 instance Eq ItemPQB where
-    i1 == i2 = priority i1 == priority i2
+    i1 == i2 = priorityPQB i1 == priorityPQB i2
 
 instance Ord ItemPQB where
-    compare i1 i2 = compare (priority i1) (priority i2)
+    compare i1 i2 = compare (priorityPQB i1) (priorityPQB i2)
 
-solveBoardPQB :: Board -> Moves
+solveBoardPQB :: Board -> Maybe Moves
 solveBoardPQB board = let goal = goalBoard board
                           (moves, (_, cache)) = runState solveBoardPQB' (PQ.fromList [makeItemPQB board [] FORWARD goal, makeItemPQB goal [] BACKWARD board], Map.empty)
-                      in trace (show $ Map.size cache) $ reverse moves
+                      in trace (show $ Map.size cache) $ fmap reverse moves
 
-solveBoardPQB' :: MonadState (MinQueue ItemPQB, Map Board ItemPQB) m => m Moves
+solveBoardPQB' :: MonadState (MinQueue ItemPQB, Map Board ItemPQB) m => m (Maybe Moves)
 solveBoardPQB' =
     do (queue, cache) <- get
-       let (item@(ItemPQB board moves direction goal _), newQueue) = PQ.deleteFindMin queue -- Assume non-empty queue
-       case trace (printBoard board) $ (Map.lookup board cache, direction) of
-         (_, FORWARD) | isGoalBoard board -> return moves
-         (Just (ItemPQB _ m d _ _), direction) | d == direction ->
-                                                   do put (newQueue, cache)
-                                                      solveBoardPQB'
-         (Just (ItemPQB _ m _ _ _), FORWARD) -> return $ reverse (map reverseMove m) ++ moves
-         (Just (ItemPQB _ m _ _ _), BACKWARD) -> return $ reverse (map reverseMove moves) ++ m
-         (Nothing, _) ->
-               do let items = [ makeItemPQB b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                  put (foldr PQ.insert newQueue items, Map.insert board item cache)
-                  solveBoardPQB'
+       case PQ.getMin queue of
+         Just item@(ItemPQB board moves direction goal _) ->
+             do let newQueue = PQ.deleteMin queue
+                case (Map.lookup board cache, direction) of
+                  (_, FORWARD) | isGoalBoard board -> return $ Just moves
+                  (Just (ItemPQB _ m d _ _), direction) | d == direction ->
+                                                            do put (newQueue, cache)
+                                                               solveBoardPQB'
+                  (Just (ItemPQB _ m _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
+                  (Just (ItemPQB _ m _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
+                  (Nothing, _) ->
+                      do let items = [ makeItemPQB b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                         put (foldr PQ.insert newQueue items, Map.insert board item cache)
+                         trace (printBoard board) $ solveBoardPQB'
+         Nothing -> return Nothing
     where
       reverseMove L = R
       reverseMove R = L
       reverseMove U = D
       reverseMove D = U
 
+solveBoardD :: Board -> Maybe Moves
+solveBoardD board@(Board panel _)
+    | r <= 4 && c <= 4 = solveBoardPQB board
+    | otherwise = Nothing
+    | r >= c = let (m, b) = solveFirstRow board
+               in case solveBoardD b of
+                    Just m2 -> Just $ m ++ m2
+                    Nothing -> solveBoardPQB board
+    | otherwise = let (m, b) = solveFirstColumn board
+                  in case solveBoardD b of
+                       Just m2 -> Just $ m ++ m2
+                       Nothing -> solveBoardPQB board
+    where
+      (r, c) = let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+               in (maxRow - minRow + 1, maxColumn - minColumn + 1)
+
+data ItemFR = ItemFR Board Moves Board Int
+
+makeItemFR :: Board -> Moves -> Board -> ItemFR
+makeItemFR b m g = ItemFR b m g (length m + distanceFR b g)
+
+priorityFR :: ItemFR -> Int
+priorityFR (ItemFR _ _ _ p) = p
+
+distanceFR :: Board -> Board -> Int
+distanceFR (Board panel _) (Board goalPanel _) =
+    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+        indices = zip (repeat minRow) [minColumn .. maxColumn]
+        goalPanels = [ (p, ix) | ix <- indices, let p = panel ! ix, isPanel p ]
+        panels = sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel, p `elem` map fst goalPanels ]
+    in sum $ zipWith dist (map snd panels) (map snd goalPanels)
+    where
+      isPanel (Panel _) = True
+      isPanel _         = False
+      dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
+
+instance Eq ItemFR where
+    i1 == i2 = priorityFR i1 == priorityFR i2
+
+instance Ord ItemFR where
+    compare i1 i2 = compare (priorityFR i1) (priorityFR i2)
+
+solveFirstRow :: Board -> (Moves, Board)
+solveFirstRow board = solveFirstRow2 board (goalBoard board)
+
+solveFirstRow2 :: Board -> Board -> (Moves, Board)
+solveFirstRow2 board goal = let ((moves, b), (_, cache)) = runState solveFirstRow' (PQ.fromList [makeItemFR board [] goal], Map.empty)
+                           in trace (show $ Map.size cache) $ (reverse moves, b)
+
+solveFirstRow' :: MonadState (MinQueue ItemFR, Map Board ItemFR) m => m (Moves, Board)
+solveFirstRow' =
+    do (queue, cache) <- get
+       let (item@(ItemFR board moves goal _), newQueue) = PQ.deleteFindMin queue -- Assume non-empty queue
+       case Map.lookup board cache of
+         _ | isFirstRowGoal board goal -> return (moves, removeFirstRow board)
+         Just (ItemFR _ m _ _) -> do put (newQueue, cache)
+                                     solveFirstRow'
+         Nothing ->
+               do let items = [ makeItemFR b (m:moves) goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                  put (foldr PQ.insert newQueue items, Map.insert board item cache)
+                  trace (printBoard board) $ solveFirstRow'
+
+isFirstRowGoal :: Board -> Board -> Bool
+isFirstRowGoal (Board panel _) (Board goalPanel _) =
+    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+        indices = zip (repeat minRow) [minColumn .. maxColumn]
+    in map (panel !) indices == map (goalPanel !) indices
+
+removeFirstRow :: Board -> Board
+removeFirstRow (Board panel (emptyRow, emptyColumn)) =
+    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+    in Board (listArray ((minRow, minColumn), (maxRow - 1, maxColumn)) $ drop (maxColumn - minColumn + 1) $ elems panel) (emptyRow - 1, emptyColumn)
+
+solveFirstColumn :: Board -> (Moves, Board)
+solveFirstColumn board = let (moves, b) = solveFirstRow2 (transposeBoard board) (transposeBoard $ goalBoard board)
+                         in (map transposeMove moves, transposeBoard b)
+
 distance :: Board -> Board -> Int
-distance b1 b2 = sum $ zipWith f (indices b1) (indices b2)
+distance b1 b2 = sum $ zipWith dist (indices b1) (indices b2)
     where
       indices (Board panel _) = map snd $ sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
-      f (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
+      dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
 isGoalBoard :: Board -> Bool
 isGoalBoard (Board panel _) =
@@ -187,6 +267,9 @@ goalBoard (Board panels _) =
       fill []            _               = []
       fill (Wall:panels) goalPanels      = Wall:fill panels goalPanels
       fill (_:panels)    (gp:goalPanels) = gp:fill panels goalPanels
+
+transposeBoard :: Board -> Board
+transposeBoard (Board panel (emptyRow, emptyColumn)) = Board (transpose panel) (emptyColumn, emptyRow)
 
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx) m
@@ -205,8 +288,19 @@ moveIx (r, c) R = (r, c + 1)
 moveIx (r, c) U = (r - 1, c)
 moveIx (r, c) D = (r + 1, c)
 
+transposeMove :: Move -> Move
+transposeMove L = U
+transposeMove R = D
+transposeMove U = L
+transposeMove D = R
+
 findIx :: (IArray a e, Ix i, Eq e) => e -> a i e -> Maybe i
 findIx e a = lookup e $ map swap $ assocs a
+
+transpose :: (IArray a1 e, IArray a2 e, Ix ix, Ix iy) => a1 (ix, iy) e -> a2 (iy, ix) e
+transpose a = let ((minX, minY), (maxX, maxY)) = bounds a
+                  values = map snd $ sortBy (comparing fst) $ map (\((x, y), v) -> ((y, x), v)) $ assocs a
+              in listArray ((minY, minX), (maxY, maxX)) values
 
 swap :: (a, b) -> (b, a)
 swap (x, y) = (y, x)
@@ -219,7 +313,7 @@ readInput s = let inputs = lines s
 
 parseBoard :: String -> Board
 parseBoard l = let [w, h, p] = sepBy "," l
-                   panels = listArray ((0, 0), (read w - 1, read h - 1)) $ map parsePanel p
+                   panels = listArray ((0, 0), (read h - 1, read w - 1)) $ map parsePanel p
                    Just emptyIx = findIx Empty panels
                in Board panels emptyIx
 
