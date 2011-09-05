@@ -2,8 +2,7 @@
 
 module Main (main) where
 
-import Control.Monad (forM, liftM)
-import Control.Monad.State (MonadState, evalState, get, modify, put, runState)
+import Control.Monad.State (MonadState, get, put, runState)
 import Data.Array (Array)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.List (sort, sortBy, tails)
@@ -14,26 +13,22 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
-import Data.Sequence (Seq, ViewL((:<)), (><))
-import qualified Data.Sequence as Seq
-import Data.Set (Set)
-import qualified Data.Set as Set
 import qualified Debug.Trace
 
 data Input = Input {
-    hands :: Hands,
+    hands  :: Hands,
     boards :: [Board]
 } deriving (Show, Eq)
 
 data Hands = Hands {
-    left :: Int,
+    left  :: Int,
     right :: Int,
-    up :: Int,
-    down :: Int
+    up    :: Int,
+    down  :: Int
 } deriving (Show, Eq)
 
 data Board = Board {
-    panels :: Array (Int, Int) Panel,
+    panels  :: Array (Int, Int) Panel,
     emptyIx :: (Int, Int)
 } deriving (Show, Eq, Ord)
 
@@ -52,119 +47,64 @@ type Moves = [Move]
 
 
 main :: IO ()
-main = interact (writeOutput . solve . readInput)
+main = interact (writeOutput . s . readInput)
+    where
+      s (Input hands boards) = map solve boards
+          
 
-solve :: Input -> [Moves]
-solve (Input hands boards) = map (fromMaybe [] . solveBoardD) boards
-
-solveBoard :: Board -> [Moves]
-solveBoard board = solveBoard' board Set.empty
-
-solveBoard' :: Board -> Set Board -> [Moves]
-solveBoard' board@(Board panels emptyIx) cache
-    | Set.member board cache = []
-    | isGoalBoard board = [[]]
-    | otherwise =
-        let nextBoards = [ (m, b) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-        in concatMap (\(c, b) -> map (c:) $ solveBoard' b (Set.insert board cache)) nextBoards
-
-solveBoardM :: Board -> [Moves]
-solveBoardM board = evalState (solveBoardM' board) Set.empty
-
-solveBoardM' :: MonadState (Set Board) m => Board -> m [Moves]
-solveBoardM' board@(Board panels emptyIx) =
-    do cache <- get
-       case () of
-         _ | Set.member board cache -> return []
-           | isGoalBoard board -> return [[]]
-           | otherwise ->
-               do modify (Set.insert board) 
-                  let nextBoards = [ (m, b) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                  liftM concat $ forM nextBoards $ \(m, b) ->
-                      liftM (map (m:)) $ solveBoardM' b
-
-data Item = Item Board Moves
-
-solveBoardQ :: Board -> Moves
-solveBoardQ board = reverse $ evalState solveBoardQ' (Seq.singleton (Item board []), Set.empty)
-
-solveBoardQ' :: MonadState (Seq Item, Set Board) m => m Moves
-solveBoardQ' =
-    do (queue, cache) <- get
-       let (Item board moves) :< newQueue = Seq.viewl queue -- Assume non-empty queue
-       case () of
-         _ | Set.member board cache ->
-               do put (newQueue, cache)
-                  solveBoardQ'
-           | isGoalBoard board -> return moves
-           | otherwise ->
-               do let items = [ Item b (m:moves) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                  put (newQueue >< Seq.fromList items, Set.insert board cache)
-                  solveBoardQ'
+solve :: Board -> Moves
+solve board = fromMaybe [] $ s board
+    where
+      s board@(Board panel _)
+          | r <= 3 && c <= 3 = solveBoard board
+          | c * r <= 12 = solveBoardD board
+          | otherwise        = Nothing
+          where
+            (r, c) = let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+                     in (maxRow - minRow + 1, maxColumn - minColumn + 1)
 
 data Direction = FORWARD
                | BACKWARD
   deriving (Eq)
 
-data ItemB = ItemB Board Moves Direction
+data Item = Item Board Moves Direction Board Int
 
-solveBoardQB :: Board -> Moves
-solveBoardQB board = let (moves, (_, cache)) = runState solveBoardQB' (Seq.fromList [ItemB board [] FORWARD, ItemB (goalBoard board) [] BACKWARD], Map.empty)
-                     in trace (show $ Map.size cache) $ reverse moves
+makeItem :: Board -> Moves -> Direction -> Board -> Item
+makeItem b m d g = Item b m d g (length m + distance b g)
 
-solveBoardQB' :: MonadState (Seq ItemB, Map Board ItemB) m => m Moves
-solveBoardQB' =
-    do (queue, cache) <- get
-       let (ItemB board moves direction) :< newQueue = Seq.viewl queue -- Assume non-empty queue
-       case trace (printBoard board) $ Map.lookup board cache of
-         _ | direction == FORWARD && isGoalBoard board -> return moves
-         Just item@(ItemB _ m d)
-             | d == direction ->
-                 do put (newQueue, cache)
-                    solveBoardQB'
-             | direction == FORWARD -> return $ reverse m ++ moves
-             | direction == BACKWARD -> return $ reverse moves ++ m
-         Nothing ->
-               do let items = [ ItemB b (m:moves) direction | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                  put (newQueue >< Seq.fromList items, Map.insert board (ItemB board moves direction) cache)
-                  solveBoardQB'
+priority :: Item -> Int
+priority (Item _ _ _ _ p) = p
 
-data ItemPQB = ItemPQB Board Moves Direction Board Int
+instance Eq Item where
+    i1 == i2 = priority i1 == priority i2
 
-makeItemPQB :: Board -> Moves -> Direction -> Board -> ItemPQB
-makeItemPQB b m d g = ItemPQB b m d g (length m + distance b g)
+instance Ord Item where
+    compare i1 i2 = compare (priority i1) (priority i2)
 
-priorityPQB :: ItemPQB -> Int
-priorityPQB (ItemPQB _ _ _ _ p) = p
+solveBoard :: Board -> Maybe Moves
+solveBoard board = let goalBoard = getGoalBoard board
+                       initialBoards = [makeItem board [] FORWARD goalBoard,
+                                        makeItem goalBoard [] BACKWARD board]
+                       (moves, (_, cache)) = runState solveBoard' (PQ.fromList initialBoards, Map.empty)
+                   in trace (show $ Map.size cache) $ fmap reverse moves
 
-instance Eq ItemPQB where
-    i1 == i2 = priorityPQB i1 == priorityPQB i2
-
-instance Ord ItemPQB where
-    compare i1 i2 = compare (priorityPQB i1) (priorityPQB i2)
-
-solveBoardPQB :: Board -> Maybe Moves
-solveBoardPQB board = let goal = goalBoard board
-                          (moves, (_, cache)) = runState solveBoardPQB' (PQ.fromList [makeItemPQB board [] FORWARD goal, makeItemPQB goal [] BACKWARD board], Map.empty)
-                      in trace (show $ Map.size cache) $ fmap reverse moves
-
-solveBoardPQB' :: MonadState (MinQueue ItemPQB, Map Board ItemPQB) m => m (Maybe Moves)
-solveBoardPQB' =
+solveBoard' :: MonadState (MinQueue Item, Map Board Item) m => m (Maybe Moves)
+solveBoard' =
     do (queue, cache) <- get
        case PQ.getMin queue of
-         Just item@(ItemPQB board moves direction goal _) ->
+         Just item@(Item board moves direction goal _) ->
              do let newQueue = PQ.deleteMin queue
                 case (Map.lookup board cache, direction) of
                   (_, FORWARD) | isGoalBoard board -> return $ Just moves
-                  (Just (ItemPQB _ m d _ _), direction) | d == direction ->
-                                                            do put (newQueue, cache)
-                                                               solveBoardPQB'
-                  (Just (ItemPQB _ m _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
-                  (Just (ItemPQB _ m _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
+                  (Just (Item _ m d _ _), direction) | d == direction ->
+                                                         do put (newQueue, cache)
+                                                            solveBoard'
+                  (Just (Item _ m _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
+                  (Just (Item _ m _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
                   (Nothing, _) ->
-                      do let items = [ makeItemPQB b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
+                      do let items = [ makeItem b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
                          put (foldr PQ.insert newQueue items, Map.insert board item cache)
-                         trace (printBoard board) $ solveBoardPQB'
+                         trace (printBoard board) $ solveBoard'
          Nothing -> return Nothing
     where
       reverseMove L = R
@@ -174,16 +114,15 @@ solveBoardPQB' =
 
 solveBoardD :: Board -> Maybe Moves
 solveBoardD board@(Board panel _)
-    | r <= 4 && c <= 4 = solveBoardPQB board
-    | otherwise = Nothing
+    | r <= 4 && c <= 4 = solveBoard board
     | r >= c = let (m, b) = solveFirstRow board
                in case solveBoardD b of
                     Just m2 -> Just $ m ++ m2
-                    Nothing -> solveBoardPQB board
+                    Nothing -> solveBoard board
     | otherwise = let (m, b) = solveFirstColumn board
                   in case solveBoardD b of
                        Just m2 -> Just $ m ++ m2
-                       Nothing -> solveBoardPQB board
+                       Nothing -> solveBoard board
     where
       (r, c) = let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
                in (maxRow - minRow + 1, maxColumn - minColumn + 1)
@@ -215,11 +154,11 @@ instance Ord ItemFR where
     compare i1 i2 = compare (priorityFR i1) (priorityFR i2)
 
 solveFirstRow :: Board -> (Moves, Board)
-solveFirstRow board = solveFirstRow2 board (goalBoard board)
+solveFirstRow board = solveFirstRow2 board (getGoalBoard board)
 
 solveFirstRow2 :: Board -> Board -> (Moves, Board)
 solveFirstRow2 board goal = let ((moves, b), (_, cache)) = runState solveFirstRow' (PQ.fromList [makeItemFR board [] goal], Map.empty)
-                           in trace (show $ Map.size cache) $ (reverse moves, b)
+                            in trace (show $ Map.size cache) $ (reverse moves, b)
 
 solveFirstRow' :: MonadState (MinQueue ItemFR, Map Board ItemFR) m => m (Moves, Board)
 solveFirstRow' =
@@ -246,7 +185,7 @@ removeFirstRow (Board panel (emptyRow, emptyColumn)) =
     in Board (listArray ((minRow, minColumn), (maxRow - 1, maxColumn)) $ drop (maxColumn - minColumn + 1) $ elems panel) (emptyRow - 1, emptyColumn)
 
 solveFirstColumn :: Board -> (Moves, Board)
-solveFirstColumn board = let (moves, b) = solveFirstRow2 (transposeBoard board) (transposeBoard $ goalBoard board)
+solveFirstColumn board = let (moves, b) = solveFirstRow2 (transposeBoard board) (transposeBoard $ getGoalBoard board)
                          in (map transposeMove moves, transposeBoard b)
 
 distance :: Board -> Board -> Int
@@ -259,8 +198,8 @@ isGoalBoard :: Board -> Bool
 isGoalBoard (Board panel _) =
     all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= Wall) $ elems panel
 
-goalBoard :: Board -> Board
-goalBoard (Board panels _) =
+getGoalBoard :: Board -> Board
+getGoalBoard (Board panels _) =
     let goalPanels = [ p | p <- sort $ elems panels, p /= Wall ]
     in Board (listArray (bounds panels) (fill (elems panels) goalPanels)) (snd $ bounds panels)
     where
