@@ -5,11 +5,12 @@ module Main (main) where
 import Control.Monad.State (MonadState, get, put, runState)
 import Data.Array (Array)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
+import Data.HashMap.Lazy (HashMap)
+import qualified Data.HashMap.Lazy as HashMap
+import Data.Hashable (Hashable(..))
 import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
@@ -29,13 +30,28 @@ data Hands = Hands {
 
 data Board = Board {
     panels  :: Array (Int, Int) Panel,
-    emptyIx :: (Int, Int)
+    emptyIx :: (Int, Int),
+    h       :: Int
 } deriving (Show, Eq, Ord)
+
+instance Hashable Board where
+    hash (Board _ _ h) = h
+
+makeBoard :: Array (Int, Int) Panel -> (Int, Int) -> Board
+makeBoard panels emptyIx = Board panels emptyIx (hash panels)
+
+instance (Hashable ix, Ix ix, Hashable a) => Hashable (Array ix a) where
+    hash = hash . assocs
 
 data Panel = Panel Char
            | Wall
            | Empty
   deriving (Show, Eq, Ord)
+
+instance Hashable Panel where
+    hash (Panel c) = fromEnum c
+    hash Wall      = 143
+    hash Empty     = 197
 
 data Move = L
           | R
@@ -69,6 +85,10 @@ data Direction = FORWARD
                | BACKWARD
   deriving (Show, Eq, Ord)
 
+instance Hashable Direction where
+    hash FORWARD  = 1
+    hash BACKWARD = 2
+
 data Item = Item Board Moves Direction Board Int
   deriving Show
 
@@ -84,40 +104,40 @@ instance Eq Item where
 instance Ord Item where
     compare i1 i2 = compare (priority i1) (priority i2)
 
-data OpenItems = OpenItems (MinQueue Item) (Map (Board, Direction) Item)
+data OpenItems = OpenItems (MinQueue Item) (HashMap (Board, Direction) Item)
 
 emptyOpenItems :: OpenItems
-emptyOpenItems = OpenItems PQ.empty Map.empty
+emptyOpenItems = OpenItems PQ.empty HashMap.empty
 
 getNextOpenItem :: OpenItems -> ClosedItems -> Maybe (Item, OpenItems, ClosedItems)
 getNextOpenItem (OpenItems q t) (ClosedItems m) =
     case PQ.getMin q of
-      Just item@(Item b _ d _ _) | Map.member (b, d) t -> Just $ (item, OpenItems (PQ.deleteMin q) (Map.delete (b, d) t), ClosedItems (Map.insert b item m))
-                                 | otherwise           -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
+      Just item@(Item b _ d _ _) | isJust $ HashMap.lookup (b, d) t -> Just $ (item, OpenItems (PQ.deleteMin q) (HashMap.delete (b, d) t), ClosedItems (HashMap.insert b item m))
+                                 | otherwise                        -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
       Nothing -> Nothing
 
 getOpenItem :: Board -> Direction -> OpenItems -> Maybe Item
-getOpenItem b d (OpenItems _ t) = Map.lookup (b, d) t
+getOpenItem b d (OpenItems _ t) = HashMap.lookup (b, d) t
 
 addOpenItem :: Item -> OpenItems -> OpenItems
-addOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (Map.insert (b, d) item t)
+addOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (HashMap.insert (b, d) item t)
 
 removeOpenItem :: Item -> OpenItems -> OpenItems
-removeOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems q (Map.delete (b, d) t)
+removeOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems q (HashMap.delete (b, d) t)
 
-newtype ClosedItems = ClosedItems (Map Board Item) deriving Show
+newtype ClosedItems = ClosedItems (HashMap Board Item) deriving Show
 
 emptyClosedItems :: ClosedItems
-emptyClosedItems = ClosedItems Map.empty
+emptyClosedItems = ClosedItems HashMap.empty
 
 getClosedItem :: Board -> ClosedItems -> Maybe Item
-getClosedItem b (ClosedItems m) = Map.lookup b m
+getClosedItem b (ClosedItems m) = HashMap.lookup b m
 
 removeClosedItem :: Item -> ClosedItems -> ClosedItems
-removeClosedItem (Item b _ _ _ _) (ClosedItems m) = ClosedItems $ Map.delete b m
+removeClosedItem (Item b _ _ _ _) (ClosedItems m) = ClosedItems $ HashMap.delete b m
 
 getClosedItemsSize :: ClosedItems -> Int
-getClosedItemsSize (ClosedItems m) = Map.size m
+getClosedItemsSize (ClosedItems m) = HashMap.size m
 
 solveBoard :: Board -> Maybe Moves
 solveBoard board = let goalBoard = getGoalBoard board
@@ -237,28 +257,28 @@ solveFirstColumn board = let (moves, b) = solveFirstRow2 (transposeBoard board) 
 distance :: Board -> Board -> Int
 distance b1 b2 = sum $ zipWith dist (indices b1) (indices b2)
     where
-      indices (Board panel _) = map snd $ sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
+      indices (Board panel _ _) = map snd $ sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
       dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
 isGoalBoard :: Board -> Bool
-isGoalBoard (Board panel _) =
+isGoalBoard (Board panel _ _) =
     all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= Wall) $ elems panel
 
 getGoalBoard :: Board -> Board
-getGoalBoard (Board panels _) =
+getGoalBoard (Board panels _ _) =
     let goalPanels = [ p | p <- sort $ elems panels, p /= Wall ]
-    in Board (listArray (bounds panels) (fill (elems panels) goalPanels)) (snd $ bounds panels)
+    in makeBoard (listArray (bounds panels) (fill (elems panels) goalPanels)) (snd $ bounds panels)
     where
       fill []            _               = []
       fill (Wall:panels) goalPanels      = Wall:fill panels goalPanels
       fill (_:panels)    (gp:goalPanels) = gp:fill panels goalPanels
 
 transposeBoard :: Board -> Board
-transposeBoard (Board panel (emptyRow, emptyColumn)) = Board (transpose panel) (emptyColumn, emptyRow)
+transposeBoard (Board panel (emptyRow, emptyColumn) _) = makeBoard (transpose panel) (emptyColumn, emptyRow)
 
 move :: Board -> Move -> Maybe Board
-move (Board panels emptyIx) m
-    | isValidMove = Just $ Board (panels // [(nextEmptyIx, Empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
+move (Board panels emptyIx _) m
+    | isValidMove = Just $ makeBoard (panels // [(nextEmptyIx, Empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
     | otherwise   = Nothing
     where
       nextEmptyIx@(nextRow, nextColumn) = moveIx emptyIx m
@@ -300,7 +320,7 @@ parseBoard :: String -> Board
 parseBoard l = let [w, h, p] = sepBy "," l
                    panels = listArray ((0, 0), (read h - 1, read w - 1)) $ map parsePanel p
                    Just emptyIx = findIx Empty panels
-               in Board panels emptyIx
+               in makeBoard panels emptyIx
 
 parsePanel :: Char -> Panel
 parsePanel '=' = Wall
@@ -317,7 +337,7 @@ printMove U = 'U'
 printMove D = 'D'
 
 printBoard :: Board -> String
-printBoard (Board panels _) =
+printBoard (Board panels _ _) =
     let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panels
     in show (maxRow - minRow + 1) ++ "," ++ show (maxColumn - minColumn + 1) ++ "," ++ map printPanel (elems panels)
 
