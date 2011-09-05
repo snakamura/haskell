@@ -67,7 +67,7 @@ solve board = fromMaybe [] $ solveBoard board
 
 data Direction = FORWARD
                | BACKWARD
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data Item = Item Board Moves Direction Board Int
   deriving Show
@@ -84,31 +84,31 @@ instance Eq Item where
 instance Ord Item where
     compare i1 i2 = compare (priority i1) (priority i2)
 
-data OpenItems = OpenItems (MinQueue Item) (Map Board Item)
+data OpenItems = OpenItems (MinQueue Item) (Map (Board, Direction) Item)
 
-openItems :: OpenItems
-openItems = OpenItems PQ.empty Map.empty
+emptyOpenItems :: OpenItems
+emptyOpenItems = OpenItems PQ.empty Map.empty
 
 getNextOpenItem :: OpenItems -> ClosedItems -> Maybe (Item, OpenItems, ClosedItems)
 getNextOpenItem (OpenItems q t) (ClosedItems m) =
     case PQ.getMin q of
-      Just item@(Item b _ _ _ _) | Map.member b t -> Just $ (item, OpenItems (PQ.deleteMin q) (Map.delete b t), ClosedItems (Map.insert b item m))
-                                 | otherwise      -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
+      Just item@(Item b _ d _ _) | Map.member (b, d) t -> Just $ (item, OpenItems (PQ.deleteMin q) (Map.delete (b, d) t), ClosedItems (Map.insert b item m))
+                                 | otherwise           -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
       Nothing -> Nothing
 
-getOpenItem :: Board -> OpenItems -> Maybe Item
-getOpenItem b (OpenItems _ t) = Map.lookup b t
+getOpenItem :: Board -> Direction -> OpenItems -> Maybe Item
+getOpenItem b d (OpenItems _ t) = Map.lookup (b, d) t
 
 addOpenItem :: Item -> OpenItems -> OpenItems
-addOpenItem item@(Item b _ _ _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (Map.insert b item t)
+addOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (Map.insert (b, d) item t)
 
 removeOpenItem :: Item -> OpenItems -> OpenItems
-removeOpenItem item@(Item b _ _ _ _) (OpenItems q t) = OpenItems q (Map.delete b t)
+removeOpenItem item@(Item b _ d _ _) (OpenItems q t) = OpenItems q (Map.delete (b, d) t)
 
 newtype ClosedItems = ClosedItems (Map Board Item) deriving Show
 
-closedItems :: ClosedItems
-closedItems = ClosedItems Map.empty
+emptyClosedItems :: ClosedItems
+emptyClosedItems = ClosedItems Map.empty
 
 getClosedItem :: Board -> ClosedItems -> Maybe Item
 getClosedItem b (ClosedItems m) = Map.lookup b m
@@ -119,67 +119,40 @@ removeClosedItem (Item b _ _ _ _) (ClosedItems m) = ClosedItems $ Map.delete b m
 getClosedItemsSize :: ClosedItems -> Int
 getClosedItemsSize (ClosedItems m) = Map.size m
 
-solveBoard2 :: Board -> Maybe Moves
-solveBoard2 board = let goalBoard = getGoalBoard board
-                        initialItems = [makeItem board [] FORWARD goalBoard{-,
-                                        makeItem goalBoard [] BACKWARD board-}]
-                        (moves, (_, closedItems)) = runState solveBoard2' (foldr addOpenItem openItems initialItems, closedItems)
-                    in {-Debug.Trace.trace (show $ getClosedItemsSize closedItems) $-} fmap reverse moves
+solveBoard :: Board -> Maybe Moves
+solveBoard board = let goalBoard = getGoalBoard board
+                       initialItems = [makeItem board [] FORWARD goalBoard,
+                                       makeItem goalBoard [] BACKWARD board]
+                       (moves, (_, closedItems)) = runState solveBoard' (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
+                   in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show (getClosedItemsSize closedItems)) $ fmap reverse moves
 
-solveBoard2' :: MonadState (OpenItems, ClosedItems) m => m (Maybe Moves)
-solveBoard2' =
+solveBoard' :: MonadState (OpenItems, ClosedItems) m => m (Maybe Moves)
+solveBoard' =
     do (openItems, closedItems) <- get
        case getNextOpenItem openItems closedItems of
+--         _ | getClosedItemsSize closedItems > 2000 -> return Nothing
          Just (item@(Item board moves direction goal priority), nextOpenItems, nextClosedItems) ->
-             if trace (show closedItems) $ direction == FORWARD && board == goal then
+             if direction == FORWARD && board == goal then
                  return $ Just moves
+             else if direction == BACKWARD && board == goal then
+                 return $ Just $ reverse (map reverseMove moves)
              else
                  case (getClosedItem board closedItems, direction) of
                    (Just (Item _ m BACKWARD _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
                    (Just (Item _ m FORWARD _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
                    _ -> do let nextItems = [ makeItem b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
                            put $ foldr insert (nextOpenItems, nextClosedItems) nextItems
-                           solveBoard2'
+                           solveBoard'
          Nothing -> return Nothing
     where
-      insert item@(Item b m d g p) (openItems, closedItems) =
-          case getClosedItem b closedItems of
-            Just closedItem@(Item _ _ _ _ cp) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
-            _ -> case getOpenItem b openItems of
-                   Just openItem@(Item _ _ _ _ op) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
-                   _ -> (openItems, closedItems)
-      reverseMove L = R
-      reverseMove R = L
-      reverseMove U = D
-      reverseMove D = U
-
-solveBoard :: Board -> Maybe Moves
-solveBoard board = let goalBoard = getGoalBoard board
-                       initialBoards = [makeItem board [] FORWARD goalBoard,
-                                        makeItem goalBoard [] BACKWARD board]
-                       (moves, (_, cache)) = runState solveBoard' (PQ.fromList initialBoards, Map.empty)
-                   in Debug.Trace.trace (show $ Map.size cache) $ fmap reverse moves
-
-solveBoard' :: MonadState (MinQueue Item, Map Board Item) m => m (Maybe Moves)
-solveBoard' =
-    do (queue, cache) <- get
-       case PQ.getMin queue of
-         _ | Map.size cache > 5000 -> return Nothing
-         Just item@(Item board moves direction goal _) ->
-             do let newQueue = PQ.deleteMin queue
-                case (Map.lookup board cache, direction) of
-                  (_, FORWARD) | isGoalBoard board -> return $ Just moves
-                  (Just (Item _ m d _ _), direction) | d == direction ->
-                                                         do put (newQueue, cache)
-                                                            solveBoard'
-                  (Just (Item _ m _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
-                  (Just (Item _ m _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
-                  (Nothing, _) ->
-                      do let items = [ makeItem b (m:moves) direction goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                         put (foldr PQ.insert newQueue items, Map.insert board item cache)
-                         trace (printBoard board) $ solveBoard'
-         Nothing -> return Nothing
-    where
+      insert item@(Item b m d g p) (openItems, closedItems)
+             | p > 20 = (openItems, closedItems)
+             | otherwise =
+          case (getClosedItem b closedItems, getOpenItem b d openItems) of
+            (Nothing, Nothing) -> (addOpenItem item openItems, closedItems)
+            (Just closedItem@(Item _ _ cd _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
+            (_, Just openItem@(Item _ _ od _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
+            (_, _) -> (openItems, closedItems)
       reverseMove L = R
       reverseMove R = L
       reverseMove U = D
