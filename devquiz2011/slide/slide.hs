@@ -9,7 +9,6 @@ import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArra
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
 import Data.Hashable (Hashable(..))
---import Data.Int (Int8#)
 import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
@@ -180,89 +179,7 @@ solveBoard' n =
       reverseMove R = L
       reverseMove U = D
       reverseMove D = U
-{-
-solveBoardD :: Board -> Maybe Moves
-solveBoardD board@(Board panel _)
-    | r <= 4 && c <= 4 = solveBoard board
-    | r >= c = let (m, b) = solveFirstRow board
-               in case solveBoardD b of
-                    Just m2 -> Just $ m ++ m2
-                    Nothing -> solveBoard board
-    | otherwise = let (m, b) = solveFirstColumn board
-                  in case solveBoardD b of
-                       Just m2 -> Just $ m ++ m2
-                       Nothing -> solveBoard board
-    where
-      (r, c) = let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
-               in (maxRow - minRow + 1, maxColumn - minColumn + 1)
 
-data ItemFR = ItemFR Board Moves Board Int
-
-makeItemFR :: Board -> Moves -> Board -> ItemFR
-makeItemFR b m g = ItemFR b m g (length m + distanceFR b g)
-
-priorityFR :: ItemFR -> Int
-priorityFR (ItemFR _ _ _ p) = p
-
-distanceFR :: Board -> Board -> Int
-distanceFR (Board panel _) (Board goalPanel _) =
-    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
-        indices = zip (repeat minRow) [minColumn .. maxColumn]
-        goalPanels = [ (p, ix) | ix <- indices, let p = panel ! ix, isPanel p ]
-        panels = sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel, p `elem` map fst goalPanels ]
-    in sum $ zipWith dist (map snd panels) (map snd goalPanels)
-    where
-      isPanel (Panel _) = True
-      isPanel _         = False
-      dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
-
-instance Eq ItemFR where
-    i1 == i2 = priorityFR i1 == priorityFR i2
-
-instance Ord ItemFR where
-    compare i1 i2 = compare (priorityFR i1) (priorityFR i2)
-
-solveFirstRow :: Board -> (Moves, Board)
-solveFirstRow board = solveFirstRow2 board (getGoalBoard board)
-
-solveFirstRow2 :: Board -> Board -> (Moves, Board)
-solveFirstRow2 board goal = let ((moves, b), (_, cache)) = runState solveFirstRow' (PQ.fromList [makeItemFR board [] goal], Map.empty)
-                            in trace (show $ Map.size cache) $ (reverse moves, b)
-
-solveFirstRow' :: MonadState (MinQueue ItemFR, Map Board ItemFR) m => m (Moves, Board)
-solveFirstRow' =
-    do (queue, cache) <- get
-       let (item@(ItemFR board moves goal _), newQueue) = PQ.deleteFindMin queue -- Assume non-empty queue
-       case Map.lookup board cache of
-         _ | isFirstRowGoal board goal -> return (moves, removeFirstRow board)
-         Just (ItemFR _ m _ _) -> do put (newQueue, cache)
-                                     solveFirstRow'
-         Nothing ->
-               do let items = [ makeItemFR b (m:moves) goal | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D]]
-                  put (foldr PQ.insert newQueue items, Map.insert board item cache)
-                  trace (printBoard board) $ solveFirstRow'
-
-isFirstRowGoal :: Board -> Board -> Bool
-isFirstRowGoal (Board panel _) (Board goalPanel _) =
-    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
-        indices = zip (repeat minRow) [minColumn .. maxColumn]
-    in map (panel !) indices == map (goalPanel !) indices
-
-removeFirstRow :: Board -> Board
-removeFirstRow (Board panel (emptyRow, emptyColumn)) =
-    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
-    in Board (listArray ((minRow, minColumn), (maxRow - 1, maxColumn)) $ drop (maxColumn - minColumn + 1) $ elems panel) (emptyRow - 1, emptyColumn)
-
-solveFirstColumn :: Board -> (Moves, Board)
-solveFirstColumn board = let (moves, b) = solveFirstRow2 (transposeBoard board) (transposeBoard $ getGoalBoard board)
-                         in (map transposeMove moves, transposeBoard b)
-
-distance :: Board -> Board -> Int
-distance b1 b2 = sum $ zipWith dist (indices b1) (indices b2)
-    where
-      indices (Board panel _ _) = map snd $ sortBy (comparing fst) [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
-      dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
--}
 newtype DistanceMap = DistanceMap (Map Panel (Array (Int, Int) Int)) deriving Show
 
 makeDistanceMap :: Board -> DistanceMap
