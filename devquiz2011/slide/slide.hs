@@ -18,10 +18,7 @@ import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
 import qualified Debug.Trace
 
-data Input = Input {
-    hands  :: Hands,
-    boards :: [Board]
-} deriving (Show, Eq)
+data Input = Input Hands [Board] deriving (Show, Eq)
 
 data Hands = Hands {
     left  :: Int,
@@ -47,8 +44,11 @@ instance (Hashable ix, Ix ix, Hashable a, IArray UArray a) => Hashable (UArray i
 
 type Panel = Int
 
-wall = 100
+wall  = 100
 empty = 101
+
+isPanel :: Panel -> Bool
+isPanel p = p < wall
 
 data Move = L
           | R
@@ -73,15 +73,10 @@ data Direction = FORWARD
   deriving (Show, Eq, Ord)
 
 instance Hashable Direction where
-    hash FORWARD  = 1
-    hash BACKWARD = 2
+    hash FORWARD  = 7
+    hash BACKWARD = 11
 
-data Item = Item Board Moves Direction Board DistanceMap Int
-  deriving Show
-
-makeItem :: Board -> Moves -> Direction -> Board -> DistanceMap -> Int -> Item
-makeItem board moves direction goalBoard distanceMap priority =
-    Item board moves direction goalBoard distanceMap priority
+data Item = Item Board Moves Direction Board DistanceMap Int deriving Show
 
 priority :: Item -> Int
 priority (Item _ _ _ _ _ p) = p
@@ -131,8 +126,8 @@ solveBoard :: Board -> Maybe Moves
 solveBoard board = let goalBoard = getGoalBoard board
                        distanceMap = makeDistanceMap board
                        goalDistanceMap = makeDistanceMap goalBoard
-                       initialItems = [makeItem board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap board),
-                                       makeItem goalBoard [] BACKWARD board distanceMap (distance distanceMap goalBoard)]
+                       initialItems = [Item board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap board),
+                                       Item goalBoard [] BACKWARD board distanceMap (distance distanceMap goalBoard)]
                        (moves, (_, closedItems)) = runState (solveBoard' 0) (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
                    in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show (getClosedItemsSize closedItems)) $ fmap reverse moves
 
@@ -151,7 +146,7 @@ solveBoard' n =
                  case (getClosedItem board closedItems, direction) of
                    (Just (Item _ m BACKWARD _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
                    (Just (Item _ m FORWARD _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
-                   _ -> do let nextItems = [ makeItem b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
+                   _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
                            put $ foldr insert (nextOpenItems, nextClosedItems) nextItems
                            solveBoard' $ n + 1
          Nothing -> return Nothing
@@ -172,25 +167,25 @@ solveBoard' n =
 newtype DistanceMap = DistanceMap (Map Panel (UArray (Int, Int) Int)) deriving Show
 
 makeDistanceMap :: Board -> DistanceMap
-makeDistanceMap (Board panel _ _) =
-    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
+makeDistanceMap (Board panels _ _) =
+    let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panels
         indices = [ (r, c) | r <- [minRow .. maxRow], c <- [minColumn .. maxColumn] ]
-        panels = [ (p, ix) | (ix, p) <- assocs panel, p /= wall, p /= empty ]
-    in DistanceMap $ Map.fromList $ map (\(p, ix) -> (p, listArray (bounds panel) $ map (\i -> dist i ix) indices)) panels
+        normalPanels = map swap $ filter (isPanel . snd) $ assocs panels
+    in DistanceMap $ Map.fromList $ map (\(p, ix) -> (p, listArray (bounds panels) $ map (\i -> dist i ix) indices)) normalPanels
     where
       dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
 distance :: DistanceMap -> Board -> Int
-distance distanceMap (Board panel _ _) = 
-    sum $ map (uncurry $ panelDistance distanceMap) [ (ix, p) | (ix, p) <- assocs panel, p /= wall, p /= empty ]
+distance distanceMap (Board panels _ _) = 
+    sum $ map (uncurry $ panelDistance distanceMap) $ filter (isPanel . snd) $ assocs panels
 
 panelDistance :: DistanceMap -> (Int, Int) -> Panel -> Int
 panelDistance  (DistanceMap m) ix panel = (fromJust $ Map.lookup panel m) ! ix
-
+{-
 isGoalBoard :: Board -> Bool
-isGoalBoard (Board panel _ _) =
-    all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= wall) $ elems panel
-
+isGoalBoard (Board panels _ _) =
+    all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= wall) $ elems panels
+-}
 getGoalBoard :: Board -> Board
 getGoalBoard (Board panels _ _) =
     let goalPanels = [ p | p <- sort $ elems panels, p /= wall ]
@@ -201,7 +196,7 @@ getGoalBoard (Board panels _ _) =
                                       | otherwise = gp:fill panels goalPanels
 
 transposeBoard :: Board -> Board
-transposeBoard (Board panel (emptyRow, emptyColumn) _) = makeBoard (transpose panel) (emptyColumn, emptyRow)
+transposeBoard (Board panels (emptyRow, emptyColumn) _) = makeBoard (transpose panels) (emptyColumn, emptyRow)
 
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx _) m
@@ -270,10 +265,10 @@ printBoard (Board panels _ _) =
     in show (maxRow - minRow + 1) ++ "," ++ show (maxColumn - minColumn + 1) ++ "," ++ map printPanel (elems panels)
 
 printPanel :: Panel -> Char
-printPanel p | 1 <= p && p <= 9 = toEnum $ fromEnum '1' + p
-             | 10 <= p && p <= 36 = toEnum $ fromEnum 'A' + (p - 10)
-             | p == wall = '='
-             | p == empty = '0'
+printPanel p |  1 <= p && p <= 9  = toEnum $ fromEnum '1' + (p - 1)
+             | 10 <= p && p <= 35 = toEnum $ fromEnum 'A' + (p - 10)
+             | p == wall          = '='
+             | p == empty         = '0'
 
 
 trace :: String -> a -> a
