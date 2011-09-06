@@ -2,12 +2,15 @@
 
 module Main (main) where
 
-import Control.Monad.State (MonadState, get, put, runState)
+import Control.Monad (foldM, liftM)
+import Control.Monad.ST.Strict (ST, runST)
 import Data.Array.Unboxed (UArray)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
 import Data.Hashable (Hashable(..))
+import qualified Data.HashTable.Class as HashTable
+import Data.HashTable.ST.Cuckoo (HashTable)
 import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
@@ -16,6 +19,7 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
+import Data.STRef (STRef, newSTRef, readSTRef, writeSTRef)
 import qualified Debug.Trace
 
 data Input = Input Hands [Board] deriving (Show, Eq)
@@ -87,40 +91,50 @@ instance Eq Item where
 instance Ord Item where
     compare i1 i2 = compare (priority i1) (priority i2)
 
-data OpenItems = OpenItems (MinQueue Item) (HashMap (Board, Direction) Item)
+data OpenItems s = OpenItems (MinQueue Item) (HashTable s (Board, Direction) Item) deriving Show
 
-emptyOpenItems :: OpenItems
-emptyOpenItems = OpenItems PQ.empty HashMap.empty
+emptyOpenItems :: ST s (OpenItems s)
+emptyOpenItems = do t <- HashTable.newSized 1000
+                    return $ OpenItems PQ.empty t
 
-getNextOpenItem :: OpenItems -> ClosedItems -> Maybe (Item, OpenItems, ClosedItems)
-getNextOpenItem (OpenItems q t) (ClosedItems m) =
+getNextOpenItem :: OpenItems s -> ST s (Maybe (Item, OpenItems s))
+getNextOpenItem (OpenItems q t) =
     case PQ.getMin q of
-      Just item@(Item b _ d _ _ _) | isJust $ HashMap.lookup (b, d) t -> Just $ (item, OpenItems (PQ.deleteMin q) (HashMap.delete (b, d) t), ClosedItems (HashMap.insert b item m))
-                                   | otherwise                        -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
-      Nothing -> Nothing
+      Just item@(Item b _ d _ _ _) ->
+          do tableItem <- HashTable.lookup t (b, d)
+             case tableItem of
+               Just _ -> do HashTable.delete t (b, d)
+                            return $ Just $ (item, OpenItems (PQ.deleteMin q) t)
+               Nothing -> getNextOpenItem (OpenItems (PQ.deleteMin q) t)
+      Nothing -> return Nothing
 
-getOpenItem :: Board -> Direction -> OpenItems -> Maybe Item
-getOpenItem b d (OpenItems _ t) = HashMap.lookup (b, d) t
+getOpenItem :: Board -> Direction -> OpenItems s -> ST s (Maybe Item)
+getOpenItem b d (OpenItems _ t) = HashTable.lookup t (b, d)
 
-addOpenItem :: Item -> OpenItems -> OpenItems
-addOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (HashMap.insert (b, d) item t)
+addOpenItem :: Item -> OpenItems s -> ST s (OpenItems s)
+addOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = do HashTable.insert t (b, d) item
+                                                         return $ OpenItems (PQ.insert item q) t
 
-removeOpenItem :: Item -> OpenItems -> OpenItems
-removeOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems q (HashMap.delete (b, d) t)
+removeOpenItem :: Item -> OpenItems s -> ST s (OpenItems s)
+removeOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = do HashTable.delete t (b, d)
+                                                            return $ OpenItems q t
 
-newtype ClosedItems = ClosedItems (HashMap Board Item) deriving Show
+newtype ClosedItems s = ClosedItems (HashTable s Board Item) deriving Show
 
-emptyClosedItems :: ClosedItems
-emptyClosedItems = ClosedItems HashMap.empty
+emptyClosedItems :: ST s (ClosedItems s)
+emptyClosedItems = liftM ClosedItems $ HashTable.newSized 1000
 
-getClosedItem :: Board -> ClosedItems -> Maybe Item
-getClosedItem b (ClosedItems m) = HashMap.lookup b m
+getClosedItem :: Board -> ClosedItems s -> ST s (Maybe Item)
+getClosedItem b (ClosedItems m) = HashTable.lookup m b
 
-removeClosedItem :: Item -> ClosedItems -> ClosedItems
-removeClosedItem (Item b _ _ _ _ _) (ClosedItems m) = ClosedItems $ HashMap.delete b m
+addClosedItem :: Item -> ClosedItems s -> ST s ()
+addClosedItem item@(Item b _ _ _ _ _) (ClosedItems m) = HashTable.insert m b item
 
-getClosedItemsSize :: ClosedItems -> Int
-getClosedItemsSize (ClosedItems m) = HashMap.size m
+removeClosedItem :: Item -> ClosedItems s -> ST s ()
+removeClosedItem (Item b _ _ _ _ _) (ClosedItems m) = HashTable.delete m b
+
+getClosedItemsSize :: ClosedItems s -> ST s Int
+getClosedItemsSize (ClosedItems m) = liftM length $ HashTable.toList m
 
 solveBoard :: Board -> Maybe Moves
 solveBoard board = let goalBoard = getGoalBoard board
@@ -128,37 +142,53 @@ solveBoard board = let goalBoard = getGoalBoard board
                        goalDistanceMap = makeDistanceMap goalBoard
                        initialItems = [Item board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap board),
                                        Item goalBoard [] BACKWARD board distanceMap (distance distanceMap goalBoard)]
-                       (moves, (_, closedItems)) = runState (solveBoard' 0) (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
-                   in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show (getClosedItemsSize closedItems)) $ fmap reverse moves
+                       (moves, closedItemsLength) = runST $ do initialOpenItems <- emptyOpenItems
+                                                               initialOpenItems <- foldM (flip addOpenItem) initialOpenItems initialItems
+                                                               initialClosedItems <- emptyClosedItems
+                                                               state <- newSTRef (initialOpenItems, initialClosedItems)
+                                                               moves <- solveBoard' state 0
+                                                               (o, c) <- readSTRef state
+                                                               cl <- getClosedItemsSize c
+                                                               return (moves, cl)
+                   in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show closedItemsLength) $ fmap reverse moves
 
-solveBoard' :: MonadState (OpenItems, ClosedItems) m => Int -> m (Maybe Moves)
-solveBoard' n =
-    do (openItems, closedItems) <- get
-       case getNextOpenItem openItems closedItems of
+solveBoard' :: STRef s (OpenItems s, ClosedItems s) -> Int -> ST s (Maybe Moves)
+solveBoard' state n =
+    do (openItems, closedItems) <- readSTRef state
+       nextOpenItem <- getNextOpenItem openItems
+       case nextOpenItem of
          _ | n > 2000 -> return Nothing
 --         _ | getClosedItemsSize closedItems > 2000 -> return Nothing
-         Just (item@(Item board moves direction goal distanceMap priority), nextOpenItems, nextClosedItems) ->
+         Just (item@(Item board moves direction goal distanceMap priority), nextOpenItems) ->
              if direction == FORWARD && board == goal then
                  return $ Just moves
              else if direction == BACKWARD && board == goal then
                  return $ Just $ reverse (map reverseMove moves)
              else
-                 case (getClosedItem board closedItems, direction) of
-                   (Just (Item _ m BACKWARD _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
-                   (Just (Item _ m FORWARD _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
-                   _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
-                           put $ foldr insert (nextOpenItems, nextClosedItems) nextItems
-                           solveBoard' $ n + 1
+                 do closedItem <- getClosedItem board closedItems
+                    addClosedItem item closedItems
+                    case (closedItem, direction) of
+                      (Just (Item _ m BACKWARD _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
+                      (Just (Item _ m FORWARD _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
+                      _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
+                              newState <- foldM insert (nextOpenItems, closedItems) nextItems
+                              writeSTRef state $ newState
+                              solveBoard' state $ n + 1
          Nothing -> return Nothing
     where
-      insert item@(Item b m d g dm p) (openItems, closedItems)
-             | p > 60 = (openItems, closedItems)
-             | otherwise =
-          case (getClosedItem b closedItems, getOpenItem b d openItems) of
-            (Nothing, Nothing) -> (addOpenItem item openItems, closedItems)
-            (Just closedItem@(Item _ _ cd _ _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
-            (_, Just openItem@(Item _ _ od _ _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
-            (_, _) -> (openItems, closedItems)
+      insert (openItems, closedItems) item@(Item b m d g dm p)
+             | p > 60 = return (openItems, closedItems)
+             | otherwise = do closedItem <- getClosedItem b closedItems
+                              openItem <- getOpenItem b d openItems
+                              case (closedItem, openItem) of
+                                (Nothing, Nothing) -> do newOpenItems <- addOpenItem item openItems
+                                                         return (newOpenItems, closedItems)
+                                (Just closedItem@(Item _ _ cd _ _ cp), _) | p < cp -> do removeClosedItem closedItem closedItems
+                                                                                         newOpenItems <- addOpenItem item openItems
+                                                                                         return (newOpenItems, closedItems)
+                                (_, Just openItem@(Item _ _ od _ _ op)) | p < op -> do newOpenItems <- removeOpenItem openItem openItems >>= addOpenItem item
+                                                                                       return (newOpenItems, closedItems)
+                                (_, _) -> return (openItems, closedItems)
       reverseMove L = R
       reverseMove R = L
       reverseMove U = D
