@@ -3,7 +3,6 @@
 module Main (main) where
 
 import Control.Monad.State (MonadState, get, put, runState)
-import Data.Array (Array)
 import Data.Array.Unboxed (UArray)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.HashMap.Lazy (HashMap)
@@ -170,7 +169,7 @@ solveBoard' n =
       reverseMove U = D
       reverseMove D = U
 
-newtype DistanceMap = DistanceMap (Map Panel (Array (Int, Int) Int)) deriving Show
+newtype DistanceMap = DistanceMap (Map Panel (UArray (Int, Int) Int)) deriving Show
 
 makeDistanceMap :: Board -> DistanceMap
 makeDistanceMap (Board panel _ _) =
