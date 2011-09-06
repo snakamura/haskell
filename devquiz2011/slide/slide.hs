@@ -2,7 +2,7 @@
 
 module Main (main) where
 
-import Control.Monad.State (MonadState, get, put, runState)
+import Control.Monad.ST.Strict (ST, runST)
 import Data.Array.Unboxed (UArray)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.HashMap.Lazy (HashMap)
@@ -16,6 +16,7 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
+import Data.STRef (STRef, newSTRef, readSTRef, writeSTRef)
 import qualified Debug.Trace
 
 data Input = Input Hands [Board] deriving (Show, Eq)
@@ -128,12 +129,15 @@ solveBoard board = let goalBoard = getGoalBoard board
                        goalDistanceMap = makeDistanceMap goalBoard
                        initialItems = [Item board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap board),
                                        Item goalBoard [] BACKWARD board distanceMap (distance distanceMap goalBoard)]
-                       (moves, (_, closedItems)) = runState (solveBoard' 0) (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
+                       (moves, (_, closedItems)) = runST $ do state <- newSTRef (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
+                                                              moves <- solveBoard' state 0
+                                                              s <- readSTRef state
+                                                              return (moves, s)
                    in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show (getClosedItemsSize closedItems)) $ fmap reverse moves
 
-solveBoard' :: MonadState (OpenItems, ClosedItems) m => Int -> m (Maybe Moves)
-solveBoard' n =
-    do (openItems, closedItems) <- get
+solveBoard' :: STRef s (OpenItems, ClosedItems) -> Int -> ST s (Maybe Moves)
+solveBoard' state n =
+    do (openItems, closedItems) <- readSTRef state
        case getNextOpenItem openItems closedItems of
          _ | n > 2000 -> return Nothing
 --         _ | getClosedItemsSize closedItems > 2000 -> return Nothing
@@ -147,8 +151,8 @@ solveBoard' n =
                    (Just (Item _ m BACKWARD _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
                    (Just (Item _ m FORWARD _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
                    _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
-                           put $ foldr insert (nextOpenItems, nextClosedItems) nextItems
-                           solveBoard' $ n + 1
+                           writeSTRef state $ foldr insert (nextOpenItems, nextClosedItems) nextItems
+                           solveBoard' state $ n + 1
          Nothing -> return Nothing
     where
       insert item@(Item b m d g dm p) (openItems, closedItems)
