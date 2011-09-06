@@ -4,10 +4,12 @@ module Main (main) where
 
 import Control.Monad.State (MonadState, get, put, runState)
 import Data.Array (Array)
+import Data.Array.Unboxed (UArray)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
 import Data.Hashable (Hashable(..))
+--import Data.Int (Int8#)
 import Data.List (sort, sortBy, tails)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
@@ -31,7 +33,7 @@ data Hands = Hands {
 } deriving (Show, Eq)
 
 data Board = Board {
-    panels  :: Array (Int, Int) Panel,
+    panels  :: UArray (Int, Int) Panel,
     emptyIx :: (Int, Int),
     h       :: Int
 } deriving (Show, Eq, Ord)
@@ -39,21 +41,16 @@ data Board = Board {
 instance Hashable Board where
     hash (Board _ _ h) = h
 
-makeBoard :: Array (Int, Int) Panel -> (Int, Int) -> Board
+makeBoard :: UArray (Int, Int) Panel -> (Int, Int) -> Board
 makeBoard panels emptyIx = Board panels emptyIx (hash panels)
 
-instance (Hashable ix, Ix ix, Hashable a) => Hashable (Array ix a) where
+instance (Hashable ix, Ix ix, Hashable a, IArray UArray a) => Hashable (UArray ix a) where
     hash = hash . assocs
 
-data Panel = Panel Char
-           | Wall
-           | Empty
-  deriving (Show, Eq, Ord)
+type Panel = Int
 
-instance Hashable Panel where
-    hash (Panel c) = fromEnum c
-    hash Wall      = 143
-    hash Empty     = 197
+wall = 100
+empty = 101
 
 data Move = L
           | R
@@ -155,7 +152,7 @@ solveBoard' :: MonadState (OpenItems, ClosedItems) m => Int -> m (Maybe Moves)
 solveBoard' n =
     do (openItems, closedItems) <- get
        case getNextOpenItem openItems closedItems of
-         _ | n > 300000 -> return Nothing
+         _ | n > 2000 -> return Nothing
 --         _ | getClosedItemsSize closedItems > 2000 -> return Nothing
          Just (item@(Item board moves direction goal distanceMap priority), nextOpenItems, nextClosedItems) ->
              if direction == FORWARD && board == goal then
@@ -272,44 +269,44 @@ makeDistanceMap :: Board -> DistanceMap
 makeDistanceMap (Board panel _ _) =
     let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
         indices = [ (r, c) | r <- [minRow .. maxRow], c <- [minColumn .. maxColumn] ]
-        panels = [ (p, ix) | (ix, p@(Panel _)) <- assocs panel ]
+        panels = [ (p, ix) | (ix, p) <- assocs panel, p /= wall, p /= empty ]
     in DistanceMap $ Map.fromList $ map (\(p, ix) -> (p, listArray (bounds panel) $ map (\i -> dist i ix) indices)) panels
     where
       dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
 distance :: DistanceMap -> Board -> Int
 distance distanceMap (Board panel _ _) = 
-    sum $ map (uncurry $ panelDistance distanceMap) [ (ix, p) | (ix, p@(Panel _)) <- assocs panel ]
+    sum $ map (uncurry $ panelDistance distanceMap) [ (ix, p) | (ix, p) <- assocs panel, p /= wall, p /= empty ]
 
 panelDistance :: DistanceMap -> (Int, Int) -> Panel -> Int
-panelDistance  (DistanceMap m) ix panel@(Panel _) = (fromJust $ Map.lookup panel m) ! ix
+panelDistance  (DistanceMap m) ix panel = (fromJust $ Map.lookup panel m) ! ix
 
 isGoalBoard :: Board -> Bool
 isGoalBoard (Board panel _ _) =
-    all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= Wall) $ elems panel
+    all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= wall) $ elems panel
 
 getGoalBoard :: Board -> Board
 getGoalBoard (Board panels _ _) =
-    let goalPanels = [ p | p <- sort $ elems panels, p /= Wall ]
+    let goalPanels = [ p | p <- sort $ elems panels, p /= wall ]
     in makeBoard (listArray (bounds panels) (fill (elems panels) goalPanels)) (snd $ bounds panels)
     where
-      fill []            _               = []
-      fill (Wall:panels) goalPanels      = Wall:fill panels goalPanels
-      fill (_:panels)    (gp:goalPanels) = gp:fill panels goalPanels
+      fill []         _                           = []
+      fill (p:panels) (gp:goalPanels) | p == wall = wall:fill panels (gp:goalPanels)
+                                      | otherwise = gp:fill panels goalPanels
 
 transposeBoard :: Board -> Board
 transposeBoard (Board panel (emptyRow, emptyColumn) _) = makeBoard (transpose panel) (emptyColumn, emptyRow)
 
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx _) m
-    | isValidMove = Just $ makeBoard (panels // [(nextEmptyIx, Empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
+    | isValidMove = Just $ makeBoard (panels // [(nextEmptyIx, empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
     | otherwise   = Nothing
     where
       nextEmptyIx@(nextRow, nextColumn) = moveIx emptyIx m
       ((minRow, minColumn), (maxRow, maxColumn)) = bounds panels
       isValidMove = minRow <= nextRow && nextRow <= maxRow &&
                     minColumn <= nextColumn && nextColumn <= maxColumn &&
-                    panels ! (nextRow, nextColumn) /= Wall
+                    panels ! (nextRow, nextColumn) /= wall
 
 moveIx :: (Int, Int) -> Move -> (Int, Int)
 moveIx (r, c) L = (r, c - 1)
@@ -343,13 +340,14 @@ readInput s = let inputs = lines s
 parseBoard :: String -> Board
 parseBoard l = let [w, h, p] = sepBy "," l
                    panels = listArray ((0, 0), (read h - 1, read w - 1)) $ map parsePanel p
-                   Just emptyIx = findIx Empty panels
+                   Just emptyIx = findIx empty panels
                in makeBoard panels emptyIx
 
 parsePanel :: Char -> Panel
-parsePanel '=' = Wall
-parsePanel '0' = Empty
-parsePanel c   = Panel c
+parsePanel '=' = wall
+parsePanel '0' = empty
+parsePanel c | '1' <= c && c <= '9' = fromEnum c - fromEnum '0'
+             | 'A' <= c && c <= 'Z' = fromEnum c - fromEnum 'A' + 10
 
 writeOutput :: [Moves] -> String
 writeOutput = unlines . map (map printMove)
@@ -366,9 +364,10 @@ printBoard (Board panels _ _) =
     in show (maxRow - minRow + 1) ++ "," ++ show (maxColumn - minColumn + 1) ++ "," ++ map printPanel (elems panels)
 
 printPanel :: Panel -> Char
-printPanel (Panel c) = c
-printPanel Wall      = '='
-printPanel Empty     = '0'
+printPanel p | 1 <= p && p <= 9 = toEnum $ fromEnum '1' + p
+             | 10 <= p && p <= 36 = toEnum $ fromEnum 'A' + (p - 10)
+             | p == wall = '='
+             | p == empty = '0'
 
 
 trace :: String -> a -> a
