@@ -68,16 +68,6 @@ main = interact (writeOutput . s . readInput)
 
 solve :: Board -> Moves
 solve board = fromMaybe [] $ solveBoard board
-{-
-    where
-      s board@(Board panel _)
-          | r <= 3 && c <= 3 = solveBoard board
-          | c * r <= 12 = solveBoardD board
-          | otherwise        = Nothing
-          where
-            (r, c) = let ((minRow, minColumn), (maxRow, maxColumn)) = bounds panel
-                     in (maxRow - minRow + 1, maxColumn - minColumn + 1)
--}
 
 data Direction = FORWARD
                | BACKWARD
