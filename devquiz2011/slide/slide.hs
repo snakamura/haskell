@@ -35,7 +35,7 @@ data Board = Board {
     panels  :: UArray (Int, Int) Panel,
     emptyIx :: (Int, Int),
     h       :: Int
-} deriving (Show, Eq, Ord)
+} deriving (Show, Eq)
 
 instance Hashable Board where
     hash (Board _ _ h) = h
@@ -83,7 +83,7 @@ solve maxIteration maxPriority board = fromMaybe [] $ solveBoard maxIteration ma
 
 data Direction = FORWARD
                | BACKWARD
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 instance Hashable Direction where
     hash FORWARD  = 7
