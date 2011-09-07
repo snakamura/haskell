@@ -2,8 +2,10 @@
 
 module Main (main) where
 
+import Control.DeepSeq (NFData)
 import Control.Monad (liftM)
 import Control.Monad.State (MonadState, get, put, runState)
+import Control.Parallel.Strategies (parMap, rdeepseq)
 import Data.Array.Unboxed (UArray)
 import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArray)
 import Data.HashMap.Lazy (HashMap)
@@ -58,6 +60,8 @@ data Move = L
           | D
   deriving (Show, Eq)
 
+instance NFData Move
+
 type Moves = [Move]
 
 
@@ -70,7 +74,7 @@ main = do i:p:args <- getArgs
           interact (writeOutput . solveAllBoards (read i) (read p) results . readInput)
     where
       solveAllBoards maxIteration maxPriority results (Input hands boards) =
-          map (solveSingleBoard maxIteration maxPriority) $ zip3 boards results [1..]
+          parMap rdeepseq (solveSingleBoard maxIteration maxPriority) $ zip3 boards results [1..]
       solveSingleBoard maxIteration maxPriority (b, [],    n) = trace (show n) $ solve maxIteration maxPriority b
       solveSingleBoard _            _           (_, moves, n) = trace (show n) $ moves
 
