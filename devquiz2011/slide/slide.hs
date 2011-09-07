@@ -11,12 +11,11 @@ import Data.Array.IArray (IArray, Ix, (!), (//), assocs, bounds, elems, listArra
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
 import Data.Hashable (Hashable(..))
-import Data.List (sort, sortBy, tails)
+import Data.List (sort)
 import Data.List.Split (sepBy)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, fromMaybe, isJust)
-import Data.Ord (comparing)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
 import qualified Debug.Trace
@@ -48,6 +47,7 @@ instance (Hashable ix, Ix ix, Hashable a, IArray UArray a) => Hashable (UArray i
 
 type Panel = Int
 
+wall, empty :: Panel
 wall  = 100
 empty = 101
 
@@ -73,7 +73,7 @@ main = do i:p:args <- getArgs
                          liftM (map (map parseMove) . lines) $ readFile $ head args
           interact (writeOutput . solveAllBoards (read i) (read p) results . readInput)
     where
-      solveAllBoards maxIteration maxPriority results (Input hands boards) =
+      solveAllBoards maxIteration maxPriority results (Input _ boards) =
           parMap rdeepseq (solveSingleBoard maxIteration maxPriority) $ zip3 boards results [1..]
       solveSingleBoard maxIteration maxPriority (b, [],    n) = trace (show n) $ solve maxIteration maxPriority b
       solveSingleBoard _            _           (_, moves, n) = trace (show n) $ moves
@@ -119,7 +119,7 @@ addOpenItem :: Item -> OpenItems -> OpenItems
 addOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (HashMap.insert (b, d) item t)
 
 removeOpenItem :: Item -> OpenItems -> OpenItems
-removeOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems q (HashMap.delete (b, d) t)
+removeOpenItem (Item b _ d _ _ _) (OpenItems q t) = OpenItems q (HashMap.delete (b, d) t)
 
 newtype ClosedItems = ClosedItems (HashMap Board Item) deriving Show
 
@@ -150,7 +150,7 @@ solveBoard' maxIteration maxPriority n =
     do (openItems, closedItems) <- get
        case getNextOpenItem openItems closedItems of
          _ | n > maxIteration -> return Nothing
-         Just (item@(Item board moves direction goal distanceMap priority), nextOpenItems, nextClosedItems) ->
+         Just (Item board moves direction goal distanceMap priority, nextOpenItems, nextClosedItems) ->
              if direction == FORWARD && board == goal then
                  return $ Just moves
              else if direction == BACKWARD && board == goal then
@@ -164,13 +164,13 @@ solveBoard' maxIteration maxPriority n =
                            solveBoard' maxIteration maxPriority $ n + 1
          Nothing -> return Nothing
     where
-      insert item@(Item b m d g dm p) (openItems, closedItems)
+      insert item@(Item b _ d _ _ p) (openItems, closedItems)
              | p > maxPriority = (openItems, closedItems)
              | otherwise =
           case (getClosedItem b closedItems, getOpenItem b d openItems) of
             (Nothing, Nothing) -> (addOpenItem item openItems, closedItems)
-            (Just closedItem@(Item _ _ cd _ _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
-            (_, Just openItem@(Item _ _ od _ _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
+            (Just closedItem@(Item _ _ _ _ _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
+            (_, Just openItem@(Item _ _ _ _ _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
             (_, _) -> (openItems, closedItems)
       reverseMove L = R
       reverseMove R = L
@@ -208,9 +208,6 @@ getGoalBoard (Board panels _ _) =
       fill (p:panels) (gp:goalPanels) | p == wall = wall:fill panels (gp:goalPanels)
                                       | otherwise = gp:fill panels goalPanels
 
-transposeBoard :: Board -> Board
-transposeBoard (Board panels (emptyRow, emptyColumn) _) = makeBoard (transpose panels) (emptyColumn, emptyRow)
-
 move :: Board -> Move -> Maybe Board
 move (Board panels emptyIx _) m
     | isValidMove = Just $ makeBoard (panels // [(nextEmptyIx, empty), (emptyIx, panels ! nextEmptyIx)]) nextEmptyIx
@@ -228,19 +225,8 @@ moveIx (r, c) R = (r, c + 1)
 moveIx (r, c) U = (r - 1, c)
 moveIx (r, c) D = (r + 1, c)
 
-transposeMove :: Move -> Move
-transposeMove L = U
-transposeMove R = D
-transposeMove U = L
-transposeMove D = R
-
 findIx :: (IArray a e, Ix i, Eq e) => e -> a i e -> Maybe i
 findIx e a = lookup e $ map swap $ assocs a
-
-transpose :: (IArray a1 e, IArray a2 e, Ix ix, Ix iy) => a1 (ix, iy) e -> a2 (iy, ix) e
-transpose a = let ((minX, minY), (maxX, maxY)) = bounds a
-                  values = map snd $ sortBy (comparing fst) $ map (\((x, y), v) -> ((y, x), v)) $ assocs a
-              in listArray ((minY, minX), (maxY, maxX)) values
 
 swap :: (a, b) -> (b, a)
 swap (x, y) = (y, x)
