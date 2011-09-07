@@ -166,12 +166,11 @@ solveBoard' maxIteration maxPriority n =
     where
       insert item@(Item b _ d _ _ p) (openItems, closedItems)
              | p > maxPriority = (openItems, closedItems)
-             | otherwise =
-          case (getClosedItem b closedItems, getOpenItem b d openItems) of
-            (Nothing, Nothing) -> (addOpenItem item openItems, closedItems)
-            (Just closedItem@(Item _ _ _ _ _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
-            (_, Just openItem@(Item _ _ _ _ _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
-            (_, _) -> (openItems, closedItems)
+             | otherwise = case (getClosedItem b closedItems, getOpenItem b d openItems) of
+                             (Nothing, Nothing) -> (addOpenItem item openItems, closedItems)
+                             (Just closedItem@(Item _ _ _ _ _ cp), _) | p < cp -> (addOpenItem item openItems, removeClosedItem closedItem closedItems)
+                             (_, Just openItem@(Item _ _ _ _ _ op)) | p < op -> (addOpenItem item $ removeOpenItem openItem openItems, closedItems)
+                             (_, _) -> (openItems, closedItems)
       reverseMove L = R
       reverseMove R = L
       reverseMove U = D
@@ -194,11 +193,7 @@ distance distanceMap (Board panels _ _) =
 
 panelDistance :: DistanceMap -> (Int, Int) -> Panel -> Int
 panelDistance  (DistanceMap m) ix panel = (fromJust $ Map.lookup panel m) ! ix
-{-
-isGoalBoard :: Board -> Bool
-isGoalBoard (Board panels _ _) =
-    all (\[p1, p2] -> p1 < p2) $ map (take 2) $ takeWhile ((>= 2) . length) $ tails $ filter (/= wall) $ elems panels
--}
+
 getGoalBoard :: Board -> Board
 getGoalBoard (Board panels _ _) =
     let goalPanels = [ p | p <- sort $ elems panels, p /= wall ]
