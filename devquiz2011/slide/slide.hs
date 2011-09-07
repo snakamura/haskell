@@ -70,7 +70,7 @@ main = do i:p:args <- getArgs
           interact (writeOutput . solveAllBoards (read i) (read p) results . readInput)
     where
       solveAllBoards maxIteration maxPriority results (Input hands boards) =
-          map (solveSingleBoard maxIteration maxPriority) $ zip boards results [1..]
+          map (solveSingleBoard maxIteration maxPriority) $ zip3 boards results [1..]
       solveSingleBoard maxIteration maxPriority (b, [],    n) = trace (show n) $ solve maxIteration maxPriority b
       solveSingleBoard _            _           (_, moves, n) = trace (show n) $ moves
 
