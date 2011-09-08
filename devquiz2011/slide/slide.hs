@@ -103,23 +103,23 @@ instance Eq Item where
 instance Ord Item where
     compare i1 i2 = compare (priority i1) (priority i2)
 
-data OpenItems = OpenItems (MinQueue Item) (HashMap (Board, Direction) Item)
+data OpenItems = OpenItems OpenQueue (HashMap (Board, Direction) Item)
 
 emptyOpenItems :: OpenItems
-emptyOpenItems = OpenItems PQ.empty HashMap.empty
+emptyOpenItems = OpenItems emptyOpenQueue HashMap.empty
 
 getNextOpenItem :: OpenItems -> ClosedItems -> Maybe (Item, OpenItems, ClosedItems)
 getNextOpenItem (OpenItems q t) (ClosedItems m) =
-    case PQ.getMin q of
-      Just item@(Item b _ d _ _ _) | isJust $ HashMap.lookup (b, d) t -> Just $ (item, OpenItems (PQ.deleteMin q) (HashMap.delete (b, d) t), ClosedItems (HashMap.insert b item m))
-                                   | otherwise                        -> getNextOpenItem (OpenItems (PQ.deleteMin q) t) (ClosedItems m)
+    case getMinOpenItem q of
+      Just item@(Item b _ d _ _ _) | isJust $ HashMap.lookup (b, d) t -> Just $ (item, OpenItems (deleteMinOpenItem q) (HashMap.delete (b, d) t), ClosedItems (HashMap.insert b item m))
+                                   | otherwise                        -> getNextOpenItem (OpenItems (deleteMinOpenItem q) t) (ClosedItems m)
       Nothing -> Nothing
 
 getOpenItem :: Board -> Direction -> OpenItems -> Maybe Item
 getOpenItem b d (OpenItems _ t) = HashMap.lookup (b, d) t
 
 addOpenItem :: Item -> OpenItems -> OpenItems
-addOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems (PQ.insert item q) (HashMap.insert (b, d) item t)
+addOpenItem item@(Item b _ d _ _ _) (OpenItems q t) = OpenItems (insertOpenItem item q) (HashMap.insert (b, d) item t)
 
 removeOpenItem :: Item -> OpenItems -> OpenItems
 removeOpenItem (Item b _ d _ _ _) (OpenItems q t) = OpenItems q (HashMap.delete (b, d) t)
@@ -137,6 +137,24 @@ removeClosedItem (Item b _ _ _ _ _) (ClosedItems m) = ClosedItems $ HashMap.dele
 
 getClosedItemsSize :: ClosedItems -> Int
 getClosedItemsSize (ClosedItems m) = HashMap.size m
+
+data OpenQueue = OpenQueue ([Item], [Item])
+
+emptyOpenQueue :: OpenQueue
+emptyOpenQueue = OpenQueue ([], [])
+
+getMinOpenItem :: OpenQueue -> Maybe Item
+getMinOpenItem (OpenQueue ([],  _)) = Nothing
+getMinOpenItem (OpenQueue (x:_, _)) = Just x
+
+deleteMinOpenItem :: OpenQueue -> OpenQueue
+deleteMinOpenItem (OpenQueue ([x], y)) = OpenQueue (y, [])
+deleteMinOpenItem (OpenQueue (x:xs, y)) = OpenQueue (xs, y)
+
+insertOpenItem :: Item -> OpenQueue -> OpenQueue
+insertOpenItem item (OpenQueue ([],   ys))                               = OpenQueue ([item], ys)
+insertOpenItem item (OpenQueue (x:xs, ys)) | priority item == priority x = OpenQueue (item:x:xs, ys)
+                                           | otherwise                   = OpenQueue (x:xs, item:ys)
 
 solveBoard :: Int -> Int -> Board -> Maybe Moves
 solveBoard maxIteration maxPriority board =
