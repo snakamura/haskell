@@ -20,6 +20,7 @@ import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as PQ
 import qualified Debug.Trace
 import System.Environment (getArgs)
+import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 data Input = Input Hands [Board] deriving (Show, Eq)
 
@@ -71,6 +72,7 @@ main = do i:p:args <- getArgs
                          return $ repeat []
                      else
                          liftM (map (map parseMove) . lines) $ readFile $ head args
+          hSetBuffering stdout LineBuffering
           interact (writeOutput . solveAllBoards (read i) (read p) results . readInput)
     where
       solveAllBoards maxIteration maxPriority results (Input _ boards) =
