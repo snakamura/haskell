@@ -68,21 +68,20 @@ type Moves = [Move]
 
 
 main :: IO ()
-main = do i:p:args <- getArgs
+main = do i:p:df:args <- getArgs
           results <- if null args then
                          return $ repeat []
                      else
                          liftM (map (map parseMove) . lines) $ readFile $ head args
           hSetBuffering stdout LineBuffering
-          interact (writeOutput . solveAllBoards (read i) (read p) results . readInput)
-    where
-      solveAllBoards maxIteration maxPriority results (Input _ boards) =
-          parMap rdeepseq (solveSingleBoard maxIteration maxPriority) $ zip3 boards results [1..]
-      solveSingleBoard maxIteration maxPriority (b, [],    n) = trace (show n) $ solve maxIteration maxPriority b
-      solveSingleBoard _            _           (_, moves, n) = trace (show n) $ moves
+          interact (writeOutput . solveAllBoards (read i) (read p) (read df) results . readInput)
 
-solve :: Int -> Int -> Board -> Moves
-solve maxIteration maxPriority board = fromMaybe [] $ solveBoard maxIteration maxPriority board
+solveAllBoards :: Int -> Int -> Int -> [Moves] -> Input -> [Moves]
+solveAllBoards maxIteration maxPriority distanceFactor results (Input _ boards) =
+    parMap rdeepseq solveSingleBoard $ zip3 boards results [1..]
+    where
+      solveSingleBoard (b, [],    n) = trace (show n) $ fromMaybe [] $ solveBoard maxIteration maxPriority distanceFactor b
+      solveSingleBoard (_, moves, n) = trace (show n) $ moves
 
 data Direction = FORWARD
                | BACKWARD
@@ -138,18 +137,18 @@ removeClosedItem (Item b _ _ _ _ _) (ClosedItems m) = ClosedItems $ HashMap.dele
 getClosedItemsSize :: ClosedItems -> Int
 getClosedItemsSize (ClosedItems m) = HashMap.size m
 
-solveBoard :: Int -> Int -> Board -> Maybe Moves
-solveBoard maxIteration maxPriority board =
+solveBoard :: Int -> Int -> Int -> Board -> Maybe Moves
+solveBoard maxIteration maxPriority distanceFactor board =
     let goalBoard = getGoalBoard board
         distanceMap = makeDistanceMap board
         goalDistanceMap = makeDistanceMap goalBoard
-        initialItems = [Item board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap board),
-                        Item goalBoard [] BACKWARD board distanceMap (distance distanceMap goalBoard)]
-        (moves, (_, closedItems)) = runState (solveBoard' maxIteration maxPriority 0) (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
+        initialItems = [Item board [] FORWARD goalBoard goalDistanceMap (distance goalDistanceMap distanceFactor board),
+                        Item goalBoard [] BACKWARD board distanceMap (distance distanceMap distanceFactor goalBoard)]
+        (moves, (_, closedItems)) = runState (solveBoard' maxIteration maxPriority distanceFactor 0) (foldr addOpenItem emptyOpenItems initialItems, emptyClosedItems)
     in Debug.Trace.trace (show (fmap length moves) ++ ", " ++ show (getClosedItemsSize closedItems)) $ fmap reverse moves
 
-solveBoard' :: MonadState (OpenItems, ClosedItems) m => Int -> Int -> Int -> m (Maybe Moves)
-solveBoard' maxIteration maxPriority n =
+solveBoard' :: MonadState (OpenItems, ClosedItems) m => Int -> Int -> Int -> Int -> m (Maybe Moves)
+solveBoard' maxIteration maxPriority distanceFactor n =
     do (openItems, closedItems) <- get
        case getNextOpenItem openItems closedItems of
          _ | n > maxIteration -> return Nothing
@@ -162,9 +161,9 @@ solveBoard' maxIteration maxPriority n =
                  case (getClosedItem board closedItems, direction) of
                    (Just (Item _ m BACKWARD _ _ _), FORWARD) -> return $ Just $ reverse (map reverseMove m) ++ moves
                    (Just (Item _ m FORWARD _ _ _), BACKWARD) -> return $ Just $ reverse (map reverseMove moves) ++ m
-                   _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
+                   _ -> do let nextItems = [ Item b (m:moves) direction goal distanceMap (priority + 1 - panelDistance distanceMap distanceFactor (emptyIx b) (panels board ! emptyIx b) + panelDistance distanceMap distanceFactor (emptyIx board) (panels b ! emptyIx board)) | (m, Just b) <- map (\m -> (m, move board m)) [L, R, U, D] ]
                            put $ foldr insert (nextOpenItems, nextClosedItems) nextItems
-                           solveBoard' maxIteration maxPriority $ n + 1
+                           solveBoard' maxIteration maxPriority distanceFactor $ n + 1
          Nothing -> return Nothing
     where
       insert item@(Item b _ d _ _ p) (openItems, closedItems)
@@ -190,12 +189,12 @@ makeDistanceMap (Board panels _ _) =
     where
       dist (r1, c1) (r2, c2) = abs (r1 - r2) + abs (c1 - c2)
 
-distance :: DistanceMap -> Board -> Int
-distance distanceMap (Board panels _ _) = 
-    sum $ map (uncurry $ panelDistance distanceMap) $ filter (isPanel . snd) $ assocs panels
+distance :: DistanceMap -> Int -> Board -> Int
+distance distanceMap factor (Board panels _ _) = 
+    sum $ map (uncurry $ panelDistance distanceMap factor) $ filter (isPanel . snd) $ assocs panels
 
-panelDistance :: DistanceMap -> (Int, Int) -> Panel -> Int
-panelDistance  (DistanceMap m) ix panel = (fromJust $ Map.lookup panel m) ! ix
+panelDistance :: DistanceMap -> Int -> (Int, Int) -> Panel -> Int
+panelDistance  (DistanceMap m) factor ix panel = ((fromJust $ Map.lookup panel m) ! ix) * factor
 
 getGoalBoard :: Board -> Board
 getGoalBoard (Board panels _ _) =
