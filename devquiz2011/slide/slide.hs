@@ -41,10 +41,11 @@ instance Hashable Board where
     hash (Board _ _ h) = h
 
 makeBoard :: UArray (Int, Int) Panel -> (Int, Int) -> Board
-makeBoard panels emptyIx = Board panels emptyIx (hash panels)
-
-instance (Hashable ix, Ix ix, Hashable a, IArray UArray a) => Hashable (UArray ix a) where
-    hash = hash . assocs
+makeBoard panels emptyIx = Board panels emptyIx hashPanels
+    where
+      ((_, minColumn), (_, maxColumn)) = bounds panels
+      hashPanels = sum $ map (uncurry hashPanelWithIx) $ filter ((/= wall) . snd) $ assocs panels
+      hashPanelWithIx (r, c) panel = (r * (maxColumn - minColumn + 1) + c) * hashPanel panel
 
 type Panel = Int
 
@@ -251,6 +252,44 @@ parseMove 'L' = L
 parseMove 'R' = R
 parseMove 'U' = U
 parseMove 'D' = D
+
+hashPanel :: Panel -> Int
+hashPanel 1 = 101
+hashPanel 2 = 103
+hashPanel 3 = 107
+hashPanel 4 = 109
+hashPanel 5 = 113
+hashPanel 6 = 127
+hashPanel 7 = 131
+hashPanel 8 = 137
+hashPanel 9 = 139
+hashPanel 10 = 149
+hashPanel 11 = 151
+hashPanel 12 = 157
+hashPanel 13 = 163
+hashPanel 14 = 167
+hashPanel 15 = 173
+hashPanel 16 = 179
+hashPanel 17 = 181
+hashPanel 18 = 191
+hashPanel 19 = 193
+hashPanel 20 = 197
+hashPanel 21 = 199
+hashPanel 22 = 211
+hashPanel 23 = 223
+hashPanel 24 = 227
+hashPanel 25 = 229
+hashPanel 26 = 233
+hashPanel 27 = 239
+hashPanel 28 = 241
+hashPanel 29 = 251
+hashPanel 30 = 257
+hashPanel 31 = 263
+hashPanel 32 = 269
+hashPanel 33 = 271
+hashPanel 34 = 277
+hashPanel 35 = 281
+hashPanel 101 = 283
 
 writeOutput :: [Moves] -> String
 writeOutput = unlines . map (map printMove)
