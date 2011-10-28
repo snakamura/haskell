@@ -12,4 +12,4 @@ main = run 8000 hello
 
 
 hello :: Application
-hello req = return $ ResponseFile status200 [headerContentType "text/plain"] "file.hs" Nothing
+hello _ = return $ ResponseFile status200 [headerContentType "text/plain"] "file.hs" Nothing

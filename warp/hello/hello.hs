@@ -13,4 +13,4 @@ main = run 8000 hello
 
 
 hello :: Application
-hello req = return $ ResponseBuilder status200 [headerContentType "text/plain"] $ fromString "Hello, world!"
+hello _ = return $ ResponseBuilder status200 [headerContentType "text/plain"] $ fromString "Hello, world!"

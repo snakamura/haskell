@@ -17,9 +17,9 @@ main = run 8000 hello
 
 hello :: Application
 hello req = do
-  let queryText = queryToQueryText $ queryString req
+  let query = queryToQueryText $ queryString req
       headers = [headerContentType "text/plain"]
       body = fromString "Hello, " `mappend`
-             fromText (fromMaybe "(Unknown)" $ join $ lookup "name" queryText) `mappend`
+             fromText (fromMaybe "(Unknown)" $ join $ lookup "name" query) `mappend`
              fromChar '!'
   return $ ResponseBuilder status200 headers body
