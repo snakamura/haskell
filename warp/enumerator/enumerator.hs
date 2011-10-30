@@ -25,7 +25,7 @@ upper :: Application
 upper _ = do
     return $ ResponseEnumerator $ \f ->
         let handler (_ :: SomeException) = run_ $ enumList 1 [fromText "<h1>Internal error</h1>"] $$ f status500 [headerContentType "text/html"]
-        in flip catch handler $ bracket (openFile "enumerator.hsx" ReadMode) hClose $ \h -> do
+        in flip catch handler $ bracket (openFile "enumerator.hs" ReadMode) hClose $ \h -> do
             hSetEncoding h utf8
             let i = f status200 [headerContentType "text/plain"]
-            run_ $ ET.enumHandle h $$ EL.map T.toUpper =$ EL.map fromText =$ EL.isolate 10 =$ i
+            run_ $ ET.enumHandle h $$ EL.map T.toUpper =$ EL.map fromText =$ EL.isolate 10 =$ EL.concatMap (\t -> [t, fromText "\n"]) =$ i
