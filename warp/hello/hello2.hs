@@ -2,8 +2,9 @@
 
 module Main (main) where
 
+import Blaze.ByteString.Builder.Char.Utf8 (fromString)
 import Network.HTTP.Types (headerContentType, status200)
-import Network.Wai (Application, responseLBS)
+import Network.Wai (Application, Response(..))
 import Network.Wai.Handler.Warp (run)
 
 
@@ -12,4 +13,4 @@ main = run 8000 hello
 
 
 hello :: Application
-hello _ = return $ responseLBS status200 [headerContentType "text/plain"] "Hello, world!"
+hello _ = return $ ResponseBuilder status200 [headerContentType "text/plain"] $ fromString "Hello, world!"
