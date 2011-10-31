@@ -2,15 +2,14 @@
 
 module Main (main) where
 
-import Blaze.ByteString.Builder.Char.Utf8 (fromLazyText, fromText)
+import Blaze.ByteString.Builder.Char.Utf8 (fromText)
 import Control.Exception (bracket)
 import Control.Monad.IO.Class (liftIO)
-import Data.Enumerator (Iteratee, ($$), (=$), catchError, run_, tryIO)
+import Data.Enumerator (($$), (=$), catchError, run_, tryIO)
 import qualified Data.Enumerator.List as EL
 import qualified Data.Enumerator.Text as ET
 import Data.Monoid (mconcat)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Network.HTTP.Types (headerContentType, status200, status500)
 import Network.Wai (Application, Response(..), responseLBS)
 import Network.Wai.Handler.Warp (run)
@@ -27,5 +26,5 @@ upper :: Application
 upper _ = do
     t <- tryIO $ liftIO $ bracket (openFile "builder.hs" ReadMode) hClose $ \h -> do
            hSetEncoding h utf8
-           run_ $ ET.enumHandle h $$ EL.map T.toUpper =$ EL.map fromText =$ EL.take 10
+           run_ $ ET.enumHandle h $$ EL.map T.toUpper =$ EL.isolate 10 =$ EL.concatMap (:["\n"]) =$ EL.map fromText =$ EL.consume
     return $ ResponseBuilder status200 [headerContentType "text/plain"] $ mconcat t
