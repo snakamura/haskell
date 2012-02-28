@@ -11,12 +11,12 @@ data TestException = TestException deriving (Show, Typeable)
 
 instance Exception TestException
 
-
+{-
 instance MonadCatchIO m => MonadCatchIO (MaybeT m) where
     m `catch` f = mapMaybeT (\m' -> m' `CatchIO.catch` (\e -> runMaybeT $ f e)) m
     block = mapMaybeT CatchIO.block
     unblock = mapMaybeT CatchIO.unblock
-
+-}
 
 test :: MonadIO m => MaybeT m a -> m (Maybe a)
 test f = runMaybeT $ do liftIO $ print "Start"
