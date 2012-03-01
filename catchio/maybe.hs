@@ -33,7 +33,7 @@ testBracket f = runMaybeT $ CatchIO.bracket (liftIO $ print "Start")
 test1, test2, test3, test4, test5, test6 :: IO (Maybe Int)
 test1 = test $ return 1
 test2 = test empty
-test3 = test $ liftIO $ throwIO TestException
+test3 = test $ CatchIO.throw TestException
 test4 = testBracket $ return 1
 test5 = testBracket empty
-test6 = testBracket $ liftIO $ throwIO TestException
+test6 = testBracket $ CatchIO.throw TestException
