@@ -4,6 +4,7 @@ import Control.Monad.Base
 import Control.Monad.Trans
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.State
 
 testFunc1 :: (Int -> IO a) -> IO a
 testFunc1 f = print "Test" >> f 1
@@ -49,9 +50,9 @@ test00 = runMaybeT $ runMaybeT go
       go = control $ \run -> control $ \run2 -> testFunc0 $ run2 $ run func00
 
 
-func0b = do liftBase $ print 0
+func0b = do get >>= liftBase . print
             return 0
 
-test0b = runMaybeT $ runMaybeT go
+test0b = runMaybeT $ runStateT go 10
     where
       go = control $ \run -> testFunc0 $ run func0b
