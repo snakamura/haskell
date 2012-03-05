@@ -94,18 +94,18 @@ class MonadTrans t => MonadTransControl t where
     type V t :: * -> *
     liftFunc :: Monad m => ((forall a. t m a -> m (V t a)) -> m (V t b)) -> t m b
 
-{-
+
 instance MonadTransControl MaybeT where
     type V MaybeT = Maybe
     liftFunc f = MaybeT $ f runMaybeT
--}
 
+{-
 newtype M a = M { unM :: Maybe a } deriving Show
 
 instance MonadTransControl MaybeT where
     type V MaybeT = M
     liftFunc f = MaybeT $ liftM unM $ f $ liftM M . runMaybeT
-
+-}
 
 t0 = runMaybeT go
     where
@@ -133,7 +133,8 @@ testFunc10 f m = print "Test" >> m >> f 1
 
 func0' :: MaybeT IO Char
 func0' = do lift $ print 0
-            return 'c'
+            -- return 'c'
+            mzero
 
 t10 = runMaybeT go
     where
