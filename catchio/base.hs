@@ -11,7 +11,7 @@ data TestException = TestException deriving (Show, Typeable)
 instance Exception TestException
 
 test = runMaybeT $ catchMaybeT (liftIO $ throwIO TestException)
-                               (\e -> return 0)
+                               (\(e :: TestException) -> return 0)
 
--- catchMaybeT m f = mapMaybeT (\m' -> m' `catch` (\(e :: SomeException) -> runMaybeT $ f e)) m
-catchMaybeT m f = MaybeT $ runMaybeT m `catch` (\(e :: SomeException) -> runMaybeT $ f e)
+-- catchMaybeT m f = mapMaybeT (\m' -> m' `catch` (\e -> runMaybeT $ f e)) m
+catchMaybeT m f = MaybeT $ runMaybeT m `catch` \e -> runMaybeT $ f e
