@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, TypeFamilies #-}
+{-# LANGUAGE NoMonomorphismRestriction, TypeFamilies, RankNTypes #-}
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -32,7 +32,7 @@ liftFunc1 f g = let h x = runMaybeT $ g x
 testFunc0 :: IO a -> IO a
 testFunc0 f = print "Test" >> f
 
--- func0 :: MaybeT IO Int
+func0 :: MaybeT IO Int
 func0 = do lift $ print 0
            return 0
 
@@ -92,7 +92,7 @@ liftFunc2''' f = let z = f runMaybeT
 
 class MonadTrans t => MonadTransControl t where
     type V t :: * -> *
-    liftFunc :: Monad m => ((t m a -> m (V t a)) -> m (V t b)) -> t m b
+    liftFunc :: Monad m => ((forall a. t m a -> m (V t a)) -> m (V t b)) -> t m b
 
 {-
 instance MonadTransControl MaybeT where
@@ -126,3 +126,15 @@ func00 = do lift $ lift $ print 0
 tt0 = runMaybeT $ runMaybeT go
     where
       go = liftFunc $ \run -> liftFunc $ \run2 -> testFunc0 $ run2 $ run $ func00
+
+
+testFunc10 :: (Int -> IO a) -> IO b -> IO a
+testFunc10 f m = print "Test" >> m >> f 1
+
+func0' :: MaybeT IO Char
+func0' = do lift $ print 0
+            return 'c'
+
+t10 = runMaybeT go
+    where
+      go = liftFunc $ \run -> testFunc10 (\x -> run $ func1 x) (run func0')
