@@ -63,31 +63,31 @@ liftFunc2 f g = let h x y = runMaybeT $ g x y
                 in MaybeT z
 
 
-test2' = runMaybeT go
+test' = runMaybeT go
     where
-      go = liftFunc2' testFunc2 (\x y -> runMaybeT $ func2 x y)
+      go = liftFunc' testFunc2 (\x y -> runMaybeT $ func2 x y)
 
-liftFunc2' :: (a -> IO (Maybe b)) -> a -> MaybeT IO b
-liftFunc2' f g = let z = f g
+liftFunc' :: (a -> IO (Maybe b)) -> a -> MaybeT IO b
+liftFunc' f g = let z = f g
+                in MaybeT z
+
+
+test'' = runMaybeT go
+    where
+      go = liftFunc'' testFunc2 (\run x y -> run $ func2 x y)
+
+liftFunc'' :: (a -> IO (Maybe b)) -> ((MaybeT IO c -> IO (Maybe c)) -> a) -> MaybeT IO b
+liftFunc'' f g = let z = f (g runMaybeT)
                  in MaybeT z
 
 
-test2'' = runMaybeT go
+test''' = runMaybeT go
     where
-      go = liftFunc2'' testFunc2 (\run x y -> run $ func2 x y)
+      go = liftFunc''' (\run -> testFunc2 (\x y -> run $ func2 x y))
 
-liftFunc2'' :: (a -> IO (Maybe b)) -> ((MaybeT IO c -> IO (Maybe c)) -> a) -> MaybeT IO b
-liftFunc2'' f g = let z = f (g runMaybeT)
-                  in MaybeT z
-
-
-test2''' = runMaybeT go
-    where
-      go = liftFunc2''' (\run -> testFunc2 (\x y -> run $ func2 x y))
-
-liftFunc2''' :: ((MaybeT IO a -> IO (Maybe a)) -> IO (Maybe b)) -> MaybeT IO b
-liftFunc2''' f = let z = f runMaybeT
-                 in MaybeT z
+liftFunc''' :: ((MaybeT IO a -> IO (Maybe a)) -> IO (Maybe b)) -> MaybeT IO b
+liftFunc''' f = let z = f runMaybeT
+                in MaybeT z
 
 
 class MonadTrans t => MonadTransControl t where

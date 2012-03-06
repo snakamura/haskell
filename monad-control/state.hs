@@ -62,41 +62,41 @@ liftFunc2 f g = let h s x y = runStateT (g x y) s
                 in StateT $ \s -> z s
 
 
-test2' = runStateT go 0
+test' = runStateT go 0
     where
-      go = liftFunc2' testFunc2 $ \x y -> runStateT $ func2 x y
+      go = liftFunc' testFunc2 $ \x y -> runStateT $ func2 x y
 
--- liftFunc2' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
-liftFunc2' f g = let h s = g s
+-- liftFunc' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc' f g = let h s = g s
+                    z s = f (h s)
+                in StateT $ \s -> z s
+
+
+test'' = runStateT go 0
+    where
+      go = liftFunc'' testFunc2 $ \run x y -> run $ func2 x y
+
+-- liftFunc'' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc'' f g = let h s = (g runStateT) s
                      z s = f (h s)
                  in StateT $ \s -> z s
 
 
-test2'' = runStateT go 0
+test''' = runStateT go 0
     where
-      go = liftFunc2'' testFunc2 $ \run x y -> run $ func2 x y
+      go = liftFunc''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
 
--- liftFunc2'' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
-liftFunc2'' f g = let h s = (g runStateT) s
-                      z s = f (h s)
-                  in StateT $ \s -> z s
+-- liftFunc''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc''' f = let z s = f (flip runStateT s)
+                in StateT $ \s -> z s
 
 
-test2''' = runStateT go 0
+test'''' = runStateT go 0
     where
-      go = liftFunc2''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
+      go = liftFunc'''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
 
--- liftFunc2''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
-liftFunc2''' f = let z s = f (flip runStateT s)
-                 in StateT $ \s -> z s
-
-
-test2'''' = runStateT go 0
-    where
-      go = liftFunc2'''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
-
--- liftFunc2''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
-liftFunc2'''' f = let z s = f (liftM P . flip runStateT s)
+-- liftFunc''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc'''' f = let z s = f (liftM P . flip runStateT s)
                   in StateT $ \s -> liftM unP $ z s
 
 class MonadTransControl t where
