@@ -66,7 +66,7 @@ test' = runStateT go 0
     where
       go = liftFunc' testFunc2 $ \x y -> runStateT $ func2 x y
 
--- liftFunc' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc' :: (a -> IO (b, s)) -> (s -> a) -> StateT s IO b
 liftFunc' f g = let h s = g s
                     z s = f (h s)
                 in StateT $ \s -> z s
@@ -76,7 +76,7 @@ test'' = runStateT go 0
     where
       go = liftFunc'' testFunc2 $ \run x y -> run $ func2 x y
 
--- liftFunc'' :: (a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc'' :: (a -> IO (b, s)) -> ((StateT s IO b -> s -> IO (b, s)) -> s -> a) -> StateT s IO b
 liftFunc'' f g = let h s = (g runStateT) s
                      z s = f (h s)
                  in StateT $ \s -> z s
@@ -86,7 +86,7 @@ test''' = runStateT go 0
     where
       go = liftFunc''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
 
--- liftFunc''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc''' :: ((StateT s IO a -> IO (a, s)) -> IO (b, s)) -> StateT s IO b
 liftFunc''' f = let z s = f (flip runStateT s)
                 in StateT $ \s -> z s
 
@@ -95,7 +95,7 @@ test'''' = runStateT go 0
     where
       go = liftFunc'''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
 
--- liftFunc''' :: ((a -> b -> IO (c, s)) -> IO (c, s)) -> (a -> b -> StateT s IO c) -> StateT s IO c
+liftFunc'''' :: ((StateT s IO a -> IO (P s a)) -> IO (P s b)) -> StateT s IO b
 liftFunc'''' f = let z s = f (liftM P . flip runStateT s)
                   in StateT $ \s -> liftM unP $ z s
 
