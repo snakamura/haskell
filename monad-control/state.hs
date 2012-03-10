@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, TypeFamilies #-}
+{-# LANGUAGE NoMonomorphismRestriction, TypeFamilies, RankNTypes #-}
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -86,7 +86,7 @@ test''' = runStateT go 0
     where
       go = liftFunc''' $ \run -> testFunc2 $ \x y -> run (func2 x y)
 
-liftFunc''' :: ((StateT s IO a -> IO (a, s)) -> IO (b, s)) -> StateT s IO b
+liftFunc''' :: ((forall a. StateT s IO a -> IO (a, s)) -> IO (b, s)) -> StateT s IO b
 liftFunc''' f = let z s = f (flip runStateT s)
                 in StateT $ \s -> z s
 
