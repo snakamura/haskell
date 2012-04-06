@@ -1,0 +1,2 @@
+<p>#{text}#{T.reverse text}</p>
+<a href=@{MirrorR}>Back</a>

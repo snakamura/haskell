@@ -1,0 +1,3 @@
+<form method=post action=@{MirrorR}>
+  <input type=text name=text>
+  <input type=submit>

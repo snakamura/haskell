@@ -1,0 +1,4 @@
+cabal-dev
+dist
+static/tmp
+*.sqlite3

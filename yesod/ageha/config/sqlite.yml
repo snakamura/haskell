@@ -1,0 +1,20 @@
+Default: &defaults
+  database: ageha.sqlite3
+  poolsize: 10
+
+Development:
+  <<: *defaults
+
+Test:
+  database: ageha_test.sqlite3
+  <<: *defaults
+
+Staging:
+  database: ageha_staging.sqlite3
+  poolsize: 100
+  <<: *defaults
+
+Production:
+  database: ageha_production.sqlite3
+  poolsize: 100
+  <<: *defaults

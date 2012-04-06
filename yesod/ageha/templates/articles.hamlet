@@ -1,0 +1,14 @@
+<h1>Articles
+$if null articles
+  <p>No articles
+$else
+  <ul>
+    $forall Entity articleId article <- articles
+      <li>
+        <a href=@{ArticleR articleId}>#{articleTitle article}
+
+<hr>
+  <form method=post enctype=#{enctype}>
+    ^{articleWidget}
+    <div>
+      <input type=submit>
