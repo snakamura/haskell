@@ -10,7 +10,7 @@ entryForm = renderDivs $ Article <$> areq textField "Title" Nothing
 getBlogR :: Handler RepHtml
 getBlogR = do
     articles <- runDB $ selectList [] [Desc ArticleTitle]
-    ((_, articleWidget), enctype) <- generateFormPost entryForm
+    (articleWidget, enctype) <- generateFormPost entryForm
     defaultLayout $ do
         $(widgetFile "articles")
 
