@@ -9,8 +9,9 @@ combination2' candidates n = nub $ concatMap f (combination2' candidates (n - 1)
   where
     f [f, s] = map (\c -> [sort $ f ++ [c], delete c s]) s
 
-combination3 :: [Char] -> [[[Char]]]
-combination3 candidates = concatMap f $ combination2 candidates
+combination :: [Char] -> Int -> [[[Char]]]
+combination candidates 2 = combination2 candidates
+combination candidates n = concatMap f $ combination candidates (n - 1)
   where
     f :: [[Char]] -> [[[Char]]]
-    f [f, s] = map (f:) $ combination2 s
+    f l = map ((init l) ++) $ combination2 $ last l
