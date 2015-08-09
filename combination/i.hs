@@ -3,7 +3,7 @@ import Data.List
 
 combination :: Ord a => [a] -> Int -> [[[a]]]
 combination items 1 = [[items]]
-combination items 2 = concatMap (map toList . pickN (sort items)) [1 .. length items - 1]
+combination items 2 = concatMap (map toList . pickN (sort items)) [0 .. length items]
   where
     toList (x, y) = [x, y]
 combination items n = concatMap splitLast $ combination items (n - 1)
