@@ -25,8 +25,6 @@ door1 = forceOpen SOpened openedDoor
 door2 = forceOpen SClosed closedDoor
 door3 = forceOpen SLocked lockedDoor
 
-data SomeDoor = forall state. SomeDoor (SingState state) (Door state)
-
 doors :: [SomeDoor]
 doors = [SomeDoor SOpened openedDoor, SomeDoor SClosed closedDoor, SomeDoor SLocked lockedDoor]
 

@@ -13,6 +13,7 @@ module Door
     , lock
     , unlock
     , SingState(SOpened, SClosed, SLocked)
+    , SomeDoor(SomeDoor)
     ) where
 
 import Data.Kind (Type)
@@ -44,3 +45,6 @@ data SingState :: State -> Type where
     SOpened :: SingState 'Opened
     SClosed :: SingState 'Closed
     SLocked :: SingState 'Locked
+
+
+data SomeDoor = forall state. SomeDoor (SingState state) (Door state)
