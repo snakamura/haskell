@@ -14,11 +14,11 @@ forceOpen door = case unlock door of
                                 Nothing -> door
 
 openedDoor :: Door
-openedDoor = fromJust $ (open <=< unlock) $ makeDoor "opened"
+openedDoor = fromJust $ (open <=< unlock) $ makeLocked "opened"
 closedDoor :: Door
-closedDoor = fromJust $ unlock $ makeDoor "closed"
+closedDoor = fromJust $ unlock $ makeLocked "closed"
 lockedDoor :: Door
-lockedDoor = makeDoor "locked"
+lockedDoor = makeLocked "locked"
 
 door1, door2, door3 :: Door
 door1 = forceOpen openedDoor

@@ -4,7 +4,7 @@ module Door
     , OpenedDoor
     , ClosedDoor
     , LockedDoor
-    , makeDoor
+    , makeLocked
     , open
     , close
     , lock
@@ -21,8 +21,8 @@ newtype OpenedDoor = OpenedDoor Door deriving (Show, Eq)
 newtype ClosedDoor = ClosedDoor Door deriving (Show, Eq)
 newtype LockedDoor = LockedDoor Door deriving (Show, Eq)
 
-makeDoor :: Text -> LockedDoor
-makeDoor = LockedDoor . Door
+makeLocked :: Text -> LockedDoor
+makeLocked = LockedDoor . Door
 
 open :: ClosedDoor -> OpenedDoor
 open (ClosedDoor door) = OpenedDoor door

@@ -15,11 +15,11 @@ instance ForceOpenDoor LockedDoor where
     forceOpen = open . unlock
 
 openedDoor :: OpenedDoor
-openedDoor = open $ unlock $ makeDoor "opened"
+openedDoor = open $ unlock $ makeLocked "opened"
 closedDoor :: ClosedDoor
-closedDoor = unlock $ makeDoor "closed"
+closedDoor = unlock $ makeLocked "closed"
 lockedDoor :: LockedDoor
-lockedDoor = makeDoor "locked"
+lockedDoor = makeLocked "locked"
 
 door1, door2, door3 :: OpenedDoor
 door1 = forceOpen openedDoor
@@ -29,7 +29,10 @@ door3 = forceOpen lockedDoor
 data SomeDoor = forall door. ForceOpenDoor door => SomeDoor door
 
 doors :: [SomeDoor]
-doors = [SomeDoor openedDoor, SomeDoor closedDoor, SomeDoor lockedDoor]
+doors = [ SomeDoor openedDoor
+        , SomeDoor closedDoor
+        , SomeDoor lockedDoor
+        ]
 
 openedDoors :: [OpenedDoor]
 openedDoors = map (\(SomeDoor door) -> forceOpen door) doors

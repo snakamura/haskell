@@ -7,7 +7,7 @@ module Door
     ( Door
     , State(Opened, Closed, Locked)
     , name
-    , makeDoor
+    , makeLocked
     , open
     , close
     , lock
@@ -26,8 +26,8 @@ data Door (state :: State) = Door {
     name :: Text
 } deriving (Show, Eq)
 
-makeDoor :: Text -> Door 'Locked
-makeDoor name = Door name
+makeLocked :: Text -> Door 'Locked
+makeLocked name = Door name
 
 open :: Door 'Closed -> Door 'Opened
 open (Door name) = Door name
