@@ -6,6 +6,7 @@ module Door
     , close
     , lock
     , unlock
+    , knock
 ) where
 
 import Data.Text (Text)
@@ -35,3 +36,8 @@ lock _ = Nothing
 unlock :: Door -> Maybe Door
 unlock (Door name Locked) = Just $ Door name Closed
 unlock _ = Nothing
+
+knock :: Door -> Maybe Door
+knock door@(Door name Closed) = Just door
+knock door@(Door name Locked) = Just door
+knock _ = Nothing

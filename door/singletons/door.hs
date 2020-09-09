@@ -16,8 +16,10 @@ module Door
     , close
     , lock
     , unlock
+    , knock
     ) where
 
+import Data.Kind (Constraint)
 import Data.Singletons.TH (singletons)
 import Data.Text (Text)
 
@@ -43,3 +45,10 @@ lock (Door name) = Door name
 
 unlock :: Door 'Locked -> Door 'Closed
 unlock (Door name) = Door name
+
+type family Knockable (state :: State) :: Constraint where
+    Knockable 'Closed = ()
+    Knockable 'Locked = ()
+
+knock :: Knockable state => Door state -> Door state
+knock = id

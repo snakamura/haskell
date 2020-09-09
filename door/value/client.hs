@@ -5,13 +5,16 @@ import Data.Maybe (fromJust)
 import Door
 
 forceOpen :: Door -> Door
-forceOpen door = case unlock door of
-                   Just closedDoor -> case open closedDoor of
-                                        Just openedDoor -> openedDoor
-                                        Nothing -> error "Must not happen"
-                   Nothing -> case open door of
-                                Just openedDoor -> openedDoor
-                                Nothing -> door
+forceOpen door =
+    case knock door of
+      Just door -> case unlock door of
+                     Just closedDoor -> case open closedDoor of
+                                          Just openedDoor -> openedDoor
+                                          Nothing -> error "Must not happen"
+                     Nothing -> case open door of
+                                  Just openedDoor -> openedDoor
+                                  Nothing -> error "Must not happen"
+      Nothing -> door
 
 openedDoor :: Door
 openedDoor = fromJust $ (open <=< unlock) $ makeLocked "opened"

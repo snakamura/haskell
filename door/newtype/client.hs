@@ -10,9 +10,9 @@ class ForceOpenDoor door where
 instance ForceOpenDoor OpenedDoor where
     forceOpen = id
 instance ForceOpenDoor ClosedDoor where
-    forceOpen = open
+    forceOpen = open . knock
 instance ForceOpenDoor LockedDoor where
-    forceOpen = open . unlock
+    forceOpen = open . unlock . knock
 
 openedDoor :: OpenedDoor
 openedDoor = open $ unlock $ makeLocked "opened"

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds,
              GADTs,
-             KindSignatures
+             KindSignatures,
+             TypeFamilies
 #-}
 
 module Door
@@ -12,11 +13,12 @@ module Door
     , close
     , lock
     , unlock
+    , knock
     , SingState(SOpened, SClosed, SLocked)
     , SomeDoor(SomeDoor)
     ) where
 
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Text (Text)
 
 data State = Opened | Closed | Locked
@@ -39,6 +41,13 @@ lock (Door name) = Door name
 
 unlock :: Door 'Locked -> Door 'Closed
 unlock (Door name) = Door name
+
+type family Knockable (state :: State) :: Constraint where
+    Knockable 'Closed = ()
+    Knockable 'Locked = ()
+
+knock :: Knockable state => Door state -> Door state
+knock = id
 
 
 data SingState :: State -> Type where

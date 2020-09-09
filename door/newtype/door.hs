@@ -9,6 +9,7 @@ module Door
     , close
     , lock
     , unlock
+    , knock
     ) where
 
 import Data.Text (Text)
@@ -35,3 +36,9 @@ lock (ClosedDoor door) = LockedDoor door
 
 unlock :: LockedDoor -> ClosedDoor
 unlock (LockedDoor door) = ClosedDoor door
+
+class KnockableDoor door where
+    knock :: door -> door
+    knock = id
+instance KnockableDoor ClosedDoor
+instance KnockableDoor LockedDoor

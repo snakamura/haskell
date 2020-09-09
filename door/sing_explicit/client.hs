@@ -10,8 +10,8 @@ forceOpen :: SingState state -> Door state -> Door 'Opened
 forceOpen singDoor door =
     case singDoor of
         SOpened -> door
-        SClosed -> open door
-        SLocked -> open $ unlock door
+        SClosed -> open $ knock door
+        SLocked -> open $ unlock $ knock door
 
 openedDoor :: Door 'Opened
 openedDoor = open $ unlock $ makeLocked "opened"

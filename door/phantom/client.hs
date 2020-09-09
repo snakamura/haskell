@@ -12,9 +12,9 @@ class ForceOpenDoor (state :: State) where
 instance ForceOpenDoor 'Opened where
     forceOpen = id
 instance ForceOpenDoor 'Closed where
-    forceOpen = open
+    forceOpen = open . knock
 instance ForceOpenDoor 'Locked where
-    forceOpen = open . unlock
+    forceOpen = open . unlock . knock
 
 openedDoor :: Door 'Opened
 openedDoor = open $ unlock $ makeLocked "opened"

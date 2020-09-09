@@ -16,8 +16,8 @@ forceOpen :: forall state. SingI state => Door state -> Door 'Opened
 forceOpen door =
     case sing @state of
         SOpened -> door
-        SClosed -> open door
-        SLocked -> open $ unlock door
+        SClosed -> open $ knock door
+        SLocked -> open $ unlock $ knock door
 
 openedDoor :: Door 'Opened
 openedDoor = open $ unlock $ makeLocked "opened"
