@@ -8,6 +8,7 @@
 
 module Door
     ( Door
+    , SomeDoor(SomeDoor)
     , State(Opened, Closed, Locked)
     , SState(SOpened, SClosed, SLocked)
     , name
@@ -20,6 +21,7 @@ module Door
     ) where
 
 import Data.Kind (Constraint)
+import Data.Singletons (SingI)
 import Data.Singletons.TH (singletons)
 import Data.Text (Text)
 
@@ -30,6 +32,8 @@ singletons [d|
 data Door (state :: State) = Door {
     name :: Text
 } deriving (Show, Eq)
+
+data SomeDoor = forall state. SingI state => SomeDoor (Door state)
 
 makeLocked :: Text -> Door 'Locked
 makeLocked name = Door name

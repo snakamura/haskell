@@ -31,8 +31,6 @@ door1 = forceOpen openedDoor
 door2 = forceOpen closedDoor
 door3 = forceOpen lockedDoor
 
-data SomeDoor = forall state. SingI state => SomeDoor (Door state)
-
 doors :: [SomeDoor]
 doors = [ SomeDoor openedDoor
         , SomeDoor closedDoor
