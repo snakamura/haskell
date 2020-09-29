@@ -8,8 +8,10 @@
 
 import Data.Singletons
     ( SingI
+    , TyCon
     , sing
     )
+import Data.Singletons.Sigma (Sigma((:&:)))
 import Door
 
 forceOpen :: forall state. SingI state => Door state -> Door 'Opened
@@ -18,6 +20,11 @@ forceOpen door =
         SOpened -> door
         SClosed -> open $ knock door
         SLocked -> open $ unlock $ knock door
+
+forceOpen2 :: Sigma State (TyCon Door) -> Door 'Opened
+forceOpen2 (SOpened :&: openedDoor) = openedDoor
+forceOpen2 (SClosed :&: closedDoor) = open $ knock closedDoor
+forceOpen2 (SLocked :&: lockedDoor) = open $ unlock $ knock lockedDoor
 
 openedDoor :: Door 'Opened
 openedDoor = open $ unlock $ makeLocked "opened"
@@ -39,3 +46,12 @@ doors = [ SomeDoor openedDoor
 
 openedDoors :: [Door 'Opened]
 openedDoors = map (\(SomeDoor door) -> forceOpen door) doors
+
+doors2 :: [Sigma State (TyCon Door)]
+doors2 = [ SOpened :&: openedDoor
+         , SClosed :&: closedDoor
+         , SLocked :&: lockedDoor
+         ]
+
+openedDoors2 :: [Door 'Opened]
+openedDoors2 = map forceOpen2 doors2
