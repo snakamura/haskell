@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds,
              GADTs,
-             OverloadedStrings
+             OverloadedStrings,
+             PatternSynonyms
 #-}
 
+import Data.Singletons (pattern FromSing)
 import Data.Singletons.Sigma (projSigma2)
 import Data.Text (Text)
 import Door
@@ -28,3 +30,18 @@ tryOpen keys = try keys $ knock $ makeLocked "locked" "goodKey"
                 try' :: (MaybeUnlockedDoor state) -> Maybe (Door 'Opened)
                 try' (Unlocked door@(ClosedDoor _)) = Just $ open door
                 try' (NotUnlocked door@(LockedDoor _ _)) = try keys door
+
+openedByUnlocking2 :: Door 'Opened
+openedByUnlocking2 =
+    let door = makeLocked "locked" "goodKey"
+    in case tryUnlock "goodKey" $ knock door of
+           FromSing r@SSuccess -> open $ commitUnlock r door
+
+tryOpen2 :: [Text] -> Maybe (Door 'Opened)
+tryOpen2 keys = try keys $ knock $ makeLocked "locked" "goodKey"
+    where
+        try :: [Text] -> Door 'Locked -> Maybe (Door 'Opened)
+        try [] _ = Nothing
+        try (key:keys) door = case tryUnlock key door of
+                                  FromSing r@SSuccess -> Just $ open $ commitUnlock r door
+                                  FromSing r@SFail -> try keys door

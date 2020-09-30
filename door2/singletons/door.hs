@@ -9,17 +9,20 @@
 
 module Door
     ( Door(OpenedDoor, ClosedDoor, LockedDoor)
-    , SomeDoor(SomeDoor)
     , State(Opened, Closed, Locked)
     , SState(SOpened, SClosed, SLocked)
     , MaybeUnlocked(Unlocked, NotUnlocked)
     , MaybeUnlockedDoor
+    , UnlockResult
+    , SUnlockResult(SSuccess, SFail)
     , name
     , makeLocked
     , open
     , close
     , lock
     , unlock
+    , tryUnlock
+    , commitUnlock
     , knock
     ) where
 
@@ -46,8 +49,6 @@ name (OpenedDoor name) = name
 name (ClosedDoor name) = name
 name (LockedDoor name _) = name
 
-data SomeDoor = forall state. SingI state => SomeDoor (Door state)
-
 makeLocked :: Text -> Text -> Door 'Locked
 makeLocked name key = LockedDoor name key
 
@@ -59,6 +60,7 @@ close (OpenedDoor name) = ClosedDoor name
 
 lock :: Text -> Door 'Closed -> Door 'Locked
 lock key (ClosedDoor name) = LockedDoor name key
+
 
 data MaybeUnlocked state where
     Unlocked:: Door 'Closed -> MaybeUnlocked 'Closed
@@ -72,6 +74,28 @@ unlock :: Text -> Door 'Locked -> Sigma State MaybeUnlockedDoorSym0
 unlock key door@(LockedDoor name lockedKey)
     | lockedKey == key = SClosed :&: Unlocked (ClosedDoor name)
     | otherwise = SLocked :&: NotUnlocked door
+
+
+-- These tryUnlock and commitUnlock withUnlockResult don't make much sense
+-- because you can always pass SSuccess to commitUnlock.
+singletons [d|
+    data UnlockResult = Success | Fail
+  |]
+
+type family UnlockedState result where
+    UnlockedState Success = 'Closed
+    UnlockedState Fail = 'Locked
+
+tryUnlock :: Text -> Door 'Locked -> UnlockResult
+tryUnlock key door@(LockedDoor name lockedKey)
+    | lockedKey == key = Success
+    | otherwise = Fail
+
+commitUnlock :: SUnlockResult result -> Door 'Locked -> Door (UnlockedState result)
+commitUnlock result door@(LockedDoor _ name) = case result of
+    SSuccess -> ClosedDoor name
+    SFail -> door
+
 
 type family Knockable (state :: State) :: Constraint where
     Knockable 'Closed = ()
