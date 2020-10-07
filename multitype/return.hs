@@ -7,12 +7,14 @@
              PolyKinds,
              RankNTypes,
              ScopedTypeVariables,
+             StandaloneDeriving,
              TemplateHaskell,
              TypeApplications,
              TypeFamilies,
              TypeOperators,
              UndecidableInstances
 #-}
+{-# OPTIONS_GHC -Wincomplete-patterns #-}
 
 import Data.Kind
 import Data.Singletons
@@ -27,16 +29,18 @@ singletons [d|
   |]
 
 data X (s :: S) where
-    X1 :: X S1
-    X2 :: Int -> X S2
-    X3 :: Text -> X S3
-    X4 :: Float -> X S4
+    X1 :: X 'S1
+    X2 :: Int -> X 'S2
+    X3 :: Text -> X 'S3
+    X4 :: Float -> X 'S4
 
-f :: X S1 -> X S2
+deriving instance Show (X s)
+
+f :: X 'S1 -> X 'S2
 f x = X2 2
 
 
-g1 :: Bool -> X S1 -> Either (X S2) (X S3)
+g1 :: Bool -> X 'S1 -> Either (X 'S2) (X 'S3)
 g1 True x = Left $ X2 2
 g1 False x = Right $ X3 "3"
 
@@ -46,7 +50,7 @@ c1 = case g1 True X1 of
          Right (X3 t) -> t
 
 
-g2 :: Bool -> X S1 -> Sigma S (TyCon X)
+g2 :: Bool -> X 'S1 -> Sigma S (TyCon X)
 g2 True x = SS2 :&: X2 2
 g2 False x = SS3 :&: X3 "3"
 
@@ -54,19 +58,21 @@ c2 :: Text
 c2 = projSigma2 p $ g2 True X1
   where
     p :: X s -> Text
+    p X1 = undefined
     p (X2 n) = T.pack $ show n
     p (X3 t) = t
+    p (X4 _) = undefined
 
 
 data Y (s :: S) where
-    Y2 :: X S2 -> Y S2
-    Y3 :: X S3 -> Y S3
+    Y2 :: X 'S2 -> Y 'S2
+    Y3 :: X 'S3 -> Y 'S3
 
 singletons [d|
     type Z s = Y s
   |]
 
-g3 :: Bool -> X S1 -> Sigma S ZSym0
+g3 :: Bool -> X 'S1 -> Sigma S ZSym0
 g3 True x = SS2 :&: Y2 (X2 2)
 g3 False x = SS3 :&: Y3 (X3 "3")
 
@@ -84,6 +90,7 @@ data SigmaP (s :: Type) (p :: s ~> Constraint) (t :: s ~> Type) where
 type family Y23 (x :: S) :: Constraint where
     Y23 S2 = ()
     Y23 S3 = ()
+    Y23 _ = ('True ~ 'False)
 
 data Y23Sym0 :: S ~> Constraint
 type instance Apply Y23Sym0 x = Y23 x
@@ -99,7 +106,7 @@ singletons [d|
   |]
 -}
 
-g4 :: Bool -> X S1 -> SigmaP S Y23Sym0 (TyCon X)
+g4 :: Bool -> X 'S1 -> SigmaP S Y23Sym0 (TyCon X)
 g4 True x = SS2 :&?: X2 2
 g4 False x = SS3 :&?: X3 "3"
 
@@ -120,7 +127,7 @@ type family OneOf t l :: Constraint where
 projSigmaL2 :: forall s (l :: [s]) t r. (forall (fst :: s). (t @@ fst) -> r) -> SigmaL l t -> r
 projSigmaL2 f ((_ :: Sing (fst :: s)) :&!: b) = f @fst b
 
-g5 :: Bool -> X S1 -> SigmaL '[S2, S3] (TyCon X)
+g5 :: Bool -> X 'S1 -> SigmaL '[ 'S2, 'S3 ] (TyCon X)
 g5 True x = SS2 :&!: X2 2
 g5 False x = SS3 :&!: X3 "3"
 
