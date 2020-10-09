@@ -17,9 +17,14 @@
 {-# OPTIONS_GHC -Wincomplete-patterns #-}
 
 import Data.Kind
-import Data.Singletons
-import Data.Singletons.Prelude
+    ( Constraint
+    , Type
+    )
+import Data.Singletons.Prelude (Elem)
 import Data.Singletons.Sigma
+    ( Sigma((:&:))
+    , projSigma2
+    )
 import Data.Singletons.TH
 import Data.Text (Text)
 import qualified Data.Text as T
