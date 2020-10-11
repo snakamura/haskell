@@ -41,26 +41,23 @@ data X (s :: S) where
 
 deriving instance Show (X s)
 
-f :: X 'S1 -> X 'S2
-f x = X2 2
 
-
-g1 :: Bool -> X 'S1 -> Either (X 'S2) (X 'S3)
-g1 True x = Left $ X2 2
-g1 False x = Right $ X3 "3"
+f1 :: Bool -> X 'S1 -> Either (X 'S2) (X 'S3)
+f1 True x = Left $ X2 2
+f1 False x = Right $ X3 "3"
 
 c1 :: Text
-c1 = case g1 True X1 of
+c1 = case f1 True X1 of
          Left (X2 n) -> T.pack $ show n
          Right (X3 t) -> t
 
 
-g2 :: Bool -> X 'S1 -> Sigma S (TyCon X)
-g2 True x = SS2 :&: X2 2
-g2 False x = SS3 :&: X3 "3"
+f2 :: Bool -> X 'S1 -> Sigma S (TyCon X)
+f2 True x = SS2 :&: X2 2
+f2 False x = SS3 :&: X3 "3"
 
 c2 :: Text
-c2 = projSigma2 p $ g2 True X1
+c2 = projSigma2 p $ f2 True X1
   where
     p :: X s -> Text
     p X1 = undefined
@@ -69,58 +66,54 @@ c2 = projSigma2 p $ g2 True X1
     p (X4 _) = undefined
 
 
-data Y (s :: S) where
-    Y2 :: X 'S2 -> Y 'S2
-    Y3 :: X 'S3 -> Y 'S3
+data F3 :: S -> Type where
+    F32 :: X 'S2 -> F3 'S2
+    F33 :: X 'S3 -> F3 'S3
 
-singletons [d|
-    type Z s = Y s
-  |]
+data F3Sym0 :: S ~> Type
+type instance Apply F3Sym0 x = F3 x
 
-g3 :: Bool -> X 'S1 -> Sigma S ZSym0
-g3 True x = SS2 :&: Y2 (X2 2)
-g3 False x = SS3 :&: Y3 (X3 "3")
+f3 :: Bool -> X 'S1 -> Sigma S F3Sym0
+f3 True x = SS2 :&: F32 (X2 2)
+f3 False x = SS3 :&: F33 (X3 "3")
 
 c3 :: Text
-c3 = projSigma2 p $ g3 True X1
+c3 = projSigma2 p $ f3 True X1
   where
-    p :: Y s -> Text
-    p (Y2 (X2 n)) = T.pack $ show n
-    p (Y3 (X3 t)) = t
+    p :: F3 s -> Text
+    p (F32 (X2 n)) = T.pack $ show n
+    p (F33 (X3 t)) = t
 
 
 data SigmaP (s :: Type) (p :: s ~> Constraint) (t :: s ~> Type) where
     (:&?:) :: (p @@ fst) => Sing (fst :: s) -> t @@ fst -> SigmaP s p t
 
-type family Y23 (x :: S) :: Constraint where
-    Y23 S2 = ()
-    Y23 S3 = ()
-    Y23 _ = ('True ~ 'False)
+type family F4 (x :: S) :: Constraint where
+    F4 S2 = ()
+    F4 S3 = ()
+    F4 _ = ('True ~ 'False)
 
-data Y23Sym0 :: S ~> Constraint
-type instance Apply Y23Sym0 x = Y23 x
+data F4Sym0 :: S ~> Constraint
+type instance Apply F4Sym0 x = F4 x
 
-projSigmaP2 :: forall s p t r. (forall (fst :: s). (t @@ fst) -> r) -> SigmaP s p t -> r
+projSigmaP2 :: forall s p t r. (forall (fst :: s). p @@ fst => (t @@ fst) -> r) -> SigmaP s p t -> r
 projSigmaP2 f ((_ :: Sing (fst :: s)) :&?: b) = f @fst b
 
-{-
-singletons [d|
-    y23 :: S -> Constraint
-    y23 S2 = ()
-    y23 S3 = ()
-  |]
--}
-
-g4 :: Bool -> X 'S1 -> SigmaP S Y23Sym0 (TyCon X)
-g4 True x = SS2 :&?: X2 2
-g4 False x = SS3 :&?: X3 "3"
+f4 :: Bool -> X 'S1 -> SigmaP S F4Sym0 (TyCon X)
+f4 True x = SS2 :&?: X2 2
+f4 False x = SS3 :&?: X3 "3"
 
 c4 :: Text
-c4 = projSigmaP2 p $ g4 True X1
+c4 = projSigmaP2 p $ f4 True X1
   where
-    p :: X s -> Text
+    p :: F4 s => X s -> Text
     p (X2 n) = T.pack $ show n
     p (X3 t) = t
+
+c4' :: Text
+c4' = case f4 True X1 of
+    SS2 :&?: X2 n -> T.pack $ show n
+    SS3 :&?: X3 t -> t
 
 
 data SigmaL (l :: [s :: Type]) (t :: s ~> Type) where
@@ -129,16 +122,16 @@ data SigmaL (l :: [s :: Type]) (t :: s ~> Type) where
 type family OneOf t l :: Constraint where
     OneOf t l = If (Elem t l) (() :: Constraint) ('True ~ 'False)
 
-projSigmaL2 :: forall s (l :: [s]) t r. (forall (fst :: s). (t @@ fst) -> r) -> SigmaL l t -> r
+projSigmaL2 :: forall s (l :: [s]) t r. (forall (fst :: s). OneOf fst l => (t @@ fst) -> r) -> SigmaL l t -> r
 projSigmaL2 f ((_ :: Sing (fst :: s)) :&!: b) = f @fst b
 
-g5 :: Bool -> X 'S1 -> SigmaL '[ 'S2, 'S3 ] (TyCon X)
-g5 True x = SS2 :&!: X2 2
-g5 False x = SS3 :&!: X3 "3"
+f5 :: Bool -> X 'S1 -> SigmaL '[ 'S2, 'S3 ] (TyCon X)
+f5 True x = SS2 :&!: X2 2
+f5 False x = SS3 :&!: X3 "3"
 
 c5 :: Text
-c5 = projSigmaL2 p $ g5 True X1
+c5 = projSigmaL2 p $ f5 True X1
   where
-    p :: X s -> Text
+    p :: OneOf s '[ 'S2, 'S3 ] => X s -> Text
     p (X2 n) = T.pack $ show n
     p (X3 t) = t
