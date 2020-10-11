@@ -32,9 +32,6 @@ data X :: S -> Type where
 
 deriving instance Show (X s)
 
-data SomeX where
-    SomeX :: Sing s -> X s -> SomeX
-
 
 data F :: S -> Type where
     F2 :: F 'S2
@@ -45,12 +42,15 @@ f F2 (X2 n) = T.pack $ show n
 f F3 (X3 t) = t
 
 
+data SomeX where
+    SomeX :: Sing s -> X s -> SomeX
+
+
 f1 :: SomeX -> Maybe Text
-f1 = \case
-    SomeX SS1 _ -> Nothing
-    SomeX SS2 x -> Just $ f F2 x
-    SomeX SS3 x -> Just $ f F3 x
-    SomeX SS4 _ -> Nothing
+f1 (SomeX SS1 _) = Nothing
+f1 (SomeX SS2 x) = Just $ f F2 x
+f1 (SomeX SS3 x) = Just $ f F3 x
+f1 (SomeX SS4 _) = Nothing
 
 c1 :: Maybe Text
 c1 = f1 $ SomeX SS2 $ X2 2

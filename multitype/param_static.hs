@@ -3,7 +3,6 @@
              FlexibleContexts,
              GADTs,
              InstanceSigs,
-             KindSignatures,
              MultiParamTypeClasses,
              PolyKinds,
              ScopedTypeVariables,
@@ -18,6 +17,10 @@
 import Data.Kind
     ( Constraint
     , Type
+    )
+import Data.Singletons.Prelude
+    ( Elem
+    , If
     )
 import Data.Singletons.TH
 import Data.Text (Text)
@@ -69,25 +72,28 @@ c3 :: Text
 c3 = f3 F32 $ X2 2
 
 
-data F4 :: S -> Type where
-    F42 :: F4 'S2
-    F43 :: F4 'S3
-
 class Proved p a where
     auto :: p a
 
-instance Proved F4 'S2 where
-    auto = F42
+instance Proved F3 'S2 where
+    auto = F32
 
-instance Proved F4 'S3 where
-    auto = F43
+instance Proved F3 'S3 where
+    auto = F33
 
-f4 :: Proved F4 s => X s -> Text
-f4 = f4' auto
-  where
-    f4' :: F4 s -> X s -> Text
-    f4' F42 (X2 n) = T.pack $ show n
-    f4' F43 (X3 t) = t
+f3' :: Proved F3 s => X s -> Text
+f3' = f3 auto
+
+c3' :: Text
+c3' = f3' $ X2 2
+
+
+type family OneOf t l :: Constraint where
+    OneOf t l = If (Elem t l) (() :: Constraint) ('True ~ 'False)
+
+f4 :: OneOf s '[ 'S2, 'S3 ] => X s -> Text
+f4 (X2 n) = T.pack $ show n
+f4 (X3 t) = t
 
 c4 :: Text
 c4 = f4 $ X2 2
