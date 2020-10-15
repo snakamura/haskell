@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes,
+             ConstraintKinds,
              DataKinds,
              GADTs,
              EmptyCase,
@@ -93,6 +94,7 @@ type family F4 (x :: S) :: Constraint where
     F4 S3 = ()
     F4 _ = ('True ~ 'False)
 
+-- genDefunSymbols [''F4]
 data F4Sym0 :: S ~> Constraint
 type instance Apply F4Sym0 x = F4 x
 
@@ -116,22 +118,41 @@ c4' = case f4 True X1 of
     SS3 :&?: X3 t -> t
 
 
-data SigmaL (l :: [s :: Type]) (t :: s ~> Type) where
-    (:&!:) :: OneOf fst l => Sing (fst :: s) -> t @@ fst -> SigmaL l t
+type family OneOf l t :: Constraint where
+    OneOf l t = If (Elem t l) (() :: Constraint) ('True ~ 'False)
 
-type family OneOf t l :: Constraint where
-    OneOf t l = If (Elem t l) (() :: Constraint) ('True ~ 'False)
+-- genDefunSymbols [''OneOf]
+data OneOfSym0 :: l ~> t ~> Constraint
+type instance Apply OneOfSym0 x = OneOfSym1 x
+data OneOfSym1 :: l -> t ~> Constraint
+type instance Apply (OneOfSym1 l) t = OneOf l t
+type OneOfSym2 l t = OneOf l t
 
-projSigmaL2 :: forall s (l :: [s]) t r. (forall (fst :: s). OneOf fst l => (t @@ fst) -> r) -> SigmaL l t -> r
-projSigmaL2 f ((_ :: Sing (fst :: s)) :&!: b) = f @fst b
-
-f5 :: Bool -> X 'S1 -> SigmaL '[ 'S2, 'S3 ] (TyCon X)
-f5 True x = SS2 :&!: X2 2
-f5 False x = SS3 :&!: X3 "3"
+f5 :: Bool -> X 'S1 -> SigmaP S (OneOfSym1 '[ 'S2, 'S3 ]) (TyCon X)
+f5 True x = SS2 :&?: X2 2
+f5 False x = SS3 :&?: X3 "3"
 
 c5 :: Text
-c5 = projSigmaL2 p $ f5 True X1
+c5 = projSigmaP2 p $ f5 True X1
   where
-    p :: OneOf s '[ 'S2, 'S3 ] => X s -> Text
+    p :: OneOf '[ 'S2, 'S3 ] s => X s -> Text
+    p (X2 n) = T.pack $ show n
+    p (X3 t) = t
+
+
+data SigmaL (l :: [s :: Type]) (t :: s ~> Type) where
+    (:&!:) :: OneOf l fst => Sing (fst :: s) -> t @@ fst -> SigmaL l t
+
+projSigmaL2 :: forall s (l :: [s]) t r. (forall (fst :: s). OneOf l fst => (t @@ fst) -> r) -> SigmaL l t -> r
+projSigmaL2 f ((_ :: Sing (fst :: s)) :&!: b) = f @fst b
+
+f6 :: Bool -> X 'S1 -> SigmaL '[ 'S2, 'S3 ] (TyCon X)
+f6 True x = SS2 :&!: X2 2
+f6 False x = SS3 :&!: X3 "3"
+
+c6 :: Text
+c6 = projSigmaL2 p $ f6 True X1
+  where
+    p :: OneOf '[ 'S2, 'S3 ] s => X s -> Text
     p (X2 n) = T.pack $ show n
     p (X3 t) = t
