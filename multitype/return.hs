@@ -89,6 +89,10 @@ c3 = projSigma2 p $ f3 True X1
 data SigmaP (s :: Type) (p :: s ~> Constraint) (t :: s ~> Type) where
     (:&?:) :: (p @@ fst) => Sing (fst :: s) -> t @@ fst -> SigmaP s p t
 
+projSigmaP2 :: forall s p t r. (forall (fst :: s). p @@ fst => (t @@ fst) -> r) -> SigmaP s p t -> r
+projSigmaP2 f ((_ :: Sing (fst :: s)) :&?: b) = f @fst b
+
+
 type family F4 (x :: S) :: Constraint where
     F4 S2 = ()
     F4 S3 = ()
@@ -97,9 +101,6 @@ type family F4 (x :: S) :: Constraint where
 -- genDefunSymbols [''F4]
 data F4Sym0 :: S ~> Constraint
 type instance Apply F4Sym0 x = F4 x
-
-projSigmaP2 :: forall s p t r. (forall (fst :: s). p @@ fst => (t @@ fst) -> r) -> SigmaP s p t -> r
-projSigmaP2 f ((_ :: Sing (fst :: s)) :&?: b) = f @fst b
 
 f4 :: Bool -> X 'S1 -> SigmaP S F4Sym0 (TyCon X)
 f4 True x = SS2 :&?: X2 2
@@ -127,6 +128,7 @@ type instance Apply OneOfSym0 x = OneOfSym1 x
 data OneOfSym1 :: l -> t ~> Constraint
 type instance Apply (OneOfSym1 l) t = OneOf l t
 type OneOfSym2 l t = OneOf l t
+
 
 f5 :: Bool -> X 'S1 -> SigmaP S (OneOfSym1 '[ 'S2, 'S3 ]) (TyCon X)
 f5 True x = SS2 :&?: X2 2
