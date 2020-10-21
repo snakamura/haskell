@@ -94,8 +94,8 @@ projSigmaP2 f ((_ :: Sing (fst :: s)) :&?: b) = f @fst b
 
 
 type family F4 (x :: S) :: Constraint where
-    F4 S2 = ()
-    F4 S3 = ()
+    F4 'S2 = ()
+    F4 'S3 = ()
     F4 _ = ('True ~ 'False)
 
 -- genDefunSymbols [''F4]
