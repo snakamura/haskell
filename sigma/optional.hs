@@ -6,6 +6,7 @@
              KindSignatures,
              ScopedTypeVariables,
              StandaloneDeriving,
+             StandaloneKindSignatures,
              TemplateHaskell,
              TypeApplications,
              TypeFamilies,
@@ -15,7 +16,6 @@
 {-# OPTIONS_GHC -Wincomplete-patterns #-}
 
 import Data.Kind (Type)
-import Data.Singletons ( SLambda(SLambda))
 import Data.Singletons.Prelude
     ( FlipSym1
     , Id
@@ -81,3 +81,7 @@ addText''' :: Int -> Text -> Opt Int
 addText''' n t = mapSigma (SLambda sId :: SLambda (IdSym0 :: O ~> O))
                           (fmap (+ n) :: Optional o Int -> Optional (Id o) Int)
                           (textToInt t)
+
+addSuffix :: Opt Text -> Text -> Opt Text
+addSuffix (SS :&: Some text) suffix = SS :&: Some (text <> suffix)
+addSuffix (SN :&: None) _ = SN :&: None
