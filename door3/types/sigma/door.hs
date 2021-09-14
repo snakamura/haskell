@@ -15,7 +15,7 @@ module Door
     ( Door
     , State(Opened, Closed, Locked)
     , SState(SOpened, SClosed, SLocked)
-    , SomeDoor(SomeDoor)
+    , SomeDoor
     , makeLocked
     , name
     , open
@@ -26,6 +26,7 @@ module Door
 ) where
 
 import Data.Kind (Constraint, Type)
+import Data.Singletons.Sigma (Sigma)
 import Data.Singletons.TH
 import Data.Text (Text)
 import Sigma (OneOfSym1, SigmaP((:&?:)))
@@ -40,7 +41,7 @@ data Door :: State -> Type where
     LockedDoor :: Text -> Text -> Door 'Locked
 deriving instance Show (Door state)
 
-data SomeDoor = forall state. SingI state => SomeDoor (Door state)
+type SomeDoor = Sigma State (TyCon Door)
 
 name :: Door state -> Text
 name (OpenedDoor name) = name
