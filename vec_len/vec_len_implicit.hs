@@ -64,7 +64,8 @@ sum3 (VCons a1 (VCons a2 (VCons a3 VNil))) = a1 <> a2 <> a3
 
 trySum3 :: Monoid a => [a] -> Maybe a
 trySum3 xs = case vec xs of
-               SomeVec (v :: Vec len a) -> case natVal @len of
+               SomeVec (v :: Vec len a) ->
+                 case natVal @len of
                    SS (SS (SS SZ)) -> Just $ sum3 v
                    _ -> Nothing
 
