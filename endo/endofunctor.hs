@@ -1,7 +1,12 @@
-{-# LANGUAGE FlexibleInstances, RankNTypes, TypeFamilies, TypeOperators, UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances,
+             RankNTypes,
+             TypeFamilies,
+             TypeOperators,
+             UndecidableInstances
+#-}
 
-import Data.Functor.Compose
-import Data.Functor.Identity
+import Data.Functor.Compose (Compose(Compose))
+import Data.Functor.Identity (Identity(Identity))
 import Data.Kind (Type)
 import Data.Monoid (Endo(Endo))
 
@@ -52,6 +57,34 @@ instance MonoidF'' Maybe where
     muF'' (Compose (Just (Just x))) = Just x
     muF'' _ = Nothing
     etaF'' (Identity x) = Just x
+
+instance MonoidF'' ((->) r) where
+    type Product'' ((->) r) = Compose ((->) r) ((->) r)
+    type Unit'' ((->) r) = Identity
+    muF'' (Compose f) e = f e e
+    etaF'' (Identity x) = const x
+
+newtype R r a = R (r -> a)
+
+instance MonoidF'' (R r) where
+    type Product'' (R r) = Compose (R r) (R r)
+    type Unit'' (R r) = Identity
+    muF'' (Compose (R f)) = R $ \e -> let R g = f e in g e
+    etaF'' (Identity x) = R $ const x
+
+instance Monoid w => MonoidF'' ((,) w) where
+    type Product'' ((,) w) = Compose ((,) w) ((,) w)
+    type Unit'' ((,) w) = Identity
+    muF'' (Compose (w2, (w1, x))) = (w1 <> w2, x)
+    etaF'' (Identity x) = (mempty, x)
+
+newtype W w a = W (a, w)
+
+instance Monoid w => MonoidF'' (W w) where
+    type Product'' (W w) = Compose (W w) (W w)
+    type Unit'' (W w) = Identity
+    muF'' (Compose (W (W (x, w1), w2))) = W (x, w1 <> w2)
+    etaF'' (Identity x) = W (x, mempty)
 
 
 class Monad' f where
