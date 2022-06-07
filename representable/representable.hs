@@ -1,9 +1,10 @@
-{-# LANGUAGE InstanceSigs,
+{-# LANGUAGE DerivingVia,
+             InstanceSigs,
+             StandaloneDeriving,
              StandaloneKindSignatures,
              TypeFamilies
 #-}
 
-import Data.Functor.Identity (Identity(Identity))
 import Data.Kind (Constraint, Type)
 import Numeric.Natural (Natural)
 
@@ -14,6 +15,11 @@ class Functor f => Representable f where
     index :: f a -> Rep f -> a
 
 -- Identity
+newtype Identity a = Identity a
+
+instance Functor Identity where
+    fmap f (Identity x) = Identity (f x)
+
 instance Representable Identity where
     type Rep Identity = ()
 
@@ -108,3 +114,13 @@ instance Representable f => Applicative (Wrap f) where
 instance Representable f => Monad (Wrap f) where
     (>>=) :: Wrap f a -> (a -> Wrap f b) -> Wrap f b
     m >>= f = tabulate $ \x -> index (f (index m x)) x
+
+
+deriving via Wrap Identity instance Applicative Identity
+deriving via Wrap Identity instance Monad Identity
+
+deriving via Wrap Stream instance Applicative Stream
+deriving via Wrap Stream instance Monad Stream
+
+deriving via Wrap Pair instance Applicative Pair
+deriving via Wrap Pair instance Monad Pair
