@@ -7,22 +7,22 @@
 import Control.Applicative (Alternative(..))
 import Data.Void (Void, absurd)
 
-class Functor f => Choice f where
-    choice :: (f a, f b) -> f (Either a b)
-    none :: () -> f Void
+class Functor f => Monoidal f where
+    mu :: (f a, f b) -> f (Either a b)
+    epsilon :: () -> f Void
 
-instance Choice Maybe where
-    choice :: (Maybe a, Maybe b) -> Maybe (Either a b)
-    choice (Just a, _) = Just (Left a)
-    choice (_, Just b) = Just (Right b)
-    choice (_, _) = Nothing
+instance Monoidal Maybe where
+    mu :: (Maybe a, Maybe b) -> Maybe (Either a b)
+    mu (Just a, _) = Just (Left a)
+    mu (_, Just b) = Just (Right b)
+    mu (_, _) = Nothing
 
-    none :: () -> Maybe Void
-    none () = Nothing
+    epsilon :: () -> Maybe Void
+    epsilon () = Nothing
 
-instance (Functor f, Choice f, Applicative f) => Alternative f where
+instance (Functor f, Monoidal f, Applicative f) => Alternative f where
     (<|>) :: f a -> f a -> f a
-    x <|> y = either id id <$> choice (x, y)
+    x <|> y = either id id <$> mu (x, y)
 
     empty :: f a
-    empty = absurd <$> none ()
+    empty = absurd <$> epsilon ()

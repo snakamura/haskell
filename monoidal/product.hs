@@ -5,21 +5,21 @@
 #-}
 
 class Functor f => Monoidal f where
-    op :: (f a, f b) -> f (a, b)
-    unit :: f ()
+    mu :: (f a, f b) -> f (a, b)
+    epsilon :: () -> f ()
 
 instance Monoidal Maybe where
-    op :: (Maybe a, Maybe b) -> Maybe (a, b)
-    op (Just a, Just b) = Just (a, b)
-    op _ = Nothing
+    mu :: (Maybe a, Maybe b) -> Maybe (a, b)
+    mu (Just a, Just b) = Just (a, b)
+    mu _ = Nothing
 
-    unit :: Maybe ()
-    unit = Just ()
+    epsilon :: () -> Maybe ()
+    epsilon () = Just ()
 
 instance (Functor f, Monoidal f) => Applicative f where
     (<*>) :: forall a b. f (a -> b) -> f a -> f b
-    ff <*> fa = let fp :: f (a -> b, a) = op (ff, fa)
+    ff <*> fa = let fp :: f (a -> b, a) = mu (ff, fa)
                 in fmap (\(f, a) -> f a) fp
 
     pure :: a -> f a
-    pure a = fmap (const a) unit
+    pure a = fmap (const a) (epsilon ())
