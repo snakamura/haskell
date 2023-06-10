@@ -1,3 +1,5 @@
+module Getter where
+
 import Data.Foldable
 import Data.Functor.Const
 import Data.Functor.Contravariant

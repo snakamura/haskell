@@ -1,3 +1,5 @@
+module Setter where
+
 import Data.Functor.Identity
 import Data.Kind
 
