@@ -5,26 +5,26 @@ import Data.Kind
 import Data.Monoid
 import Data.Profunctor
 
-type Getter1 s t a b = (a -> Const a b) -> (s -> Const a t)
+to0 :: (s -> a) -> ((a -> r) -> (s -> r))
+to0 get = \ar -> \s ->
+  let a = get s
+      r = ar a
+   in r
 
-to1 :: (s -> a) -> Getter1 s t a b
+type Getter1 r s t a b = (a -> Const r b) -> (s -> Const r t)
+
+to1 :: (s -> a) -> Getter1 r s t a b
 to1 get = \afb -> \s ->
   let a = get s
-   in Const a
+      Const r = afb a
+   in Const r
 
-view1 :: Getter1 s t a b -> s -> a
+view1 :: Getter1 a s t a b -> s -> a
 view1 getter s =
   let afb a = Const a
       sft = getter afb
-      Const t = sft s
-   in t
-
-to1' :: (s -> a) -> Getter1 s t a b
-to1' get = \afb -> \s ->
-  let a = get s
-      fb = afb a
-      Const a' = fb
-   in Const a'
+      Const a = sft s
+   in a
 
 type Getter2 s t a b = forall f. (Functor f, Contravariant f) => (a -> f b) -> (s -> f t)
 
@@ -52,14 +52,14 @@ type Getting2 s a = (a -> Const a a) -> (s -> Const a s)
 view2 :: Getting2 s a -> s -> a
 view2 getter = getConst . getter Const
 
-list1 :: Monoid a => (s -> [a]) -> Getter1 s t a b
+list1 :: Monoid a => (s -> [a]) -> Getter1 a s t a b
 list1 getList = \afb -> \s ->
   let la = getList s
       fb = afb $ mconcat la
       Const a = fb
    in Const a
 
-list1' :: forall s t a (b :: Type). Monoid a => (s -> [a]) -> Getter1 s t a b
+list1' :: forall s t a (b :: Type). Monoid a => (s -> [a]) -> Getter1 a s t a b
 list1' getList = \afb -> \s ->
   let la = getList s
       fb = traverse_ afb la
