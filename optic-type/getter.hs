@@ -117,10 +117,13 @@ views3 :: Getting3 r s a -> (a -> r) -> s -> r
 views3 fold f = getConst . fold (Const . f)
 
 toListOf3 :: Getting3 [a] s a -> s -> [a]
-toListOf3 fold s = views1 fold pure s
+toListOf3 fold s = views3 fold pure s
 
 toListOf3' :: Getting3 (Endo [a]) s a -> s -> [a]
-toListOf3' fold s = appEndo (views1 fold (Endo . (:)) s) []
+toListOf3' fold s = appEndo (views3 fold (Endo . (:)) s) []
+
+preview3 :: Getting3 (First a) s a -> s -> Maybe a
+preview3 fold s = getFirst (views3 fold (First . pure) s)
 
 type Fold3 s a = forall f. (Functor f, Contravariant f, Applicative f) => (a -> f a) -> (s -> f s)
 
@@ -147,6 +150,9 @@ view getter = getConst . getter Const
 
 views :: Getting r s a -> (a -> r) -> s -> r
 views fold f = getConst . fold (Const . f)
+
+preview :: Getting3 (First a) s a -> s -> Maybe a
+preview fold s = getFirst (views fold (First . pure) s)
 
 toListOf :: Getting (Endo [a]) s a -> s -> [a]
 toListOf fold s = appEndo (views fold (Endo . (:)) s) []
