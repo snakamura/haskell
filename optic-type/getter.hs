@@ -96,7 +96,7 @@ views1 fold f s =
 
 type Fold2 s a = (a -> Const a a) -> (s -> Const a s)
 
-folding2 :: forall g s t a (b :: Type). (Foldable g, Monoid a) => (s -> g a) -> Fold2 s a
+folding2 :: forall g s a. (Foldable g, Monoid a) => (s -> g a) -> Fold2 s a
 folding2 fold = \afb -> \s ->
   let ga = fold s
       fb = traverse_ afb ga
