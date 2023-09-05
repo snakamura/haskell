@@ -28,9 +28,9 @@ view1 getter s =
       Const a = sft s
    in a
 
-type Getter2 s t a b = forall f. (Functor f, Contravariant f) => (a -> f b) -> (s -> f t)
+type Getter2 r s t a b = forall f. (Functor f, Contravariant f) => (a -> f b) -> (s -> f t)
 
-to2 :: (s -> a) -> Getter2 s t a b
+to2 :: (s -> a) -> Getter2 r s t a b
 to2 get = \afb -> \s ->
   let a = get s
       fb = afb a
@@ -43,6 +43,9 @@ to3 get = \afb -> \s ->
   let a = get s
       fb = afb a
    in () <$ fb $< ()
+
+to3' :: (s -> a) -> Getter3 s a
+to3' get = \afa -> contramap get . afa . get
 
 type Getter4 s a = forall p f. (Profunctor p, Functor f, Contravariant f) => p a (f a) -> p s (f s)
 
@@ -70,11 +73,11 @@ list1' getList = \afb -> \s ->
 
 type ListGetter2 s a = forall f. (Functor f, Contravariant f, Applicative f) => (a -> f a) -> (s -> f s)
 
-list2 :: forall s t a (b :: Type). (s -> [a]) -> ListGetter2 s a
-list2 getList = \afb -> \s ->
+list2 :: forall s a. (s -> [a]) -> ListGetter2 s a
+list2 getList = \afa -> \s ->
   let la = getList s
-      fb = traverse_ afb la
-   in fb $< ()
+      fa = traverse_ afa la
+   in fa $< ()
 
 type Fold1 s t a b = (a -> Const a b) -> (s -> Const a t)
 
@@ -91,8 +94,8 @@ views1 :: Folding1 r s t a b -> (a -> r) -> s -> r
 views1 fold f s =
   let afb a = Const (f a)
       sft = fold afb
-      Const t = sft s
-   in t
+      Const r = sft s
+   in r
 
 type Fold2 s a = (a -> Const a a) -> (s -> Const a s)
 
