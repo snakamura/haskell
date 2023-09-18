@@ -60,7 +60,7 @@ view2 getter = getConst . getter Const
 list1 :: Monoid a => (s -> [a]) -> Getter1 a s t a b
 list1 getList = \afb -> \s ->
   let la = getList s
-      fb = afb $ mconcat la
+      fb = afb (mconcat la)
       Const a = fb
    in Const a
 

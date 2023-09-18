@@ -14,7 +14,7 @@ setting1 map = \afb -> \s ->
 
 over1 :: Setter1 s t a b -> (a -> b) -> s -> t
 over1 setter ab s =
-  let afb a = Identity $ ab a
+  let afb a = Identity (ab a)
       sft = setter afb
       Identity t = sft s
    in t
@@ -39,7 +39,7 @@ type Setting2 s t a b = (a -> Identity b) -> (s -> Identity t)
 
 over2 :: Setting2 s t a b -> (a -> b) -> s -> t
 over2 setter ab s =
-  let afb a = Identity $ ab a
+  let afb a = Identity (ab a)
       sft = setter afb
       Identity t = sft s
    in t
