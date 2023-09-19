@@ -45,11 +45,12 @@ prism2 :: (s -> Either t a) -> (b -> t) -> Prism2 s t a b
 prism2 sa bt = dimap sa (either pure (fmap bt)) . fmap
 
 type Prism3 s t a b = forall p f. (Profunctor p, Choice p, Applicative f) => p a (f b) -> p s (f t)
+type APrism3 s t a b = Tagged a (Identity b) -> Tagged s (Identity t)
 
 prism3 :: (s -> Either t a) -> (b -> t) -> Prism3 s t a b
 prism3 sa bt = dimap sa (either pure (fmap bt)) . right'
 
-review3 :: (Tagged b (Identity b) -> Tagged t (Identity t)) -> b -> t
+review3 :: APrism s t a b -> b -> t
 -- review3 prism = fmap (runIdentity . unTagged . prism . Tagged . Identity) ask
 -- review3 prism = runIdentity . unTagged . prism . Tagged . Identity
 review3 prism = \b ->
