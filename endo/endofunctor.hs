@@ -110,7 +110,7 @@ instance Monoid w => MonoidF'' (W w) where
     etaF'' (Identity x) = W (x, mempty)
 
 
-class Monad' f where
+class Functor f => Monad' f where
     join' :: f (f a) -> f a
     pure' :: a -> f a
 
@@ -120,7 +120,7 @@ instance MonoidF f => Monad' f where
     pure' = etaF . Identity
 -}
 
-instance (MonoidF'' f, ProductF'' f ~ Compose f f, UnitF'' f ~ Identity) => Monad' f where
+instance (Functor f, MonoidF'' f, ProductF'' f ~ Compose f f, UnitF'' f ~ Identity) => Monad' f where
     join' = muF'' . Compose
     pure' = etaF'' . Identity
 
