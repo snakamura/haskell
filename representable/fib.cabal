@@ -1,0 +1,7 @@
+Cabal-Version: 3.4
+Name: fib
+Version: 0.0.0
+
+Library
+  Default-Language: GHC2021
+  Build-Depends: base, adjunctions, distributive
