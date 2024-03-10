@@ -14,6 +14,8 @@ executable monoidal2
     default-extensions: QuantifiedConstraints
                         TypeFamilies
                         UndecidableInstances
-    other-modules: Coproduct
+    other-modules: Compose
+                   Coproduct
                    Functor
+                   NaturalTransformation
                    Product
