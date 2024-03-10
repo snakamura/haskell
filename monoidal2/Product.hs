@@ -1,0 +1,49 @@
+module Product where
+
+import Data.Kind
+import Functor
+import Prelude (Int, Num (..), String, (++))
+
+type Product :: Type -> Type -> Type
+data Product a b = Product a b
+
+instance Functor (Product p) where
+  fmap :: (a -> b) -> (Product p a -> Product p b)
+  fmap ab (Product p a) = Product p (ab a)
+
+instance Bifunctor Product where
+  bimap :: (a -> c) -> (b -> d) -> (Product a b -> Product c d)
+  bimap ac bd (Product a b) = Product (ac a) (bd b)
+
+-- (Hask, Product, ()) is a monoidal category
+
+assoc :: Product a (Product b c) -> Product (Product a b) c
+assoc (Product a (Product b c)) = Product (Product a b) c
+
+assocInv :: Product (Product a b) c -> Product a (Product b c)
+assocInv (Product (Product a b) c) = Product a (Product b c)
+
+left :: Product () a -> a
+left (Product () a) = a
+
+leftInv :: a -> Product () a
+leftInv a = Product () a
+
+right :: Product a () -> a
+right (Product a ()) = a
+
+rightInv :: a -> Product a ()
+rightInv a = Product a ()
+
+type ProductMonoid :: Type -> Constraint
+class ProductMonoid a where
+  mu :: Product a a -> a
+  eta :: () -> a
+
+instance ProductMonoid Int where
+  mu (Product n m) = n + m
+  eta () = 0
+
+instance ProductMonoid String where
+  mu (Product s1 s2) = s1 ++ s2
+  eta () = ""
