@@ -1,8 +1,8 @@
 module Compose where
 
-import Data.Kind
 import Data.Maybe
 import Functor
+import FunctorMonoid
 import NaturalTransformation
 import Prelude ()
 
@@ -61,16 +61,15 @@ right (Compose fia) = fmap (\(Identity a) -> a) fia
 rightInv :: (Functor f) => f ~> Compose f Identity
 rightInv fa = Compose (fmap Identity fa)
 
-type ComposeMonoid :: FunctorType -> Constraint
-class ComposeMonoid f where
-  mu :: Compose f f ~> f
-  eta :: Identity ~> f
-
-instance ComposeMonoid Identity where
+instance FunctorMonoid Identity where
+  type Tensor Identity = Compose Identity Identity
+  type Id Identity = Identity
   mu (Compose (Identity (Identity a))) = Identity a
   eta (Identity a) = Identity a
 
-instance ComposeMonoid Maybe where
+instance FunctorMonoid Maybe where
+  type Tensor Maybe = Compose Maybe Maybe
+  type Id Maybe = Identity
   mu (Compose (Just (Just a))) = Just a
   mu (Compose _) = Nothing
   eta (Identity a) = Just a

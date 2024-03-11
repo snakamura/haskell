@@ -18,6 +18,7 @@ executable monoidal2
                    Coproduct
                    Day
                    Functor
+                   FunctorMonoid
                    Monoid
                    NaturalTransformation
                    Product
