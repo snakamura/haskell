@@ -39,11 +39,19 @@ rightInv a = Product a ()
 instance Monoid Int where
   type Tensor Int = Product Int Int
   type Id Int = ()
+
+  mu :: Product Int Int -> Int
   mu (Product n m) = n + m
+
+  eta :: () -> Int
   eta () = 0
 
 instance Monoid String where
   type Tensor String = Product String String
   type Id String = ()
+
+  mu :: Product String String -> String
   mu (Product s1 s2) = s1 ++ s2
+
+  eta :: () -> String
   eta () = ""

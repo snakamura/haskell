@@ -52,6 +52,10 @@ rightInv = Left
 instance Monoid a where
   type Tensor a = Coproduct a a
   type Id a = Void
+
+  mu :: Coproduct a a -> a
   mu (Left a) = a
   mu (Right a) = a
+
+  eta :: Void -> a
   eta = absurd

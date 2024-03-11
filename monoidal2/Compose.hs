@@ -64,12 +64,20 @@ rightInv fa = Compose (fmap Identity fa)
 instance FunctorMonoid Identity where
   type Tensor Identity = Compose Identity Identity
   type Id Identity = Identity
+
+  mu :: Compose Identity Identity ~> Identity
   mu (Compose (Identity (Identity a))) = Identity a
+
+  eta :: Identity ~> Identity
   eta (Identity a) = Identity a
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Compose Maybe Maybe
   type Id Maybe = Identity
+
+  mu :: Compose Maybe Maybe ~> Maybe
   mu (Compose (Just (Just a))) = Just a
   mu (Compose _) = Nothing
+
+  eta :: Identity ~> Maybe
   eta (Identity a) = Just a
