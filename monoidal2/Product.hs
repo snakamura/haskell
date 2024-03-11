@@ -2,6 +2,7 @@ module Product where
 
 import Data.Kind
 import Functor
+import Monoid
 import Prelude (Int, Num (..), String, (++))
 
 type Product :: Type -> Type -> Type
@@ -35,15 +36,14 @@ right (Product a ()) = a
 rightInv :: a -> Product a ()
 rightInv a = Product a ()
 
-type ProductMonoid :: Type -> Constraint
-class ProductMonoid a where
-  mu :: Product a a -> a
-  eta :: () -> a
-
-instance ProductMonoid Int where
+instance Monoid Int where
+  type Tensor Int = Product Int Int
+  type Id Int = ()
   mu (Product n m) = n + m
   eta () = 0
 
-instance ProductMonoid String where
+instance Monoid String where
+  type Tensor String = Product String String
+  type Id String = ()
   mu (Product s1 s2) = s1 ++ s2
   eta () = ""

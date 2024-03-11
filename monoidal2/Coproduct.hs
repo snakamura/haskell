@@ -2,6 +2,7 @@ module Coproduct where
 
 import Data.Kind
 import Functor
+import Monoid
 import Prelude ()
 
 type Coproduct :: Type -> Type -> Type
@@ -48,12 +49,9 @@ right (Right v) = absurd v
 rightInv :: a -> Coproduct a Void
 rightInv = Left
 
-type CoproductMonoid :: Type -> Constraint
-class CoproductMonoid a where
-  mu :: Coproduct a a -> a
-  eta :: Void -> a
-
-instance CoproductMonoid a where
+instance Monoid a where
+  type Tensor a = Coproduct a a
+  type Id a = Void
   mu (Left a) = a
   mu (Right a) = a
   eta = absurd
