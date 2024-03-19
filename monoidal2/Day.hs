@@ -6,6 +6,7 @@ import FunctorMonoid
 import NaturalTransformation
 import Prelude (const, flip)
 
+type Day :: FunctorType -> FunctorType -> FunctorType
 data Day f g a = forall p q. Day (f p) (g q) (p -> q -> a)
 
 instance Functor (Day f g) where

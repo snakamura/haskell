@@ -3,6 +3,7 @@ module Functor where
 import Data.Kind
 import Prelude ()
 
+type FunctorType :: Type
 type FunctorType = Type -> Type
 
 type Functor :: (Type -> Type) -> Constraint

@@ -4,6 +4,7 @@ import Data.Kind
 import Functor
 import Prelude ()
 
+type NaturalTransformationType :: Type
 type NaturalTransformationType = FunctorType -> FunctorType
 
 type (~>) :: FunctorType -> FunctorType -> Type
