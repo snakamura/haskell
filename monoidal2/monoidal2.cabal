@@ -19,6 +19,7 @@ executable monoidal2
                    FunctorCompose
                    FunctorDay
                    FunctorMonoid
+                   FunctorProduct
                    Monoid
                    NaturalTransformation
                    Product
