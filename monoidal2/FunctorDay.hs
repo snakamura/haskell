@@ -9,18 +9,18 @@ import NaturalTransformation
 import Prelude (const, flip, ($), (.))
 
 type Day :: FunctorType -> FunctorType -> FunctorType
-data Day f g a = forall p q. Day (f p) (g q) (p -> q -> a)
+data Day f g a = forall b c. Day (f b) (g c) (b -> c -> a)
 
 instance Functor (Day f g) where
   fmap :: (a -> b) -> (Day f g a -> Day f g b)
-  fmap ab (Day f g pqa) = Day f g (\p q -> ab (pqa p q))
+  fmap ab (Day fb gc bca) = Day fb gc (\b c -> ab (bca b c))
 
-instance (Functor h) => NaturalTransformation (Day h) where
+instance (Functor f) => NaturalTransformation (Day f) where
   ntmap ::
-    (Functor f, Functor g) =>
-    (f ~> g) ->
-    (Day h f ~> Day h g)
-  ntmap fg (Day h f pqa) = Day h (fg f) pqa
+    (Functor g, Functor h) =>
+    (g ~> h) ->
+    (Day f g ~> Day f h)
+  ntmap gh (Day f g bca) = Day f (gh g) bca
 
 instance
   (forall f. NaturalTransformation (Day f)) =>
@@ -31,7 +31,7 @@ instance
     (f ~> h) ->
     (g ~> i) ->
     (Day f g ~> Day h i)
-  bintmap fh gi (Day f g pqa) = Day (fh f) (gi g) pqa
+  bintmap fh gi (Day f g bca) = Day (fh f) (gi g) bca
 
 newtype Identity a = Identity a
 
@@ -40,30 +40,30 @@ newtype Identity a = Identity a
 assoc ::
   (Functor f, Functor g, Functor h) =>
   Day f (Day g h) ~> Day (Day f g) h
-assoc (Day fp (Day gq hr qrs) psa) =
-  Day (Day fp gq (,)) hr (\(p, q) r -> psa p (qrs q r))
+assoc (Day fb (Day gc hd cde) bea) =
+  Day (Day fb gc (,)) hd (\(b, c) d -> bea b (cde c d))
 
 assocInv ::
   (Functor f, Functor g, Functor h) =>
   Day (Day f g) h ~> Day f (Day g h)
-assocInv (Day (Day fp gq pqs) hr sra) =
-  Day fp (Day gq hr (,)) (\p (q, r) -> sra (pqs p q) r)
+assocInv (Day (Day fb gc bcd) he dea) =
+  Day fb (Day gc he (,)) (\b (c, e) -> dea (bcd b c) e)
 
 left :: (Functor f) => Day Identity f ~> f
-left (Day (Identity p) fq pqa) = fmap (pqa p) fq
+left (Day (Identity b) fc bca) = fmap (bca b) fc
 
 leftInv :: (Functor f) => f ~> Day Identity f
-leftInv fp = Day (Identity ()) fp (flip const)
+leftInv fa = Day (Identity ()) fa (flip const)
 
 right :: (Functor f) => Day f Identity ~> f
-right (Day fp (Identity q) pqa) = fmap (flip pqa q) fp
+right (Day fb (Identity c) bca) = fmap (flip bca c) fb
 
 rightInv :: (Functor f) => f ~> Day f Identity
 rightInv fa = Day fa (Identity ()) const
 
 instance Functor Maybe where
   fmap :: (a -> b) -> (Maybe a -> Maybe b)
-  fmap f (Just a) = Just (f a)
+  fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
@@ -71,7 +71,7 @@ instance FunctorMonoid Maybe where
   type Id Maybe = Identity
 
   mu :: Day Maybe Maybe ~> Maybe
-  mu (Day (Just p) (Just q) pqa) = Just (pqa p q)
+  mu (Day (Just b) (Just c) bca) = Just (bca b c)
   mu _ = Nothing
 
   eta :: Identity ~> Maybe

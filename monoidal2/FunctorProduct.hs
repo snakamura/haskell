@@ -15,12 +15,12 @@ instance (Functor f, Functor g) => Functor (Product f g) where
   fmap :: (a -> b) -> (Product f g a -> Product f g b)
   fmap ab (Product fa ga) = Product (fmap ab fa) (fmap ab ga)
 
-instance (Functor h) => NaturalTransformation (Product h) where
+instance (Functor f) => NaturalTransformation (Product f) where
   ntmap ::
-    (Functor f, Functor g) =>
-    (f ~> g) ->
-    (Product h f ~> Product h g)
-  ntmap fg (Product ha fa) = Product ha (fg fa)
+    (Functor g, Functor h) =>
+    (g ~> h) ->
+    (Product f g ~> Product f h)
+  ntmap gh (Product fa ga) = Product fa (gh ga)
 
 instance (forall f. NaturalTransformation (Product f)) => BinaturalTransformation Product where
   bintmap ::
@@ -58,7 +58,7 @@ rightInv fa = Product fa Proxy
 
 instance Functor Maybe where
   fmap :: (a -> b) -> (Maybe a -> Maybe b)
-  fmap f (Just a) = Just (f a)
+  fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where

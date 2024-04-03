@@ -16,12 +16,12 @@ instance (Functor f, Functor g) => Functor (Compose f g) where
   fmap :: (a -> b) -> (Compose f g a -> Compose f g b)
   fmap ab (Compose fga) = Compose (fmap (fmap ab) fga)
 
-instance (Functor h) => NaturalTransformation (Compose h) where
+instance (Functor f) => NaturalTransformation (Compose f) where
   ntmap ::
-    (Functor f, Functor g) =>
-    (f ~> g) ->
-    (Compose h f ~> Compose h g)
-  ntmap fg (Compose hfa) = Compose (fmap fg hfa)
+    (Functor g, Functor h) =>
+    (g ~> h) ->
+    (Compose f g ~> Compose f h)
+  ntmap gh (Compose fga) = Compose (fmap gh fga)
 
 instance
   (forall f. NaturalTransformation (Compose f)) =>
@@ -66,7 +66,7 @@ rightInv fa = Compose (fmap Identity fa)
 
 instance Functor Identity where
   fmap :: (a -> b) -> (Identity a -> Identity b)
-  fmap f (Identity a) = Identity (f a)
+  fmap ab (Identity a) = Identity (ab a)
 
 instance FunctorMonoid Identity where
   type Tensor Identity = Compose Identity Identity
@@ -80,7 +80,7 @@ instance FunctorMonoid Identity where
 
 instance Functor Maybe where
   fmap :: (a -> b) -> (Maybe a -> Maybe b)
-  fmap f (Just a) = Just (f a)
+  fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
