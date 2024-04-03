@@ -63,7 +63,7 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Product Maybe Maybe
-  type Id Maybe = Proxy
+  type Unit Maybe = Proxy
 
   mu :: Product Maybe Maybe ~> Maybe
   mu (Product (Just a) _) = Just a
@@ -78,7 +78,7 @@ instance
     Control.Applicative.Applicative f,
     FunctorMonoid f,
     Tensor f ~ Product f f,
-    Id f ~ Proxy
+    Unit f ~ Proxy
   ) =>
   Control.Applicative.Alternative f
   where

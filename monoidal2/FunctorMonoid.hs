@@ -8,6 +8,6 @@ import Prelude ()
 type FunctorMonoid :: FunctorType -> Constraint
 class Functor f => FunctorMonoid f where
   type Tensor f :: FunctorType
-  type Id f :: FunctorType
+  type Unit f :: FunctorType
   mu :: Tensor f ~> f
-  eta :: Id f ~> f
+  eta :: Unit f ~> f

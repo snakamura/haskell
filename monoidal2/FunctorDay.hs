@@ -68,7 +68,7 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Day Maybe Maybe
-  type Id Maybe = Identity
+  type Unit Maybe = Identity
 
   mu :: Day Maybe Maybe ~> Maybe
   mu (Day (Just b) (Just c) bca) = Just (bca b c)
@@ -81,7 +81,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Day f f,
-    Id f ~ Identity
+    Unit f ~ Identity
   ) =>
   Control.Applicative.Applicative f
   where

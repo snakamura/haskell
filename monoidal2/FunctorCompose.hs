@@ -70,7 +70,7 @@ instance Functor Identity where
 
 instance FunctorMonoid Identity where
   type Tensor Identity = Compose Identity Identity
-  type Id Identity = Identity
+  type Unit Identity = Identity
 
   mu :: Compose Identity Identity ~> Identity
   mu (Compose (Identity (Identity a))) = Identity a
@@ -85,7 +85,7 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Compose Maybe Maybe
-  type Id Maybe = Identity
+  type Unit Maybe = Identity
 
   mu :: Compose Maybe Maybe ~> Maybe
   mu (Compose (Just (Just a))) = Just a
@@ -98,7 +98,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Compose f f,
-    Id f ~ Identity
+    Unit f ~ Identity
   ) =>
   Control.Applicative.Applicative f
   where
@@ -119,7 +119,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Compose f f,
-    Id f ~ Identity
+    Unit f ~ Identity
   ) =>
   Control.Monad.Monad f
   where
