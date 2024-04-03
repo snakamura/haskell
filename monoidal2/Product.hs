@@ -1,6 +1,8 @@
 module Product where
 
 import Data.Kind
+import Data.Monoid qualified
+import Data.Semigroup qualified
 import Functor
 import Monoid
 import Prelude (Int, Num (..), String, (++))
@@ -55,3 +57,23 @@ instance Monoid String where
 
   eta :: () -> String
   eta () = ""
+
+instance
+  ( Monoid a,
+    Tensor a ~ Product a a,
+    Id a ~ ()
+  ) =>
+  Data.Semigroup.Semigroup a
+  where
+  (<>) :: a -> a -> a
+  (<>) a1 a2 = mu (Product a1 a2)
+
+instance
+  ( Monoid a,
+    Tensor a ~ Product a a,
+    Id a ~ ()
+  ) =>
+  Data.Monoid.Monoid a
+  where
+  mempty :: a
+  mempty = eta ()

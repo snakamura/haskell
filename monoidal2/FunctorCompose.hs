@@ -1,17 +1,20 @@
 module FunctorCompose where
 
+import Control.Applicative qualified
+import Control.Monad qualified
+import Data.Functor qualified
 import Data.Maybe
 import Functor
 import FunctorMonoid
 import NaturalTransformation
-import Prelude ()
+import Prelude (($), (.))
 
 type Compose :: FunctorType -> FunctorType -> FunctorType
 newtype Compose f g a = Compose {getCompose :: (f (g a))}
 
---instance (Functor f, Functor g) => Functor (Compose f g) where
---  fmap :: (a -> b) -> (Compose f g a -> Compose f g b)
---  fmap ab (Compose fga) = Compose (fmap (fmap ab) fga)
+instance (Functor f, Functor g) => Functor (Compose f g) where
+  fmap :: (a -> b) -> (Compose f g a -> Compose f g b)
+  fmap ab (Compose fga) = Compose (fmap (fmap ab) fga)
 
 instance (Functor h) => NaturalTransformation (Compose h) where
   ntmap ::
@@ -90,3 +93,35 @@ instance FunctorMonoid Maybe where
 
   eta :: Identity ~> Maybe
   eta (Identity a) = Just a
+
+instance
+  ( Data.Functor.Functor f,
+    FunctorMonoid f,
+    Tensor f ~ Compose f f,
+    Id f ~ Identity
+  ) =>
+  Control.Applicative.Applicative f
+  where
+  (<*>) :: f (a -> b) -> (f a -> f b)
+  (<*>) fab fa =
+    mu $
+      Compose $
+        fmap
+          ( \ab ->
+              mu $ Compose $ fmap (Control.Applicative.pure . ab) fa
+          )
+          fab
+
+  pure :: a -> f a
+  pure = eta . Identity
+
+instance
+  ( Data.Functor.Functor f,
+    FunctorMonoid f,
+    Tensor f ~ Compose f f,
+    Id f ~ Identity
+  ) =>
+  Control.Monad.Monad f
+  where
+  (>>=) :: f a -> (a -> f b) -> f b
+  (>>=) fa afb = mu $ Compose $ fmap afb fa

@@ -1,10 +1,12 @@
 module FunctorDay where
 
+import Control.Applicative qualified
+import Data.Functor qualified
 import Data.Maybe
 import Functor
 import FunctorMonoid
 import NaturalTransformation
-import Prelude (const, flip)
+import Prelude (const, flip, ($), (.))
 
 type Day :: FunctorType -> FunctorType -> FunctorType
 data Day f g a = forall p q. Day (f p) (g q) (p -> q -> a)
@@ -74,3 +76,17 @@ instance FunctorMonoid Maybe where
 
   eta :: Identity ~> Maybe
   eta (Identity a) = Just a
+
+instance
+  ( Data.Functor.Functor f,
+    FunctorMonoid f,
+    Tensor f ~ Day f f,
+    Id f ~ Identity
+  ) =>
+  Control.Applicative.Applicative f
+  where
+  (<*>) :: f (a -> b) -> (f a -> f b)
+  (<*>) fab fa = mu $ Day fab fa (\ab a -> ab a)
+
+  pure :: a -> f a
+  pure = eta . Identity

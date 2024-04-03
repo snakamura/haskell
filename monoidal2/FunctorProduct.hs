@@ -1,5 +1,7 @@
 module FunctorProduct where
 
+import Control.Applicative qualified
+import Data.Functor qualified
 import Data.Maybe
 import Functor
 import FunctorMonoid
@@ -70,3 +72,18 @@ instance FunctorMonoid Maybe where
 
   eta :: Proxy ~> Maybe
   eta _ = Nothing
+
+instance
+  ( Data.Functor.Functor f,
+    Control.Applicative.Applicative f,
+    FunctorMonoid f,
+    Tensor f ~ Product f f,
+    Id f ~ Proxy
+  ) =>
+  Control.Applicative.Alternative f
+  where
+  (<|>) :: f a -> f a -> f a
+  (<|>) fa1 fa2 = mu (Product fa1 fa2)
+
+  empty :: f a
+  empty = eta Proxy
