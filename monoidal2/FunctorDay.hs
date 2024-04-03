@@ -1,4 +1,4 @@
-module Day where
+module FunctorDay where
 
 import Data.Maybe
 import Functor

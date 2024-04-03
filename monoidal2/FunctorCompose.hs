@@ -1,4 +1,4 @@
-module Compose where
+module FunctorCompose where
 
 import Data.Maybe
 import Functor

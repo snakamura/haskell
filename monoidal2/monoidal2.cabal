@@ -9,15 +9,15 @@ common warnings
 executable monoidal2
     import: warnings
     main-is: monoidal2.hs
-    build-depends: base
+    build-depends: base, kan-extensions
     default-language: GHC2021
     default-extensions: QuantifiedConstraints
                         TypeFamilies
                         UndecidableInstances
-    other-modules: Compose
-                   Coproduct
-                   Day
+    other-modules: Coproduct
                    Functor
+                   FunctorCompose
+                   FunctorDay
                    FunctorMonoid
                    Monoid
                    NaturalTransformation
