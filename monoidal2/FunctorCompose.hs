@@ -61,6 +61,10 @@ right (Compose fia) = fmap (\(Identity a) -> a) fia
 rightInv :: (Functor f) => f ~> Compose f Identity
 rightInv fa = Compose (fmap Identity fa)
 
+instance Functor Identity where
+  fmap :: (a -> b) -> (Identity a -> Identity b)
+  fmap f (Identity a) = Identity (f a)
+
 instance FunctorMonoid Identity where
   type Tensor Identity = Compose Identity Identity
   type Id Identity = Identity
@@ -70,6 +74,11 @@ instance FunctorMonoid Identity where
 
   eta :: Identity ~> Identity
   eta (Identity a) = Identity a
+
+instance Functor Maybe where
+  fmap :: (a -> b) -> (Maybe a -> Maybe b)
+  fmap f (Just a) = Just (f a)
+  fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Compose Maybe Maybe

@@ -59,6 +59,11 @@ right (Day fp (Identity q) pqa) = fmap (flip pqa q) fp
 rightInv :: (Functor f) => f ~> Day f Identity
 rightInv fa = Day fa (Identity ()) const
 
+instance Functor Maybe where
+  fmap :: (a -> b) -> (Maybe a -> Maybe b)
+  fmap f (Just a) = Just (f a)
+  fmap _ Nothing = Nothing
+
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Day Maybe Maybe
   type Id Maybe = Identity

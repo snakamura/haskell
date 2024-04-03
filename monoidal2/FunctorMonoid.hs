@@ -3,9 +3,10 @@ module FunctorMonoid where
 import Data.Kind
 import Functor
 import NaturalTransformation
+import Prelude ()
 
 type FunctorMonoid :: FunctorType -> Constraint
-class FunctorMonoid f where
+class Functor f => FunctorMonoid f where
   type Tensor f :: FunctorType
   type Id f :: FunctorType
   mu :: Tensor f ~> f

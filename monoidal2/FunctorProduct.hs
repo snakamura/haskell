@@ -54,6 +54,11 @@ right (Product fa Proxy) = fa
 rightInv :: (Functor f) => f ~> Product f Proxy
 rightInv fa = Product fa Proxy
 
+instance Functor Maybe where
+  fmap :: (a -> b) -> (Maybe a -> Maybe b)
+  fmap f (Just a) = Just (f a)
+  fmap _ Nothing = Nothing
+
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Product Maybe Maybe
   type Id Maybe = Proxy
