@@ -35,6 +35,10 @@ instance
 
 newtype Identity a = Identity a
 
+instance Functor Identity where
+  fmap :: (a -> b) -> (Identity a -> Identity b)
+  fmap ab (Identity a) = Identity (ab a)
+
 -- (Hask -> Hask, Day, Identity) is a monoidal category
 
 assoc ::

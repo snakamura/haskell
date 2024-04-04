@@ -32,6 +32,10 @@ instance (forall f. NaturalTransformation (Product f)) => BinaturalTransformatio
 
 data Proxy a = Proxy
 
+instance Functor Proxy where
+    fmap :: (a -> b) -> (Proxy a -> Proxy b)
+    fmap _ Proxy = Proxy
+
 -- (Hask x Hask, Product, Proxy) is a monoidal category
 
 assoc ::
