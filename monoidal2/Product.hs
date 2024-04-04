@@ -5,7 +5,7 @@ import Data.Monoid qualified
 import Data.Semigroup qualified
 import Functor
 import Monoid
-import Prelude (Int, Num (..), String, (++))
+import Prelude (Int, Num (..), String, id, (++), (.))
 
 type Product :: Type -> Type -> Type
 data Product a b = Product a b
@@ -57,6 +57,16 @@ instance Monoid String where
 
   eta :: () -> String
   eta () = ""
+
+instance Monoid (a -> a) where
+  type Tensor (a -> a) = Product (a -> a) (a -> a)
+  type Unit (a -> a) = ()
+
+  mu :: Product (a -> a) (a -> a) -> (a -> a)
+  mu (Product f g) = g . f
+
+  eta :: () -> (a -> a)
+  eta () = id
 
 instance
   ( Monoid a,
