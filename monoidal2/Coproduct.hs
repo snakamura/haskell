@@ -50,7 +50,7 @@ rightInv :: a -> Coproduct a Void
 rightInv = Left
 
 instance Monoid a where
-  type Tensor a = Coproduct a a
+  type Tensor a = Coproduct
   type Unit a = Void
 
   mu :: Coproduct a a -> a

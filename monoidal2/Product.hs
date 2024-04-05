@@ -39,7 +39,7 @@ rightInv :: a -> Product a ()
 rightInv a = Product a ()
 
 instance Monoid Int where
-  type Tensor Int = Product Int Int
+  type Tensor Int = Product
   type Unit Int = ()
 
   mu :: Product Int Int -> Int
@@ -49,7 +49,7 @@ instance Monoid Int where
   eta () = 0
 
 instance Monoid String where
-  type Tensor String = Product String String
+  type Tensor String = Product
   type Unit String = ()
 
   mu :: Product String String -> String
@@ -59,7 +59,7 @@ instance Monoid String where
   eta () = ""
 
 instance Monoid (a -> a) where
-  type Tensor (a -> a) = Product (a -> a) (a -> a)
+  type Tensor (a -> a) = Product
   type Unit (a -> a) = ()
 
   mu :: Product (a -> a) (a -> a) -> (a -> a)
@@ -70,7 +70,7 @@ instance Monoid (a -> a) where
 
 instance
   ( Monoid a,
-    Tensor a ~ Product a a,
+    Tensor a ~ Product,
     Unit a ~ ()
   ) =>
   Data.Semigroup.Semigroup a
@@ -80,7 +80,7 @@ instance
 
 instance
   ( Monoid a,
-    Tensor a ~ Product a a,
+    Tensor a ~ Product,
     Unit a ~ ()
   ) =>
   Data.Monoid.Monoid a

@@ -24,7 +24,7 @@ instance (Functor f) => NaturalTransformation (Compose f) where
   ntmap gh (Compose fga) = Compose (fmap gh fga)
 
 instance
-  (forall f. NaturalTransformation (Compose f)) =>
+  (forall f. (Functor f) => NaturalTransformation (Compose f)) =>
   BinaturalTransformation Compose
   where
   bintmap ::
@@ -37,6 +37,10 @@ instance
      in Compose (fh fia)
 
 newtype Identity a = Identity a
+
+instance Functor Identity where
+  fmap :: (a -> b) -> (Identity a -> Identity b)
+  fmap ab (Identity a) = Identity (ab a)
 
 -- (Hask -> Hask, Compose, Identity) is a monoidal category
 
@@ -64,12 +68,8 @@ right (Compose fia) = fmap (\(Identity a) -> a) fia
 rightInv :: (Functor f) => f ~> Compose f Identity
 rightInv fa = Compose (fmap Identity fa)
 
-instance Functor Identity where
-  fmap :: (a -> b) -> (Identity a -> Identity b)
-  fmap ab (Identity a) = Identity (ab a)
-
 instance FunctorMonoid Identity where
-  type Tensor Identity = Compose Identity Identity
+  type Tensor Identity = Compose
   type Unit Identity = Identity
 
   mu :: Compose Identity Identity ~> Identity
@@ -84,7 +84,7 @@ instance Functor Maybe where
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
-  type Tensor Maybe = Compose Maybe Maybe
+  type Tensor Maybe = Compose
   type Unit Maybe = Identity
 
   mu :: Compose Maybe Maybe ~> Maybe
@@ -97,7 +97,7 @@ instance FunctorMonoid Maybe where
 instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
-    Tensor f ~ Compose f f,
+    Tensor f ~ Compose,
     Unit f ~ Identity
   ) =>
   Control.Applicative.Applicative f
@@ -118,7 +118,7 @@ instance
 instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
-    Tensor f ~ Compose f f,
+    Tensor f ~ Compose,
     Unit f ~ Identity
   ) =>
   Control.Monad.Monad f

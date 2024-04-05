@@ -22,7 +22,10 @@ instance (Functor f) => NaturalTransformation (Product f) where
     (Product f g ~> Product f h)
   ntmap gh (Product fa ga) = Product fa (gh ga)
 
-instance (forall f. NaturalTransformation (Product f)) => BinaturalTransformation Product where
+instance
+  (forall f. (Functor f) => NaturalTransformation (Product f)) =>
+  BinaturalTransformation Product
+  where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>
     (f ~> h) ->
@@ -33,8 +36,8 @@ instance (forall f. NaturalTransformation (Product f)) => BinaturalTransformatio
 data Proxy a = Proxy
 
 instance Functor Proxy where
-    fmap :: (a -> b) -> (Proxy a -> Proxy b)
-    fmap _ Proxy = Proxy
+  fmap :: (a -> b) -> (Proxy a -> Proxy b)
+  fmap _ Proxy = Proxy
 
 -- (Hask x Hask, Product, Proxy) is a monoidal category
 
@@ -66,7 +69,7 @@ instance Functor Maybe where
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
-  type Tensor Maybe = Product Maybe Maybe
+  type Tensor Maybe = Product
   type Unit Maybe = Proxy
 
   mu :: Product Maybe Maybe ~> Maybe
@@ -81,7 +84,7 @@ instance
   ( Data.Functor.Functor f,
     Control.Applicative.Applicative f,
     FunctorMonoid f,
-    Tensor f ~ Product f f,
+    Tensor f ~ Product,
     Unit f ~ Proxy
   ) =>
   Control.Applicative.Alternative f

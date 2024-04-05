@@ -19,7 +19,7 @@ class NaturalTransformation t where
 
 type BinaturalTransformation :: (FunctorType -> FunctorType -> FunctorType) -> Constraint
 class
-  (forall f. NaturalTransformation (t f)) =>
+  (forall f. (Functor f) => NaturalTransformation (t f)) =>
   BinaturalTransformation t
   where
   bintmap ::

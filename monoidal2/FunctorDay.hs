@@ -23,7 +23,7 @@ instance (Functor f) => NaturalTransformation (Day f) where
   ntmap gh (Day f g bca) = Day f (gh g) bca
 
 instance
-  (forall f. NaturalTransformation (Day f)) =>
+  (forall f. (Functor f) => NaturalTransformation (Day f)) =>
   BinaturalTransformation Day
   where
   bintmap ::
@@ -71,7 +71,7 @@ instance Functor Maybe where
   fmap _ Nothing = Nothing
 
 instance FunctorMonoid Maybe where
-  type Tensor Maybe = Day Maybe Maybe
+  type Tensor Maybe = Day
   type Unit Maybe = Identity
 
   mu :: Day Maybe Maybe ~> Maybe
@@ -84,7 +84,7 @@ instance FunctorMonoid Maybe where
 instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
-    Tensor f ~ Day f f,
+    Tensor f ~ Day,
     Unit f ~ Identity
   ) =>
   Control.Applicative.Applicative f
