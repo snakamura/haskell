@@ -25,33 +25,35 @@ absurd = absurd
 
 -- (Hask, Coproduct, Void) is a monoidal category
 
-assoc :: Coproduct a (Coproduct b c) -> Coproduct (Coproduct a b) c
-assoc (Left a) = Left (Left a)
-assoc (Right (Left b)) = Left (Right b)
-assoc (Right (Right c)) = Right c
+instance Monoidal Coproduct where
+  type Unit Coproduct = Void
 
-assocInv :: Coproduct (Coproduct a b) c -> Coproduct a (Coproduct b c)
-assocInv (Left (Left a)) = Left a
-assocInv (Left (Right b)) = Right (Left b)
-assocInv (Right c) = Right (Right c)
+  assoc :: Coproduct a (Coproduct b c) -> Coproduct (Coproduct a b) c
+  assoc (Left a) = Left (Left a)
+  assoc (Right (Left b)) = Left (Right b)
+  assoc (Right (Right c)) = Right c
 
-left :: Coproduct Void a -> a
-left (Left v) = absurd v
-left (Right a) = a
+  assocInv :: Coproduct (Coproduct a b) c -> Coproduct a (Coproduct b c)
+  assocInv (Left (Left a)) = Left a
+  assocInv (Left (Right b)) = Right (Left b)
+  assocInv (Right c) = Right (Right c)
 
-leftInv :: a -> Coproduct Void a
-leftInv = Right
+  left :: Coproduct Void a -> a
+  left (Left v) = absurd v
+  left (Right a) = a
 
-right :: Coproduct a Void -> a
-right (Left a) = a
-right (Right v) = absurd v
+  leftInv :: a -> Coproduct Void a
+  leftInv = Right
 
-rightInv :: a -> Coproduct a Void
-rightInv = Left
+  right :: Coproduct a Void -> a
+  right (Left a) = a
+  right (Right v) = absurd v
+
+  rightInv :: a -> Coproduct a Void
+  rightInv = Left
 
 instance Monoid a where
   type Tensor a = Coproduct
-  type Unit a = Void
 
   mu :: Coproduct a a -> a
   mu (Left a) = a

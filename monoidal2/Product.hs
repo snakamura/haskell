@@ -20,27 +20,29 @@ instance Bifunctor Product where
 
 -- (Hask, Product, ()) is a monoidal category
 
-assoc :: Product a (Product b c) -> Product (Product a b) c
-assoc (Product a (Product b c)) = Product (Product a b) c
+instance Monoidal Product where
+  type Unit Product = ()
 
-assocInv :: Product (Product a b) c -> Product a (Product b c)
-assocInv (Product (Product a b) c) = Product a (Product b c)
+  assoc :: Product a (Product b c) -> Product (Product a b) c
+  assoc (Product a (Product b c)) = Product (Product a b) c
 
-left :: Product () a -> a
-left (Product () a) = a
+  assocInv :: Product (Product a b) c -> Product a (Product b c)
+  assocInv (Product (Product a b) c) = Product a (Product b c)
 
-leftInv :: a -> Product () a
-leftInv a = Product () a
+  left :: Product () a -> a
+  left (Product () a) = a
 
-right :: Product a () -> a
-right (Product a ()) = a
+  leftInv :: a -> Product () a
+  leftInv a = Product () a
 
-rightInv :: a -> Product a ()
-rightInv a = Product a ()
+  right :: Product a () -> a
+  right (Product a ()) = a
+
+  rightInv :: a -> Product a ()
+  rightInv a = Product a ()
 
 instance Monoid Int where
   type Tensor Int = Product
-  type Unit Int = ()
 
   mu :: Product Int Int -> Int
   mu (Product n m) = n + m
@@ -50,7 +52,6 @@ instance Monoid Int where
 
 instance Monoid String where
   type Tensor String = Product
-  type Unit String = ()
 
   mu :: Product String String -> String
   mu (Product s1 s2) = s1 ++ s2
@@ -60,7 +61,6 @@ instance Monoid String where
 
 instance Monoid (a -> a) where
   type Tensor (a -> a) = Product
-  type Unit (a -> a) = ()
 
   mu :: Product (a -> a) (a -> a) -> (a -> a)
   mu (Product f g) = g . f
@@ -71,7 +71,7 @@ instance Monoid (a -> a) where
 instance
   ( Monoid a,
     Tensor a ~ Product,
-    Unit a ~ ()
+    Unit (Tensor a) ~ ()
   ) =>
   Data.Semigroup.Semigroup a
   where
@@ -81,7 +81,7 @@ instance
 instance
   ( Monoid a,
     Tensor a ~ Product,
-    Unit a ~ ()
+    Unit (Tensor a) ~ ()
   ) =>
   Data.Monoid.Monoid a
   where
