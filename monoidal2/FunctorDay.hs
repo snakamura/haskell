@@ -41,29 +41,32 @@ instance Functor Identity where
 
 -- (Hask -> Hask, Day, Identity) is a monoidal category
 
-assoc ::
-  (Functor f, Functor g, Functor h) =>
-  Day f (Day g h) ~> Day (Day f g) h
-assoc (Day fb (Day gc hd cde) bea) =
-  Day (Day fb gc (,)) hd (\(b, c) d -> bea b (cde c d))
+instance FunctorMonoidal Day where
+  type Unit Day = Identity
 
-assocInv ::
-  (Functor f, Functor g, Functor h) =>
-  Day (Day f g) h ~> Day f (Day g h)
-assocInv (Day (Day fb gc bcd) he dea) =
-  Day fb (Day gc he (,)) (\b (c, e) -> dea (bcd b c) e)
+  assoc ::
+    (Functor f, Functor g, Functor h) =>
+    Day f (Day g h) ~> Day (Day f g) h
+  assoc (Day fb (Day gc hd cde) bea) =
+    Day (Day fb gc (,)) hd (\(b, c) d -> bea b (cde c d))
 
-left :: (Functor f) => Day Identity f ~> f
-left (Day (Identity b) fc bca) = fmap (bca b) fc
+  assocInv ::
+    (Functor f, Functor g, Functor h) =>
+    Day (Day f g) h ~> Day f (Day g h)
+  assocInv (Day (Day fb gc bcd) he dea) =
+    Day fb (Day gc he (,)) (\b (c, e) -> dea (bcd b c) e)
 
-leftInv :: (Functor f) => f ~> Day Identity f
-leftInv fa = Day (Identity ()) fa (flip const)
+  left :: (Functor f) => Day Identity f ~> f
+  left (Day (Identity b) fc bca) = fmap (bca b) fc
 
-right :: (Functor f) => Day f Identity ~> f
-right (Day fb (Identity c) bca) = fmap (flip bca c) fb
+  leftInv :: (Functor f) => f ~> Day Identity f
+  leftInv fa = Day (Identity ()) fa (flip const)
 
-rightInv :: (Functor f) => f ~> Day f Identity
-rightInv fa = Day fa (Identity ()) const
+  right :: (Functor f) => Day f Identity ~> f
+  right (Day fb (Identity c) bca) = fmap (flip bca c) fb
+
+  rightInv :: (Functor f) => f ~> Day f Identity
+  rightInv fa = Day fa (Identity ()) const
 
 instance Functor Maybe where
   fmap :: (a -> b) -> (Maybe a -> Maybe b)
@@ -72,7 +75,6 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Day
-  type Unit Maybe = Identity
 
   mu :: Day Maybe Maybe ~> Maybe
   mu (Day (Just b) (Just c) bca) = Just (bca b c)
@@ -85,7 +87,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Day,
-    Unit f ~ Identity
+    Unit (Tensor f) ~ Identity
   ) =>
   Control.Applicative.Applicative f
   where

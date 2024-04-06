@@ -44,33 +44,35 @@ instance Functor Identity where
 
 -- (Hask -> Hask, Compose, Identity) is a monoidal category
 
-assoc ::
-  (Functor f, Functor g, Functor h) =>
-  Compose f (Compose g h) ~> Compose (Compose f g) h
-assoc (Compose fcgha) =
-  let fgha = fmap (\(Compose gha) -> gha) fcgha
-   in Compose (Compose fgha)
+instance FunctorMonoidal Compose where
+  type Unit Compose = Identity
 
-assocInv ::
-  (Functor f, Functor g, Functor h) =>
-  Compose (Compose f g) h ~> Compose f (Compose g h)
-assocInv (Compose (Compose fgh)) = Compose (fmap Compose fgh)
+  assoc ::
+    (Functor f, Functor g, Functor h) =>
+    Compose f (Compose g h) ~> Compose (Compose f g) h
+  assoc (Compose fcgha) =
+    let fgha = fmap (\(Compose gha) -> gha) fcgha
+     in Compose (Compose fgha)
 
-left :: (Functor f) => Compose Identity f ~> f
-left (Compose (Identity f)) = f
+  assocInv ::
+    (Functor f, Functor g, Functor h) =>
+    Compose (Compose f g) h ~> Compose f (Compose g h)
+  assocInv (Compose (Compose fgh)) = Compose (fmap Compose fgh)
 
-leftInv :: f ~> Compose Identity f
-leftInv f = Compose (Identity f)
+  left :: (Functor f) => Compose Identity f ~> f
+  left (Compose (Identity f)) = f
 
-right :: (Functor f) => Compose f Identity ~> f
-right (Compose fia) = fmap (\(Identity a) -> a) fia
+  leftInv :: f ~> Compose Identity f
+  leftInv f = Compose (Identity f)
 
-rightInv :: (Functor f) => f ~> Compose f Identity
-rightInv fa = Compose (fmap Identity fa)
+  right :: (Functor f) => Compose f Identity ~> f
+  right (Compose fia) = fmap (\(Identity a) -> a) fia
+
+  rightInv :: (Functor f) => f ~> Compose f Identity
+  rightInv fa = Compose (fmap Identity fa)
 
 instance FunctorMonoid Identity where
   type Tensor Identity = Compose
-  type Unit Identity = Identity
 
   mu :: Compose Identity Identity ~> Identity
   mu (Compose (Identity (Identity a))) = Identity a
@@ -85,7 +87,6 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Compose
-  type Unit Maybe = Identity
 
   mu :: Compose Maybe Maybe ~> Maybe
   mu (Compose (Just (Just a))) = Just a
@@ -98,7 +99,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Compose,
-    Unit f ~ Identity
+    Unit (Tensor f) ~ Identity
   ) =>
   Control.Applicative.Applicative f
   where
@@ -119,7 +120,7 @@ instance
   ( Data.Functor.Functor f,
     FunctorMonoid f,
     Tensor f ~ Compose,
-    Unit f ~ Identity
+    Unit (Tensor f) ~ Identity
   ) =>
   Control.Monad.Monad f
   where

@@ -41,27 +41,36 @@ instance Functor Proxy where
 
 -- (Hask x Hask, Product, Proxy) is a monoidal category
 
-assoc ::
-  (Functor f, Functor g, Functor h) =>
-  Product f (Product g h) ~> Product (Product f g) h
-assoc (Product fa (Product ga ha)) = Product (Product fa ga) ha
+instance FunctorMonoidal Product where
+  type Unit Product = Proxy
 
-assocInv ::
-  (Functor f, Functor g, Functor h) =>
-  Product (Product f g) h ~> Product f (Product g h)
-assocInv (Product (Product fa ga) ha) = (Product fa (Product ga ha))
+  assoc ::
+    (Functor f, Functor g, Functor h) =>
+    Product f (Product g h)
+      ~> Product
+           (Product f g)
+           h
+  assoc (Product fa (Product ga ha)) = Product (Product fa ga) ha
 
-left :: (Functor f) => Product Proxy f ~> f
-left (Product Proxy fa) = fa
+  assocInv ::
+    (Functor f, Functor g, Functor h) =>
+    Product (Product f g) h
+      ~> Product
+           f
+           (Product g h)
+  assocInv (Product (Product fa ga) ha) = (Product fa (Product ga ha))
 
-leftInv :: (Functor f) => f ~> Product Proxy f
-leftInv fa = Product Proxy fa
+  left :: (Functor f) => Product Proxy f ~> f
+  left (Product Proxy fa) = fa
 
-right :: (Functor f) => Product f Proxy ~> f
-right (Product fa Proxy) = fa
+  leftInv :: (Functor f) => f ~> Product Proxy f
+  leftInv fa = Product Proxy fa
 
-rightInv :: (Functor f) => f ~> Product f Proxy
-rightInv fa = Product fa Proxy
+  right :: (Functor f) => Product f Proxy ~> f
+  right (Product fa Proxy) = fa
+
+  rightInv :: (Functor f) => f ~> Product f Proxy
+  rightInv fa = Product fa Proxy
 
 instance Functor Maybe where
   fmap :: (a -> b) -> (Maybe a -> Maybe b)
@@ -70,7 +79,6 @@ instance Functor Maybe where
 
 instance FunctorMonoid Maybe where
   type Tensor Maybe = Product
-  type Unit Maybe = Proxy
 
   mu :: Product Maybe Maybe ~> Maybe
   mu (Product (Just a) _) = Just a
@@ -85,7 +93,7 @@ instance
     Control.Applicative.Applicative f,
     FunctorMonoid f,
     Tensor f ~ Product,
-    Unit f ~ Proxy
+    Unit (Tensor f) ~ Proxy
   ) =>
   Control.Applicative.Alternative f
   where
