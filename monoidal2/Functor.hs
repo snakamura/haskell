@@ -6,11 +6,14 @@ import Prelude ()
 type FunctorType :: Type
 type FunctorType = Type -> Type
 
-type Functor :: (Type -> Type) -> Constraint
+type Functor :: FunctorType -> Constraint
 class Functor f where
   fmap :: (a -> b) -> (f a -> f b)
 
-type Bifunctor :: (Type -> Type -> Type) -> Constraint
+type BifunctorType :: Type
+type BifunctorType = Type -> Type -> Type
+
+type Bifunctor :: BifunctorType -> Constraint
 class
   (forall a. Functor (f a)) =>
   Bifunctor f

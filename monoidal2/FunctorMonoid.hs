@@ -5,7 +5,7 @@ import Functor
 import NaturalTransformation
 import Prelude ()
 
-type FunctorMonoidal :: (FunctorType -> FunctorType -> FunctorType) -> Constraint
+type FunctorMonoidal :: BinaturalTransformationType -> Constraint
 class (BinaturalTransformation t) => FunctorMonoidal t where
   type Unit t :: FunctorType
 
@@ -31,6 +31,6 @@ class
   ) =>
   FunctorMonoid f
   where
-  type Tensor f :: FunctorType -> FunctorType -> FunctorType
+  type Tensor f :: BinaturalTransformationType
   mu :: Tensor f f f ~> f
   eta :: Unit (Tensor f) ~> f

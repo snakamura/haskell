@@ -4,7 +4,7 @@ import Data.Kind
 import Functor
 import Prelude ()
 
-type Monoidal :: (Type -> Type -> Type) -> Constraint
+type Monoidal :: BifunctorType -> Constraint
 class (Bifunctor t) => Monoidal t where
   type Unit t :: Type
 
@@ -19,6 +19,6 @@ class (Bifunctor t) => Monoidal t where
 
 type Monoid :: Type -> Constraint
 class (Monoidal (Tensor a)) => Monoid a where
-  type Tensor a :: Type -> Type -> Type
+  type Tensor a :: BifunctorType
   mu :: Tensor a a a -> a
   eta :: Unit (Tensor a) -> a
