@@ -11,7 +11,9 @@ executable monoidal2
     main-is: monoidal2.hs
     build-depends: base, kan-extensions
     default-language: GHC2021
-    default-extensions: QuantifiedConstraints
+    default-extensions: AllowAmbiguousTypes
+                        FunctionalDependencies
+                        QuantifiedConstraints
                         TypeFamilies
                         UndecidableInstances
     other-modules: Coproduct

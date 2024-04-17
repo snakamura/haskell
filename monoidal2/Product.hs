@@ -20,9 +20,7 @@ instance Bifunctor Product where
 
 -- (Hask, Product, ()) is a monoidal category
 
-instance Monoidal Product where
-  type Unit Product = ()
-
+instance Monoidal Product () where
   assoc :: Product a (Product b c) -> Product (Product a b) c
   assoc (Product a (Product b c)) = Product (Product a b) c
 
@@ -41,27 +39,21 @@ instance Monoidal Product where
   rightInv :: a -> Product a ()
   rightInv a = Product a ()
 
-instance Monoid Int where
-  type Tensor Int = Product
-
+instance Monoid Product () Int where
   mu :: Product Int Int -> Int
   mu (Product n m) = n + m
 
   eta :: () -> Int
   eta () = 0
 
-instance Monoid String where
-  type Tensor String = Product
-
+instance Monoid Product () String where
   mu :: Product String String -> String
   mu (Product s1 s2) = s1 ++ s2
 
   eta :: () -> String
   eta () = ""
 
-instance Monoid (a -> a) where
-  type Tensor (a -> a) = Product
-
+instance Monoid Product () (a -> a) where
   mu :: Product (a -> a) (a -> a) -> (a -> a)
   mu (Product f g) = g . f
 
@@ -69,21 +61,17 @@ instance Monoid (a -> a) where
   eta () = id
 
 instance
-  ( Monoid a,
-    Tensor a ~ Product,
-    Unit (Tensor a) ~ ()
-  ) =>
+  {-# OVERLAPPABLE #-}
+  (Monoid Product () a) =>
   Data.Semigroup.Semigroup a
   where
   (<>) :: a -> a -> a
   (<>) a1 a2 = mu (Product a1 a2)
 
 instance
-  ( Monoid a,
-    Tensor a ~ Product,
-    Unit (Tensor a) ~ ()
-  ) =>
+  {-# OVERLAPPABLE #-}
+  (Monoid Product () a) =>
   Data.Monoid.Monoid a
   where
   mempty :: a
-  mempty = eta ()
+  mempty = eta @Product ()
