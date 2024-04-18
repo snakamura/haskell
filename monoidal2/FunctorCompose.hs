@@ -44,9 +44,7 @@ instance Functor Identity where
 
 -- (Hask -> Hask, Compose, Identity) is a monoidal category
 
-instance FunctorMonoidal Compose where
-  type Unit Compose = Identity
-
+instance FunctorMonoidal Compose Identity where
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Compose f (Compose g h) ~> Compose (Compose f g) h
@@ -71,9 +69,7 @@ instance FunctorMonoidal Compose where
   rightInv :: (Functor f) => f ~> Compose f Identity
   rightInv fa = Compose (fmap Identity fa)
 
-instance FunctorMonoid Identity where
-  type Tensor Identity = Compose
-
+instance FunctorMonoid Compose Identity Identity where
   mu :: Compose Identity Identity ~> Identity
   mu (Compose (Identity (Identity a))) = Identity a
 
@@ -85,9 +81,7 @@ instance Functor Maybe where
   fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
-instance FunctorMonoid Maybe where
-  type Tensor Maybe = Compose
-
+instance FunctorMonoid Compose Identity Maybe where
   mu :: Compose Maybe Maybe ~> Maybe
   mu (Compose (Just (Just a))) = Just a
   mu (Compose _) = Nothing
@@ -96,10 +90,9 @@ instance FunctorMonoid Maybe where
   eta (Identity a) = Just a
 
 instance
+  {-# OVERLAPPABLE #-}
   ( Data.Functor.Functor f,
-    FunctorMonoid f,
-    Tensor f ~ Compose,
-    Unit (Tensor f) ~ Identity
+    FunctorMonoid Compose Identity f
   ) =>
   Control.Applicative.Applicative f
   where
@@ -114,13 +107,12 @@ instance
           fab
 
   pure :: a -> f a
-  pure = eta . Identity
+  pure = eta @Compose . Identity
 
 instance
+  {-# OVERLAPPABLE #-}
   ( Data.Functor.Functor f,
-    FunctorMonoid f,
-    Tensor f ~ Compose,
-    Unit (Tensor f) ~ Identity
+    FunctorMonoid Compose Identity f
   ) =>
   Control.Monad.Monad f
   where
