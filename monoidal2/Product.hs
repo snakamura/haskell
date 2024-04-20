@@ -20,7 +20,7 @@ instance Bifunctor Product where
 
 -- (Hask, Product, ()) is a monoidal category
 
-instance Monoidal Product () where
+instance MonoidalCategory Product () where
   assoc :: Product a (Product b c) -> Product (Product a b) c
   assoc (Product a (Product b c)) = Product (Product a b) c
 
@@ -39,21 +39,21 @@ instance Monoidal Product () where
   rightInv :: a -> Product a ()
   rightInv a = Product a ()
 
-instance Monoid Product () Int where
+instance MonoidObject Product () Int where
   mu :: Product Int Int -> Int
   mu (Product n m) = n + m
 
   eta :: () -> Int
   eta () = 0
 
-instance Monoid Product () String where
+instance MonoidObject Product () String where
   mu :: Product String String -> String
   mu (Product s1 s2) = s1 ++ s2
 
   eta :: () -> String
   eta () = ""
 
-instance Monoid Product () (a -> a) where
+instance MonoidObject Product () (a -> a) where
   mu :: Product (a -> a) (a -> a) -> (a -> a)
   mu (Product f g) = g . f
 
@@ -62,7 +62,7 @@ instance Monoid Product () (a -> a) where
 
 instance
   {-# OVERLAPPABLE #-}
-  (Monoid Product () a) =>
+  (MonoidObject Product () a) =>
   Data.Semigroup.Semigroup a
   where
   (<>) :: a -> a -> a
@@ -70,7 +70,7 @@ instance
 
 instance
   {-# OVERLAPPABLE #-}
-  (Monoid Product () a) =>
+  (MonoidObject Product () a) =>
   Data.Monoid.Monoid a
   where
   mempty :: a

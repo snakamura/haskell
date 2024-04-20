@@ -41,7 +41,7 @@ instance Functor Identity where
 
 -- (Hask -> Hask, Day, Identity) is a monoidal category
 
-instance FunctorMonoidal Day Identity where
+instance FunctorMonoidalCategory Day Identity where
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Day f (Day g h) ~> Day (Day f g) h
@@ -71,7 +71,7 @@ instance Functor Maybe where
   fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
-instance FunctorMonoid Day Identity Maybe where
+instance FunctorMonoidObject Day Identity Maybe where
   mu :: Day Maybe Maybe ~> Maybe
   mu (Day (Just b) (Just c) bca) = Just (bca b c)
   mu _ = Nothing
@@ -82,7 +82,7 @@ instance FunctorMonoid Day Identity Maybe where
 instance
   {-# OVERLAPPABLE #-}
   ( Data.Functor.Functor f,
-    FunctorMonoid Day Identity f
+    FunctorMonoidObject Day Identity f
   ) =>
   Control.Applicative.Applicative f
   where

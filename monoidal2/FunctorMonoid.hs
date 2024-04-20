@@ -5,13 +5,13 @@ import Functor
 import NaturalTransformation
 import Prelude ()
 
-type FunctorMonoidal ::
+type FunctorMonoidalCategory ::
   BinaturalTransformationType ->
   FunctorType ->
   Constraint
 class
   (BinaturalTransformation t) =>
-  FunctorMonoidal t u
+  FunctorMonoidalCategory t u
     | t -> u
   where
   assoc ::
@@ -27,17 +27,17 @@ class
   right :: (Functor f) => t f u ~> f
   rightInv :: (Functor f) => f ~> t f u
 
-type FunctorMonoid ::
+type FunctorMonoidObject ::
   BinaturalTransformationType ->
   FunctorType ->
   FunctorType ->
   Constraint
 class
-  ( FunctorMonoidal t u,
+  ( FunctorMonoidalCategory t u,
     Functor u,
     Functor f
   ) =>
-  FunctorMonoid t u f
+  FunctorMonoidObject t u f
   where
   mu :: t f f ~> f
   eta :: u ~> f

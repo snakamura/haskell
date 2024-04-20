@@ -41,7 +41,7 @@ instance Functor Proxy where
 
 -- (Hask x Hask, Product, Proxy) is a monoidal category
 
-instance FunctorMonoidal Product Proxy where
+instance FunctorMonoidalCategory Product Proxy where
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Product f (Product g h)
@@ -75,7 +75,7 @@ instance Functor Maybe where
   fmap ab (Just a) = Just (ab a)
   fmap _ Nothing = Nothing
 
-instance FunctorMonoid Product Proxy Maybe where
+instance FunctorMonoidObject Product Proxy Maybe where
   mu :: Product Maybe Maybe ~> Maybe
   mu (Product (Just a) _) = Just a
   mu (Product _ (Just a)) = Just a
@@ -88,7 +88,7 @@ instance
   {-# OVERLAPPABLE #-}
   ( Data.Functor.Functor f,
     Control.Applicative.Applicative f,
-    FunctorMonoid Product Proxy f
+    FunctorMonoidObject Product Proxy f
   ) =>
   Control.Applicative.Alternative f
   where

@@ -25,7 +25,7 @@ absurd = absurd
 
 -- (Hask, Coproduct, Void) is a monoidal category
 
-instance Monoidal Coproduct Void where
+instance MonoidalCategory Coproduct Void where
   assoc :: Coproduct a (Coproduct b c) -> Coproduct (Coproduct a b) c
   assoc (Left a) = Left (Left a)
   assoc (Right (Left b)) = Left (Right b)
@@ -50,7 +50,7 @@ instance Monoidal Coproduct Void where
   rightInv :: a -> Coproduct a Void
   rightInv = Left
 
-instance Monoid Coproduct Void a where
+instance MonoidObject Coproduct Void a where
   mu :: Coproduct a a -> a
   mu (Left a) = a
   mu (Right a) = a
