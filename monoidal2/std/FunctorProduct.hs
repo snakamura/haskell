@@ -26,7 +26,9 @@ instance
 
 -- (Hask x Hask, Product, Proxy) is a monoidal category
 
-instance FunctorMonoidalCategory Product Proxy where
+instance FunctorMonoidalCategory Product where
+  type FunctorUnit Product = Proxy
+
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Product f (Product g h)
@@ -37,10 +39,7 @@ instance FunctorMonoidalCategory Product Proxy where
 
   assocInv ::
     (Functor f, Functor g, Functor h) =>
-    Product (Product f g) h
-      ~> Product
-           f
-           (Product g h)
+    Product (Product f g) h ~> Product f (Product g h)
   assocInv (Pair (Pair fa ga) ha) = (Pair fa (Pair ga ha))
 
   left :: (Functor f) => Product Proxy f ~> f
@@ -55,7 +54,7 @@ instance FunctorMonoidalCategory Product Proxy where
   rightInv :: (Functor f) => f ~> Product f Proxy
   rightInv fa = Pair fa Proxy
 
-instance FunctorMonoidObject Product Proxy Maybe where
+instance FunctorMonoidObject Product Maybe where
   mu :: Product Maybe Maybe ~> Maybe
   mu (Pair (Just a) _) = Just a
   mu (Pair _ (Just a)) = Just a
@@ -68,7 +67,7 @@ instance
   {-# OVERLAPPABLE #-}
   ( Functor f,
     Applicative f,
-    FunctorMonoidObject Product Proxy f
+    FunctorMonoidObject Product f
   ) =>
   Alternative f
   where

@@ -25,7 +25,9 @@ instance
 
 -- (Hask -> Hask, Day, Identity) is a monoidal category
 
-instance FunctorMonoidalCategory Day Identity where
+instance FunctorMonoidalCategory Day where
+  type FunctorUnit Day = Identity
+
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Day f (Day g h) ~> Day (Day f g) h
@@ -50,7 +52,7 @@ instance FunctorMonoidalCategory Day Identity where
   rightInv :: (Functor f) => f ~> Day f Identity
   rightInv fa = Day fa (Identity ()) const
 
-instance FunctorMonoidObject Day Identity Maybe where
+instance FunctorMonoidObject Day Maybe where
   mu :: Day Maybe Maybe ~> Maybe
   mu (Day (Just b) (Just c) bca) = Just (bca b c)
   mu _ = Nothing
@@ -61,7 +63,7 @@ instance FunctorMonoidObject Day Identity Maybe where
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,
-    FunctorMonoidObject Day Identity f
+    FunctorMonoidObject Day f
   ) =>
   Applicative f
   where

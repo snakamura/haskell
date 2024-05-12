@@ -27,7 +27,9 @@ instance
 
 -- (Hask -> Hask, Compose, Identity) is a monoidal category
 
-instance FunctorMonoidalCategory Compose Identity where
+instance FunctorMonoidalCategory Compose where
+  type FunctorUnit Compose = Identity
+
   assoc ::
     (Functor f, Functor g, Functor h) =>
     Compose f (Compose g h) ~> Compose (Compose f g) h
@@ -52,14 +54,14 @@ instance FunctorMonoidalCategory Compose Identity where
   rightInv :: (Functor f) => f ~> Compose f Identity
   rightInv fa = Compose (fmap Identity fa)
 
-instance FunctorMonoidObject Compose Identity Identity where
+instance FunctorMonoidObject Compose Identity where
   mu :: Compose Identity Identity ~> Identity
   mu (Compose (Identity (Identity a))) = Identity a
 
   eta :: Identity ~> Identity
   eta (Identity a) = Identity a
 
-instance FunctorMonoidObject Compose Identity Maybe where
+instance FunctorMonoidObject Compose Maybe where
   mu :: Compose Maybe Maybe ~> Maybe
   mu (Compose (Just (Just a))) = Just a
   mu (Compose _) = Nothing
@@ -70,7 +72,7 @@ instance FunctorMonoidObject Compose Identity Maybe where
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,
-    FunctorMonoidObject Compose Identity f
+    FunctorMonoidObject Compose f
   ) =>
   Applicative f
   where
@@ -90,7 +92,7 @@ instance
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,
-    FunctorMonoidObject Compose Identity f
+    FunctorMonoidObject Compose f
   ) =>
   Monad f
   where

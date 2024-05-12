@@ -6,13 +6,10 @@ import NaturalTransformation
 
 type FunctorMonoidalCategory ::
   BinaturalTransformationType ->
-  FunctorType ->
   Constraint
-class
-  (BinaturalTransformation t) =>
-  FunctorMonoidalCategory t u
-    | t -> u
-  where
+class (BinaturalTransformation t, Functor (FunctorUnit t)) => FunctorMonoidalCategory t where
+  type FunctorUnit t :: FunctorType
+
   assoc ::
     (Functor f, Functor g, Functor h) =>
     t f (t g h) ~> t (t f g) h
@@ -20,23 +17,13 @@ class
     (Functor f, Functor g, Functor h) =>
     t (t f g) h ~> t f (t g h)
 
-  left :: (Functor f) => t u f ~> f
-  leftInv :: (Functor f) => f ~> t u f
+  left :: (Functor f) => t (FunctorUnit t) f ~> f
+  leftInv :: (Functor f) => f ~> t (FunctorUnit t) f
 
-  right :: (Functor f) => t f u ~> f
-  rightInv :: (Functor f) => f ~> t f u
+  right :: (Functor f) => t f (FunctorUnit t) ~> f
+  rightInv :: (Functor f) => f ~> t f (FunctorUnit t)
 
-type FunctorMonoidObject ::
-  BinaturalTransformationType ->
-  FunctorType ->
-  FunctorType ->
-  Constraint
-class
-  ( FunctorMonoidalCategory t u,
-    Functor u,
-    Functor f
-  ) =>
-  FunctorMonoidObject t u f
-  where
+type FunctorMonoidObject :: BinaturalTransformationType -> FunctorType -> Constraint
+class (FunctorMonoidalCategory t, Functor f) => FunctorMonoidObject t f where
   mu :: t f f ~> f
-  eta :: u ~> f
+  eta :: (FunctorUnit t) ~> f

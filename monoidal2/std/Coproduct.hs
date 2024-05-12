@@ -5,7 +5,9 @@ import Monoid
 
 -- (Hask, Either, Void) is a monoidal category
 
-instance MonoidalCategory Either Void where
+instance MonoidalCategory Either where
+  type Unit Either = Void
+
   assoc :: Either a (Either b c) -> Either (Either a b) c
   assoc (Left a) = Left (Left a)
   assoc (Right (Left b)) = Left (Right b)
@@ -30,7 +32,7 @@ instance MonoidalCategory Either Void where
   rightInv :: a -> Either a Void
   rightInv = Left
 
-instance MonoidObject Either Void a where
+instance MonoidObject Either a where
   mu :: Either a a -> a
   mu (Left a) = a
   mu (Right a) = a

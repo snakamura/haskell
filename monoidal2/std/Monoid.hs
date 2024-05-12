@@ -4,18 +4,20 @@ import Data.Bifunctor
 import Data.Kind
 import Functor
 
-type MonoidalCategory :: BifunctorType -> Type -> Constraint
-class (Bifunctor t) => MonoidalCategory t u | t -> u where
+type MonoidalCategory :: BifunctorType -> Constraint
+class (Bifunctor t) => MonoidalCategory t where
+  type Unit t :: Type
+
   assoc :: t a (t a a) -> t (t a a) a
   assocInv :: t (t a a) a -> t a (t a a)
 
-  left :: t u a -> a
-  leftInv :: a -> t u a
+  left :: t (Unit t) a -> a
+  leftInv :: a -> t (Unit t) a
 
-  right :: t a u -> a
-  rightInv :: a -> t a u
+  right :: t a (Unit t) -> a
+  rightInv :: a -> t a (Unit t)
 
-type MonoidObject :: BifunctorType -> Type -> Type -> Constraint
-class (MonoidalCategory t u) => MonoidObject t u a where
+type MonoidObject :: BifunctorType -> Type -> Constraint
+class (MonoidalCategory t) => MonoidObject t a where
   mu :: t a a -> a
-  eta :: u -> a
+  eta :: Unit t -> a
