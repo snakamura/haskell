@@ -1,0 +1,27 @@
+cabal-version: 3.8
+name: monoidal2
+version: 0.1.0.0
+build-type: Simple
+
+common warnings
+    ghc-options: -Wall -Wno-name-shadowing -Wno-orphans
+
+executable monoidal2
+    import: warnings
+    main-is: monoidal2.hs
+    build-depends: base, kan-extensions
+    default-language: GHC2021
+    default-extensions: AllowAmbiguousTypes
+                        FunctionalDependencies
+                        QuantifiedConstraints
+                        TypeFamilies
+                        UndecidableInstances
+    other-modules: Coproduct
+                   Functor
+                   FunctorCompose
+                   FunctorDay
+                   FunctorMonoid
+                   FunctorProduct
+                   Monoid
+                   NaturalTransformation
+                   Product
