@@ -1,5 +1,6 @@
 module Main where
 
+import Criterion.Main
 import Data.Functor.Coyoneda
 import Data.Functor.Yoneda
 import NList qualified
@@ -18,26 +19,28 @@ test, test' :: (Functor f, Show a) => f a -> f Int
 test = fmap length . fmap show . fmap length . fmap show
 test' = fmap (length . show . length . show)
 
-testYoneda :: IO ()
-testYoneda = do
-  print $ length $ test list
-  print $ SList.length $ test slist
-  print $ SList.length $ lowerYoneda $ test $ liftYoneda slist
-  print $ SList.length $ test' slist
-
-applyTest :: Show a => f a -> Coyoneda f Int
-applyTest c = test $ liftCoyoneda c
-
-testCoyoneda :: IO ()
-testCoyoneda = do
-  print $ length $ lowerCoyoneda $ applyTest list
-  print $ SList.length $ lowerCoyoneda $ applyTest slist
-  -- print $ NList.length $ lowerCoyoneda $ applyTest nlist
-  print $ length $ lowerCoyoneda $ hoistCoyoneda NList.to $ applyTest nlist
-
+applyTest :: (Show a) => f a -> Coyoneda f Int
+applyTest = test . liftCoyoneda
 
 main :: IO ()
-main = do
-  testYoneda
-  testCoyoneda
-
+main =
+  defaultMain
+    [ bgroup
+        "normal"
+        [ bench "list" $ nf test list,
+          bench "slist" $ nf test slist
+          -- bench "nlist" $ nf test nlist
+        ],
+      bgroup
+        "yoneda"
+        [ bench "slist yoneda" $ nf (lowerYoneda . test . liftYoneda) slist,
+          bench "slist compose" $ nf test' slist
+          -- bench "nlist yoneda" $ nf (lowerYoneda . test . liftYoneda) nlist
+        ],
+      bgroup
+        "coyoneda"
+        [ bench "list" $ nf (lowerCoyoneda . applyTest) list,
+          bench "slist" $ nf (lowerCoyoneda . applyTest) slist,
+          bench "nlist" $ nf (lowerCoyoneda . hoistCoyoneda NList.to . applyTest) nlist
+        ]
+    ]

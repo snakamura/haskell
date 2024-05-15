@@ -1,8 +1,12 @@
 module SList where
 
+import Control.DeepSeq
+import GHC.Generics (Generic)
 import Prelude hiding (length)
 
-data SList a = SCons !a !(SList a) | SNil deriving (Show, Functor)
+data SList a = SCons !a !(SList a) | SNil deriving (Show, Functor, Generic)
+
+instance (NFData a) => NFData (SList a)
 
 from :: [a] -> SList a
 from [] = SNil
