@@ -4,7 +4,7 @@ import Control.DeepSeq
 import GHC.Generics (Generic)
 import Prelude hiding (length)
 
-data NList a = NCons a (NList a) | NNil deriving (Show, Generic)
+data NList a = NCons !a !(NList a) | NNil deriving (Show, Generic)
 
 instance (NFData a) => NFData (NList a)
 
