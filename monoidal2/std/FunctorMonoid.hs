@@ -26,4 +26,4 @@ class (BinaturalTransformation t, Functor (FunctorUnit t)) => FunctorMonoidalCat
 type FunctorMonoidObject :: BinaturalTransformationType -> FunctorType -> Constraint
 class (FunctorMonoidalCategory t, Functor f) => FunctorMonoidObject t f where
   mu :: t f f ~> f
-  eta :: (FunctorUnit t) ~> f
+  eta :: FunctorUnit t ~> f
