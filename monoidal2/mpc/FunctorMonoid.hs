@@ -2,15 +2,15 @@ module FunctorMonoid where
 
 import Data.Kind
 import Functor
-import NaturalTransformation
+import Functor2
 import Prelude ()
 
 type FunctorMonoidalCategory ::
-  BinaturalTransformationType ->
+  Bifunctor2Type ->
   FunctorType ->
   Constraint
 class
-  (BinaturalTransformation t) =>
+  (Bifunctor2 t) =>
   FunctorMonoidalCategory t u
     | t -> u
   where
@@ -28,7 +28,7 @@ class
   rightInv :: (Functor f) => f ~> t f u
 
 type FunctorMonoidObject ::
-  BinaturalTransformationType ->
+  Bifunctor2Type ->
   FunctorType ->
   FunctorType ->
   Constraint

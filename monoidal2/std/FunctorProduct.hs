@@ -4,9 +4,9 @@ import Control.Applicative
 import Data.Functor.Product
 import Data.Proxy
 import FunctorMonoid
-import NaturalTransformation
+import Functor2
 
-instance (Functor f) => NaturalTransformation (Product f) where
+instance (Functor f) => Functor2 (Product f) where
   ntmap ::
     (Functor g, Functor h) =>
     (g ~> h) ->
@@ -14,8 +14,8 @@ instance (Functor f) => NaturalTransformation (Product f) where
   ntmap gh (Pair fa ga) = Pair fa (gh ga)
 
 instance
-  (forall f. (Functor f) => NaturalTransformation (Product f)) =>
-  BinaturalTransformation Product
+  (forall f. (Functor f) => Functor2 (Product f)) =>
+  Bifunctor2 Product
   where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>

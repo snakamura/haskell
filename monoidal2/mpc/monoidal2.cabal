@@ -18,10 +18,10 @@ executable monoidal2
                         UndecidableInstances
     other-modules: Coproduct
                    Functor
+                   Functor2
                    FunctorCompose
                    FunctorDay
                    FunctorMonoid
                    FunctorProduct
                    Monoid
-                   NaturalTransformation
                    Product

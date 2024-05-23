@@ -5,7 +5,7 @@ import Data.Functor qualified
 import Data.Maybe
 import Functor
 import FunctorMonoid
-import NaturalTransformation
+import Functor2
 import Prelude (const, flip, ($), (.))
 
 type Day :: FunctorType -> FunctorType -> FunctorType
@@ -15,7 +15,7 @@ instance Functor (Day f g) where
   fmap :: (a -> b) -> (Day f g a -> Day f g b)
   fmap ab (Day fb gc bca) = Day fb gc (\b c -> ab (bca b c))
 
-instance (Functor f) => NaturalTransformation (Day f) where
+instance (Functor f) => Functor2 (Day f) where
   ntmap ::
     (Functor g, Functor h) =>
     (g ~> h) ->
@@ -23,8 +23,8 @@ instance (Functor f) => NaturalTransformation (Day f) where
   ntmap gh (Day f g bca) = Day f (gh g) bca
 
 instance
-  (forall f. (Functor f) => NaturalTransformation (Day f)) =>
-  BinaturalTransformation Day
+  (forall f. (Functor f) => Functor2 (Day f)) =>
+  Bifunctor2 Day
   where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>

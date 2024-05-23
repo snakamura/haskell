@@ -5,7 +5,7 @@ import Data.Functor qualified
 import Data.Maybe
 import Functor
 import FunctorMonoid
-import NaturalTransformation
+import Functor2
 import Prelude ()
 
 type Product :: FunctorType -> FunctorType -> FunctorType
@@ -15,7 +15,7 @@ instance (Functor f, Functor g) => Functor (Product f g) where
   fmap :: (a -> b) -> (Product f g a -> Product f g b)
   fmap ab (Product fa ga) = Product (fmap ab fa) (fmap ab ga)
 
-instance (Functor f) => NaturalTransformation (Product f) where
+instance (Functor f) => Functor2 (Product f) where
   ntmap ::
     (Functor g, Functor h) =>
     (g ~> h) ->
@@ -23,8 +23,8 @@ instance (Functor f) => NaturalTransformation (Product f) where
   ntmap gh (Product fa ga) = Product fa (gh ga)
 
 instance
-  (forall f. (Functor f) => NaturalTransformation (Product f)) =>
-  BinaturalTransformation Product
+  (forall f. (Functor f) => Functor2 (Product f)) =>
+  Bifunctor2 Product
   where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>

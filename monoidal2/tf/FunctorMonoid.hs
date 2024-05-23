@@ -2,11 +2,11 @@ module FunctorMonoid where
 
 import Data.Kind
 import Functor
-import NaturalTransformation
+import Functor2
 import Prelude ()
 
-type FunctorMonoidalCategory :: BinaturalTransformationType -> Constraint
-class (BinaturalTransformation t) => FunctorMonoidalCategory t where
+type FunctorMonoidalCategory :: Bifunctor2Type -> Constraint
+class (Bifunctor2 t) => FunctorMonoidalCategory t where
   type Unit t :: FunctorType
 
   assoc ::
@@ -31,6 +31,6 @@ class
   ) =>
   FunctorMonoidObject f
   where
-  type Tensor f :: BinaturalTransformationType
+  type Tensor f :: Bifunctor2Type
   mu :: Tensor f f f ~> f
   eta :: Unit (Tensor f) ~> f

@@ -3,9 +3,9 @@ module FunctorDay where
 import Data.Functor.Day
 import Data.Functor.Identity
 import FunctorMonoid
-import NaturalTransformation
+import Functor2
 
-instance (Functor f) => NaturalTransformation (Day f) where
+instance (Functor f) => Functor2 (Day f) where
   ntmap ::
     (Functor g, Functor h) =>
     (g ~> h) ->
@@ -13,8 +13,8 @@ instance (Functor f) => NaturalTransformation (Day f) where
   ntmap gh (Day f g bca) = Day f (gh g) bca
 
 instance
-  (forall f. (Functor f) => NaturalTransformation (Day f)) =>
-  BinaturalTransformation Day
+  (forall f. (Functor f) => Functor2 (Day f)) =>
+  Bifunctor2 Day
   where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>

@@ -3,9 +3,9 @@ module FunctorCompose where
 import Data.Functor.Compose
 import Data.Functor.Identity
 import FunctorMonoid
-import NaturalTransformation
+import Functor2
 
-instance (Functor f) => NaturalTransformation (Compose f) where
+instance (Functor f) => Functor2 (Compose f) where
   ntmap ::
     (Functor g, Functor h) =>
     (g ~> h) ->
@@ -13,8 +13,8 @@ instance (Functor f) => NaturalTransformation (Compose f) where
   ntmap gh (Compose fga) = Compose (fmap gh fga)
 
 instance
-  (forall f. (Functor f) => NaturalTransformation (Compose f)) =>
-  BinaturalTransformation Compose
+  (forall f. (Functor f) => Functor2 (Compose f)) =>
+  Bifunctor2 Compose
   where
   bintmap ::
     (Functor f, Functor g, Functor h, Functor i) =>
