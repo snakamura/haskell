@@ -2,7 +2,9 @@ module Main where
 
 import Criterion.Main
 import Data.Functor.Coyoneda
+import Data.Functor.Identity
 import Data.Functor.Yoneda
+import Item qualified
 import NList qualified
 import SList qualified
 
@@ -23,7 +25,7 @@ applyTest :: (Show a) => f a -> Coyoneda f Int
 applyTest = test . liftCoyoneda
 
 main :: IO ()
-main =
+main = do
   defaultMain
     [ bgroup
         "normal"
@@ -44,3 +46,7 @@ main =
           bench "nlist" $ nf (lowerCoyoneda . hoistCoyoneda NList.to . applyTest) nlist
         ]
     ]
+
+  let item = fmap ("$" <>) $ fmap show $ fmap (+ 100) $ liftCoyoneda $ Item.Item @Int 200 100
+  print $ runIdentity $ lowerCoyoneda $ hoistCoyoneda Item.pickPrice item
+  print $ runIdentity $ lowerCoyoneda $ hoistCoyoneda Item.pickInternalPrice item

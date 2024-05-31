@@ -14,5 +14,6 @@ executable yoneda
                       deepseq,
                       kan-extensions
     default-language: GHC2021
-    other-modules:    NList
+    other-modules:    Item
+                      NList
                       SList
