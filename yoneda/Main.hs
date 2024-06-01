@@ -21,8 +21,9 @@ test, test' :: (Functor f, Show a) => f a -> f Int
 test = fmap length . fmap show . fmap length . fmap show
 test' = fmap (length . show . length . show)
 
-applyTest :: (Show a) => f a -> Coyoneda f Int
+applyTest, applyTest' :: (Show a) => f a -> Coyoneda f Int
 applyTest = test . liftCoyoneda
+applyTest' = test' . liftCoyoneda
 
 main :: IO ()
 main = do
@@ -34,9 +35,15 @@ main = do
           -- bench "nlist" $ nf test nlist
         ],
       bgroup
+        "compose"
+        [ bench "list" $ nf test' list,
+          bench "slist" $ nf test' slist
+          -- bench "nlist" $ nf test nlist
+        ],
+      bgroup
         "yoneda"
-        [ bench "slist yoneda" $ nf (lowerYoneda . test . liftYoneda) slist,
-          bench "slist compose" $ nf test' slist
+        [ bench "list" $ nf (lowerYoneda . test . liftYoneda) list,
+          bench "slist" $ nf (lowerYoneda . test . liftYoneda) slist
           -- bench "nlist yoneda" $ nf (lowerYoneda . test . liftYoneda) nlist
         ],
       bgroup
