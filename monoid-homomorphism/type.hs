@@ -1,13 +1,14 @@
+{-# LANGUAGE TypeAbstractions #-}
+
 import Data.Monoid
 
 newtype MonoidHomomorphism m1 m2 = Hom (m1 -> m2)
 
 preserveIdentity ::
-  forall m1 m2.
   (Monoid m1, Monoid m2, Eq m2) =>
   MonoidHomomorphism m1 m2 ->
   Bool
-preserveIdentity (Hom f) = f (mempty @m1) == mempty @m2
+preserveIdentity @m1 @m2 (Hom f) = f (mempty @m1) == mempty @m2
 
 preserveAppend ::
   (Monoid m1, Monoid m2, Eq m2) =>
