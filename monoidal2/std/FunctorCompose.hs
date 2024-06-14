@@ -69,6 +69,13 @@ instance FunctorMonoidObject Compose Maybe where
   eta :: Identity ~> Maybe
   eta (Identity a) = Just a
 
+instance FunctorMonoidObject Compose [] where
+  mu :: Compose [] [] ~> []
+  mu (Compose a) = concat a
+
+  eta :: Identity ~> []
+  eta (Identity a) = [a]
+
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,

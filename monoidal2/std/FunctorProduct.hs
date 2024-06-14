@@ -63,6 +63,13 @@ instance FunctorMonoidObject Product Maybe where
   eta :: Proxy ~> Maybe
   eta _ = Nothing
 
+instance FunctorMonoidObject Product [] where
+  mu :: Product [] [] ~> []
+  mu (Pair as bs) = as <> bs
+
+  eta :: Proxy ~> []
+  eta _ = []
+
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,

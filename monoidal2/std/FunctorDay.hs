@@ -60,6 +60,13 @@ instance FunctorMonoidObject Day Maybe where
   eta :: Identity ~> Maybe
   eta (Identity a) = Just a
 
+instance FunctorMonoidObject Day [] where
+  mu :: Day [] [] ~> []
+  mu (Day bs cs bca) = [bca b c | b <- bs, c <- cs]
+
+  eta :: Identity ~> []
+  eta (Identity a) = [a]
+
 instance
   {-# OVERLAPPABLE #-}
   ( Functor f,
