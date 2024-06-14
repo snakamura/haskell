@@ -1,9 +1,11 @@
 module FunctorDay where
 
+import Data.Functor.Classes
 import Data.Functor.Day
 import Data.Functor.Identity
-import FunctorMonoid
+import Data.Maybe
 import Functor2
+import FunctorMonoid
 
 instance (Functor f) => Functor2 (Day f) where
   ntmap ::
@@ -79,3 +81,34 @@ instance
 
   pure :: a -> f a
   pure = eta @Day . Identity
+
+preserveIdentity ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Day m1,
+    FunctorMonoidObject Day m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  a ->
+  Bool
+preserveIdentity (FunctorHom t) a = t (eta @Day (Identity a)) `eq1` eta @Day (Identity a)
+
+preserveAppend ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Day m1,
+    FunctorMonoidObject Day m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  Day m1 m1 a ->
+  Bool
+preserveAppend (FunctorHom t) day@(Day fb fc bca) = t (mu day) `eq1` mu (Day (t fb) (t fc) bca)
+
+homMaybeToList :: FunctorMonoidHomomorphism Maybe []
+homMaybeToList = FunctorHom maybeToList
+
+testPreserveIdentity, testPreserveAppend :: Bool
+testPreserveIdentity = preserveIdentity homMaybeToList 'a'
+testPreserveAppend = preserveAppend homMaybeToList (Day (Just @Int 1) (Just 2) (+))

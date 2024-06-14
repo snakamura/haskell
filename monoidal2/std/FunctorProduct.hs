@@ -1,7 +1,9 @@
 module FunctorProduct where
 
 import Control.Applicative
+import Data.Functor.Classes
 import Data.Functor.Product
+import Data.Maybe
 import Data.Proxy
 import FunctorMonoid
 import Functor2
@@ -83,3 +85,34 @@ instance
 
   empty :: f a
   empty = eta @Product Proxy
+
+preserveIdentity ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Product m1,
+    FunctorMonoidObject Product m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  a ->
+  Bool
+preserveIdentity (FunctorHom t) _ = t (eta @Product (Proxy @a)) `eq1` eta @Product (Proxy @a)
+
+preserveAppend ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Product m1,
+    FunctorMonoidObject Product m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  Product m1 m1 a ->
+  Bool
+preserveAppend (FunctorHom t) pair@(Pair fa fb) = t (mu pair) `eq1` mu (Pair (t fa) (t fb))
+
+homListToMaybe :: FunctorMonoidHomomorphism [] Maybe
+homListToMaybe = FunctorHom listToMaybe
+
+testPreserveIdentity, testPreserveAppend :: Bool
+testPreserveIdentity = preserveIdentity homListToMaybe 'a'
+testPreserveAppend = preserveAppend homListToMaybe (Pair ['a'] ['b'])

@@ -1,9 +1,11 @@
 module FunctorCompose where
 
+import Data.Functor.Classes
 import Data.Functor.Compose
 import Data.Functor.Identity
-import FunctorMonoid
+import Data.Maybe
 import Functor2
+import FunctorMonoid
 
 instance (Functor f) => Functor2 (Compose f) where
   ntmap ::
@@ -105,3 +107,34 @@ instance
   where
   (>>=) :: f a -> (a -> f b) -> f b
   (>>=) fa afb = mu $ Compose $ fmap afb fa
+
+preserveIdentity ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Compose m1,
+    FunctorMonoidObject Compose m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  a ->
+  Bool
+preserveIdentity (FunctorHom t) a = t (eta @Compose (Identity a)) `eq1` eta @Compose (Identity a)
+
+preserveAppend ::
+  forall m1 m2 a.
+  ( FunctorMonoidObject Compose m1,
+    FunctorMonoidObject Compose m2,
+    Eq1 m2,
+    Eq a
+  ) =>
+  FunctorMonoidHomomorphism m1 m2 ->
+  Compose m1 m1 a ->
+  Bool
+preserveAppend (FunctorHom t) c@(Compose a) = t (mu c) `eq1` mu (Compose (t (fmap t a)))
+
+homMaybeToList :: FunctorMonoidHomomorphism Maybe []
+homMaybeToList = FunctorHom maybeToList
+
+testPreserveIdentity, testPreserveAppend :: Bool
+testPreserveIdentity = preserveIdentity homMaybeToList 'a'
+testPreserveAppend = preserveAppend homMaybeToList (Compose (Just (Just 'a')))
