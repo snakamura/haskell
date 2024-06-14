@@ -32,12 +32,12 @@ instance MonoidObject (,) Int where
   eta :: () -> Int
   eta () = 0
 
-instance MonoidObject (,) String where
-  mu :: (String, String) -> String
-  mu (s1, s2) = s1 ++ s2
+instance MonoidObject (,) [a] where
+  mu :: ([a], [a]) -> [a]
+  mu (a1, a2) = a1 ++ a2
 
-  eta :: () -> String
-  eta () = ""
+  eta :: () -> [a]
+  eta () = []
 
 instance MonoidObject (,) (a -> a) where
   mu :: (a -> a, a -> a) -> (a -> a)
@@ -53,3 +53,31 @@ instance {-# OVERLAPPABLE #-} (MonoidObject (,) a) => Semigroup a where
 instance {-# OVERLAPPABLE #-} (MonoidObject (,) a) => Monoid a where
   mempty :: a
   mempty = eta @(,) ()
+
+preserveIdentity ::
+  forall m1 m2.
+  ( MonoidObject (,) m1,
+    MonoidObject (,) m2,
+    Eq m2
+  ) =>
+  MonoidHomomorphism m1 m2 ->
+  Bool
+preserveIdentity (Hom f) = f (eta @(,) ()) == eta @(,) ()
+
+preserveAppend ::
+  forall m1 m2.
+  ( MonoidObject (,) m1,
+    MonoidObject (,) m2,
+    Eq m2
+  ) =>
+  MonoidHomomorphism m1 m2 ->
+  (m1, m1) ->
+  Bool
+preserveAppend (Hom f) (a, b) = f (mu (a, b)) == mu (f a, f b)
+
+homLength :: MonoidHomomorphism [a] Int
+homLength = Hom length
+
+testPreserveIdentity, testPreserveAppend :: Bool
+testPreserveIdentity = preserveIdentity homLength
+testPreserveAppend = preserveAppend homLength (['A', 'B'], ['C', 'D', 'E'])
