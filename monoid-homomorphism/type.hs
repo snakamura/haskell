@@ -24,3 +24,9 @@ hom = Hom (Sum . length)
 testPreserveIdentity, testPreserveAppend :: Bool
 testPreserveIdentity = preserveIdentity hom
 testPreserveAppend = preserveAppend hom ['A', 'B'] ['C', 'D', 'E']
+
+instance Semigroup b => Semigroup (MonoidHomomorphism a b) where
+  (Hom f) <> (Hom g) = Hom $ \a -> f a <> g a
+
+instance Monoid b => Monoid (MonoidHomomorphism a b) where
+  mempty = Hom (const mempty)
