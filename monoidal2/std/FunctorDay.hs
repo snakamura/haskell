@@ -82,33 +82,22 @@ instance
   pure :: a -> f a
   pure = eta @Day . Identity
 
-preserveIdentity ::
-  forall m1 m2 a.
+instance
   ( FunctorMonoidObject Day m1,
     FunctorMonoidObject Day m2,
-    Eq1 m2,
-    Eq a
+    Eq1 m2
   ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  a ->
-  Bool
-preserveIdentity (FunctorHom t) a = t (eta @Day (Identity a)) `eq1` eta @Day (Identity a)
+  FunctorMonoidHomomorphismLaws Day m1 m2
+  where
+  preserveIdentity :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> a -> Bool
+  preserveIdentity (FunctorHom t) a = t (eta @Day (Identity a)) `eq1` eta @Day (Identity a)
 
-preserveAppend ::
-  forall m1 m2 a.
-  ( FunctorMonoidObject Day m1,
-    FunctorMonoidObject Day m2,
-    Eq1 m2,
-    Eq a
-  ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  Day m1 m1 a ->
-  Bool
-preserveAppend (FunctorHom t) day@(Day fb fc bca) = t (mu day) `eq1` mu (Day (t fb) (t fc) bca)
+  preserveAppend :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> Day m1 m1 a -> Bool
+  preserveAppend (FunctorHom t) day@(Day fb fc bca) = t (mu day) `eq1` mu (Day (t fb) (t fc) bca)
 
 homMaybeToList :: FunctorMonoidHomomorphism Maybe []
 homMaybeToList = FunctorHom maybeToList
 
 testPreserveIdentity, testPreserveAppend :: Bool
-testPreserveIdentity = preserveIdentity homMaybeToList 'a'
+testPreserveIdentity = preserveIdentity @Day homMaybeToList 'a'
 testPreserveAppend = preserveAppend homMaybeToList (Day (Just @Int 1) (Just 2) (+))

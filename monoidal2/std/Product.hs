@@ -54,30 +54,22 @@ instance {-# OVERLAPPABLE #-} (MonoidObject (,) a) => Monoid a where
   mempty :: a
   mempty = eta @(,) ()
 
-preserveIdentity ::
-  forall m1 m2.
+instance
   ( MonoidObject (,) m1,
     MonoidObject (,) m2,
     Eq m2
   ) =>
-  MonoidHomomorphism m1 m2 ->
-  Bool
-preserveIdentity (Hom f) = f (eta @(,) ()) == eta @(,) ()
+  MonoidHomomorphismLaws (,) m1 m2
+  where
+  preserveIdentity :: MonoidHomomorphism m1 m2 -> Bool
+  preserveIdentity (Hom f) = f (eta @(,) ()) == eta @(,) ()
 
-preserveAppend ::
-  forall m1 m2.
-  ( MonoidObject (,) m1,
-    MonoidObject (,) m2,
-    Eq m2
-  ) =>
-  MonoidHomomorphism m1 m2 ->
-  (m1, m1) ->
-  Bool
-preserveAppend (Hom f) (a, b) = f (mu (a, b)) == mu (f a, f b)
+  preserveAppend :: MonoidHomomorphism m1 m2 -> (m1, m1) -> Bool
+  preserveAppend (Hom f) (a, b) = f (mu (a, b)) == mu (f a, f b)
 
 homLength :: MonoidHomomorphism [a] Int
 homLength = Hom length
 
 testPreserveIdentity, testPreserveAppend :: Bool
-testPreserveIdentity = preserveIdentity homLength
+testPreserveIdentity = preserveIdentity @(,) homLength
 testPreserveAppend = preserveAppend homLength (['A', 'B'], ['C', 'D', 'E'])

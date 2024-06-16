@@ -108,33 +108,22 @@ instance
   (>>=) :: f a -> (a -> f b) -> f b
   (>>=) fa afb = mu $ Compose $ fmap afb fa
 
-preserveIdentity ::
-  forall m1 m2 a.
+instance
   ( FunctorMonoidObject Compose m1,
     FunctorMonoidObject Compose m2,
-    Eq1 m2,
-    Eq a
+    Eq1 m2
   ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  a ->
-  Bool
-preserveIdentity (FunctorHom t) a = t (eta @Compose (Identity a)) `eq1` eta @Compose (Identity a)
+  FunctorMonoidHomomorphismLaws Compose m1 m2
+  where
+  preserveIdentity :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> a -> Bool
+  preserveIdentity (FunctorHom t) a = t (eta @Compose (Identity a)) `eq1` eta @Compose (Identity a)
 
-preserveAppend ::
-  forall m1 m2 a.
-  ( FunctorMonoidObject Compose m1,
-    FunctorMonoidObject Compose m2,
-    Eq1 m2,
-    Eq a
-  ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  Compose m1 m1 a ->
-  Bool
-preserveAppend (FunctorHom t) c@(Compose a) = t (mu c) `eq1` mu (Compose (t (fmap t a)))
+  preserveAppend :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> Compose m1 m1 a -> Bool
+  preserveAppend (FunctorHom t) c@(Compose a) = t (mu c) `eq1` mu (Compose (t (fmap t a)))
 
 homMaybeToList :: FunctorMonoidHomomorphism Maybe []
 homMaybeToList = FunctorHom maybeToList
 
 testPreserveIdentity, testPreserveAppend :: Bool
-testPreserveIdentity = preserveIdentity homMaybeToList 'a'
+testPreserveIdentity = preserveIdentity @Compose homMaybeToList 'a'
 testPreserveAppend = preserveAppend homMaybeToList (Compose (Just (Just 'a')))

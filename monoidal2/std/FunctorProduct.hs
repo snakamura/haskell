@@ -5,8 +5,8 @@ import Data.Functor.Classes
 import Data.Functor.Product
 import Data.Maybe
 import Data.Proxy
-import FunctorMonoid
 import Functor2
+import FunctorMonoid
 
 instance (Functor f) => Functor2 (Product f) where
   ntmap ::
@@ -86,33 +86,22 @@ instance
   empty :: f a
   empty = eta @Product Proxy
 
-preserveIdentity ::
-  forall m1 m2 a.
+instance
   ( FunctorMonoidObject Product m1,
     FunctorMonoidObject Product m2,
-    Eq1 m2,
-    Eq a
+    Eq1 m2
   ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  a ->
-  Bool
-preserveIdentity (FunctorHom t) _ = t (eta @Product (Proxy @a)) `eq1` eta @Product (Proxy @a)
+  FunctorMonoidHomomorphismLaws Product m1 m2
+  where
+  preserveIdentity :: forall a. (Eq a) => FunctorMonoidHomomorphism m1 m2 -> a -> Bool
+  preserveIdentity (FunctorHom t) _ = t (eta @Product (Proxy @a)) `eq1` eta @Product (Proxy @a)
 
-preserveAppend ::
-  forall m1 m2 a.
-  ( FunctorMonoidObject Product m1,
-    FunctorMonoidObject Product m2,
-    Eq1 m2,
-    Eq a
-  ) =>
-  FunctorMonoidHomomorphism m1 m2 ->
-  Product m1 m1 a ->
-  Bool
-preserveAppend (FunctorHom t) pair@(Pair fa fb) = t (mu pair) `eq1` mu (Pair (t fa) (t fb))
+  preserveAppend :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> Product m1 m1 a -> Bool
+  preserveAppend (FunctorHom t) pair@(Pair fa fb) = t (mu pair) `eq1` mu (Pair (t fa) (t fb))
 
 homListToMaybe :: FunctorMonoidHomomorphism [] Maybe
 homListToMaybe = FunctorHom listToMaybe
 
 testPreserveIdentity, testPreserveAppend :: Bool
-testPreserveIdentity = preserveIdentity homListToMaybe 'a'
+testPreserveIdentity = preserveIdentity @Product homListToMaybe 'a'
 testPreserveAppend = preserveAppend homListToMaybe (Pair ['a'] ['b'])

@@ -41,32 +41,25 @@ instance MonoidObject Either a where
   eta :: Void -> a
   eta = absurd
 
-preserveIdentity ::
-  forall m1 m2.
+instance
   ( MonoidObject Either m1,
     MonoidObject Either m2,
     Eq m2
   ) =>
-  MonoidHomomorphism m1 m2 ->
-  Bool
-preserveIdentity (Hom _) = True
---preserveIdentity (Hom f) = f (eta @Either undefined) == eta @Either undefined
+  MonoidHomomorphismLaws Either m1 m2
+  where
+  preserveIdentity :: MonoidHomomorphism m1 m2 -> Bool
+  preserveIdentity (Hom _) = True
 
-preserveAppend ::
-  forall m1 m2.
-  ( MonoidObject Either m1,
-    MonoidObject Either m2,
-    Eq m2
-  ) =>
-  MonoidHomomorphism m1 m2 ->
-  Either m1 m1 ->
-  Bool
-preserveAppend (Hom f) e@(Left a) = f (mu e) == mu (Left (f a))
-preserveAppend (Hom f) e@(Right b) = f (mu e) == mu (Right (f b))
+  -- preserveIdentity (Hom f) = f (eta @Either undefined) == eta @Either undefined
+
+  preserveAppend :: MonoidHomomorphism m1 m2 -> Either m1 m1 -> Bool
+  preserveAppend (Hom f) e@(Left a) = f (mu e) == mu (Left (f a))
+  preserveAppend (Hom f) e@(Right b) = f (mu e) == mu (Right (f b))
 
 homOrd :: MonoidHomomorphism Char Int
 homOrd = Hom ord
 
 testPreserveIdentity, testPreserveAppend :: Bool
-testPreserveIdentity = preserveIdentity homOrd
+testPreserveIdentity = preserveIdentity @Either homOrd
 testPreserveAppend = preserveAppend homOrd (Left 'A')

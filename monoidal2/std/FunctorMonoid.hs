@@ -30,3 +30,12 @@ class (FunctorMonoidalCategory t, Functor f) => FunctorMonoidObject t f where
 
 type FunctorMonoidHomomorphism :: FunctorType -> FunctorType -> Type
 newtype FunctorMonoidHomomorphism m1 m2 = FunctorHom (m1 ~> m2)
+
+class
+  ( FunctorMonoidObject t m1,
+    FunctorMonoidObject t m2
+  ) =>
+  FunctorMonoidHomomorphismLaws t m1 m2
+  where
+  preserveIdentity :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> a -> Bool
+  preserveAppend :: (Eq a) => FunctorMonoidHomomorphism m1 m2 -> t m1 m1 a -> Bool

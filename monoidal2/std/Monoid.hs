@@ -24,3 +24,13 @@ class (MonoidalCategory t) => MonoidObject t a where
 
 type MonoidHomomorphism :: Type -> Type -> Type
 newtype MonoidHomomorphism m1 m2 = Hom (m1 -> m2)
+
+class
+  ( MonoidalCategory t,
+    MonoidObject t m1,
+    MonoidObject t m2
+  ) =>
+  MonoidHomomorphismLaws t m1 m2
+  where
+  preserveIdentity :: MonoidHomomorphism m1 m2 -> Bool
+  preserveAppend :: MonoidHomomorphism m1 m2 -> t m1 m1 -> Bool
