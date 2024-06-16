@@ -22,4 +22,5 @@ class (MonoidalCategory t) => MonoidObject t a where
   mu :: t a a -> a
   eta :: Unit t -> a
 
+type MonoidHomomorphism :: Type -> Type -> Type
 newtype MonoidHomomorphism m1 m2 = Hom (m1 -> m2)

@@ -28,4 +28,5 @@ class (FunctorMonoidalCategory t, Functor f) => FunctorMonoidObject t f where
   mu :: t f f ~> f
   eta :: FunctorUnit t ~> f
 
+type FunctorMonoidHomomorphism :: FunctorType -> FunctorType -> Type
 newtype FunctorMonoidHomomorphism m1 m2 = FunctorHom (m1 ~> m2)
