@@ -46,6 +46,13 @@ instance MonoidObject (,) (a -> a) where
   eta :: () -> (a -> a)
   eta () = id
 
+instance (MonoidObject (,) b) => MonoidObject (,) (MonoidHomomorphism a b) where
+  mu :: (MonoidHomomorphism a b, MonoidHomomorphism a b) -> MonoidHomomorphism a b
+  mu (Hom f, Hom g) = Hom $ \a -> mu (f a, g a)
+
+  eta :: () -> MonoidHomomorphism a b
+  eta () = Hom (const (eta @(,) ()))
+
 instance {-# OVERLAPPABLE #-} (MonoidObject (,) a) => Semigroup a where
   (<>) :: a -> a -> a
   (<>) a1 a2 = mu (a1, a2)

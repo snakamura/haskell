@@ -41,6 +41,14 @@ instance MonoidObject Either a where
   eta :: Void -> a
   eta = absurd
 
+instance MonoidObject Either (MonoidHomomorphism a b) where
+  mu :: Either (MonoidHomomorphism a b) (MonoidHomomorphism a b) -> MonoidHomomorphism a b
+  mu (Left (Hom f)) = Hom $ \a -> mu (Left (f a))
+  mu (Right (Hom g)) = Hom $ \a -> mu (Right (g a))
+
+  eta :: Void -> MonoidHomomorphism a b
+  eta = absurd
+
 instance
   ( MonoidObject Either m1,
     MonoidObject Either m2,
