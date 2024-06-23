@@ -7,4 +7,4 @@ import FunctorProduct ()
 import Product ()
 
 main :: IO ()
-main = pure ()
+main = return ()

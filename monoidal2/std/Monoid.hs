@@ -34,3 +34,13 @@ class
   where
   preserveIdentity :: MonoidHomomorphism m1 m2 -> Bool
   preserveAppend :: MonoidHomomorphism m1 m2 -> t m1 m1 -> Bool
+
+class
+  ( MonoidalCategory t,
+    MonoidalCategory u,
+    Functor f
+  ) =>
+  MonoidalFunctor t u f
+  where
+  nu :: u (f a) (f b) -> f (t a b)
+  unit :: Unit u -> f (Unit t)
