@@ -39,6 +39,16 @@ instance MonoidObject (,) [a] where
   eta :: () -> [a]
   eta () = []
 
+instance (MonoidObject (,) a) => MonoidObject (,) (Maybe a) where
+  mu :: (Maybe a, Maybe a) -> Maybe a
+  mu (Just a1, Just a2) = Just $ mu (a1, a2)
+  mu (Just a1, _) = Just a1
+  mu (_, Just a2) = Just a2
+  mu _ = Nothing
+
+  eta :: () -> Maybe a
+  eta () = Nothing
+
 instance MonoidObject (,) (a -> a) where
   mu :: (a -> a, a -> a) -> (a -> a)
   mu (f, g) = g . f
