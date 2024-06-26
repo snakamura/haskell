@@ -56,7 +56,7 @@ instance MonoidObject (,) (a -> a) where
   eta :: () -> (a -> a)
   eta () = id
 
-instance (MonoidObject (,) b) => MonoidObject (,) (MonoidHomomorphism a b) where
+instance (MonoidObject (,) a, MonoidObject (,) b) => MonoidObject (,) (MonoidHomomorphism a b) where
   mu :: (MonoidHomomorphism a b, MonoidHomomorphism a b) -> MonoidHomomorphism a b
   mu (Hom f, Hom g) = Hom $ \a -> mu (f a, g a)
 
