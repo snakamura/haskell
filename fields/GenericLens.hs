@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 
+module GeneircLens where
+
 import Control.Lens
 import Data.Generics.Product
 import GHC.Generics

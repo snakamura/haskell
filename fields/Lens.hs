@@ -1,5 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
+module Lens where
+
 import Control.Lens
 
 data Person = Person

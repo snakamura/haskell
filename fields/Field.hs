@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 
+module Field where
+
 import GHC.Records
 
 data Person = Person

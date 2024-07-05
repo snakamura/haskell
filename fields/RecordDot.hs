@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 
+module RecordDot where
+
 data Person = Person
   { name :: Name,
     age :: Int
