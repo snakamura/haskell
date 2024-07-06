@@ -6,9 +6,13 @@ import Control.Lens
 import Data.Vinyl
 import Data.Vinyl.Syntax ()
 
-type Person = FieldRec '["name" ::: Name, "age" ::: Int]
+type Person = FieldRec '[ "name" ::: Name
+                        , "age" ::: Int
+                        ]
 
-type Name = FieldRec '["first" ::: String, "last" ::: String]
+type Name = FieldRec '[ "first" ::: String
+                      , "last" ::: String
+                      ]
 
 person :: Person
 person = #name =:= (     #first =:= "Tiger"
