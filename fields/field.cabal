@@ -11,7 +11,8 @@ executable field
     build-depends:    base ^>=4.19.1.0,
                       extensible,
                       generic-lens,
-                      lens
+                      lens,
+                      vinyl
     default-language: GHC2021
     other-modules:    Extensible
                       Field
@@ -19,3 +20,4 @@ executable field
                       Lens
                       Record
                       RecordDot
+                      Vinyl
