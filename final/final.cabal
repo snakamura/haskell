@@ -1,0 +1,23 @@
+cabal-version:      3.0
+name:               final
+version:            0.1.0.0
+
+common warnings
+    ghc-options: -Wall
+
+executable field
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    attoparsec,
+                      base ^>=4.19.1.0,
+                      text
+    default-language: GHC2021
+    default-extensions: ApplicativeDo
+                        DerivingStrategies
+                        GADTs
+                        OverloadedStrings
+    other-modules:    Eval
+                      Expr
+                      Format
+                      Function
+                      Util
