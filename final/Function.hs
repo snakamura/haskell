@@ -32,6 +32,16 @@ instance Parse RPN where
   literalIntP = RPN . pack . show
   addP (RPN lhs) (RPN rhs) = RPN $ lhs <> " " <> rhs <> " +"
 
+data Expr a where
+  LiteralInt :: Int -> Expr Int
+  Add :: Expr Int -> Expr Int -> Expr Int
+
+deriving stock instance Show (Expr a)
+
+instance Parse (Expr Int) where
+  literalIntP = LiteralInt
+  addP lhs rhs = Add lhs rhs
+
 v :: (Parse a) => a
 v = case parseOnly int "10 + 20 + 30 + 40" of
   Right e -> e
@@ -47,3 +57,6 @@ v3 :: Text
 v3 =
   let RPN t = v
    in t
+
+v4 :: Expr Int
+v4 = v
