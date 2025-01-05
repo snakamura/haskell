@@ -16,6 +16,7 @@ executable regex2
     main-is:          Main.hs
     other-modules:    Regex1
                       Regex2
+                      Regex3
     build-depends:    base ^>=4.19.1.0
     default-language: GHC2021
     default-extensions: LambdaCase
