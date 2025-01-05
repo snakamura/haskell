@@ -15,6 +15,7 @@ executable regex2
     import:           warnings
     main-is:          Main.hs
     other-modules:    Regex1
+                      Regex2
     build-depends:    base ^>=4.19.1.0
     default-language: GHC2021
     default-extensions: LambdaCase
