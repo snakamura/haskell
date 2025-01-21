@@ -21,6 +21,7 @@ executable regex2
                       Regex5
                       Regex6
                       Regex7
+                      Regex8
     build-depends:    base ^>=4.19.1.0
     default-language: GHC2021
     default-extensions: LambdaCase
