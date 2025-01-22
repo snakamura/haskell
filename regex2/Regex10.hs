@@ -51,22 +51,22 @@ rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
 match :: RAlt RChar a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
-    f ("", a) = Just a
+    f (a, "") = Just a
     f _ = Nothing
 
-matchAlt :: RAlt RChar a -> String -> [(String, a)]
+matchAlt :: RAlt RChar a -> String -> [(a, String)]
 matchAlt (RAlt alt) s = concatMap (flip matchSeq s) alt
 
-matchSeq :: RSeq RChar a -> String -> [(String, a)]
-matchSeq (REmpty a) s = [(s, a)]
+matchSeq :: RSeq RChar a -> String -> [(a, String)]
+matchSeq (REmpty a) s = [(a, s)]
 matchSeq (RSeq char alt) s = do
-  (s1, a1) <- matchChar char s
-  (s2, a2) <- matchAlt alt s1
-  pure (s2, a2 a1)
+  (a1, s1) <- matchChar char s
+  (a2, s2) <- matchAlt alt s1
+  pure (a2 a1, s2)
 
-matchChar :: RChar a -> String -> [(String, a)]
+matchChar :: RChar a -> String -> [(a, String)]
 matchChar (RChar rc a) (c : cs)
-  | rc == c = [(cs, a)]
+  | rc == c = [(a, cs)]
   | otherwise = []
 matchChar _ [] = []
 

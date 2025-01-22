@@ -45,21 +45,21 @@ regex8 = rMany (rChar 'a') `rSeq` rChar 'a' -- /a*a/
 match :: Regex -> String -> Maybe Int
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
-    f ("", n) = Just n
+    f (n, "") = Just n
     f _ = Nothing
 
-matchAlt :: RAlt -> String -> [(String, Int)]
+matchAlt :: RAlt -> String -> [(Int, String)]
 matchAlt (RAlt alt) s = concatMap (flip matchSeq s) alt
 
-matchSeq :: RSeq -> String -> [(String, Int)]
-matchSeq REmpty s = [(s, 0)]
+matchSeq :: RSeq -> String -> [(Int, String)]
+matchSeq REmpty s = [(0, s)]
 matchSeq (RSeq char alt) s = do
-  (s1, n1) <- matchChar char s
-  (s2, n2) <- matchAlt alt s1
-  pure (s2, n1 + n2)
+  (n1, s1) <- matchChar char s
+  (n2, s2) <- matchAlt alt s1
+  pure (n1 + n2, s2)
 
-matchChar :: RChar -> String -> [(String, Int)]
+matchChar :: RChar -> String -> [(Int, String)]
 matchChar (RChar rc) (c : cs)
-  | rc == c = [(cs, 1)]
+  | rc == c = [(1, cs)]
   | otherwise = []
 matchChar _ [] = []
