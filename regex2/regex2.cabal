@@ -26,7 +26,9 @@ executable regex2
                       Regex10
                       Regex11
                       Regex12
+                      Regex13
     build-depends:    base ^>=4.19.1.0,
+                      free,
                       mtl
     default-language: GHC2021
     default-extensions: LambdaCase
