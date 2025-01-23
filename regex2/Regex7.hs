@@ -30,7 +30,7 @@ rMany r =
   let RAlt alt = rSeq r (rMany r)
    in RAlt (REmpty mempty : alt)
 
-match :: (Monoid a) => RAlt a -> String -> Maybe a
+match :: (Monoid a) => Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
     f (a, "") = Just a

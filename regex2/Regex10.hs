@@ -48,7 +48,7 @@ rSeq' (RSeq c alt) seq = RSeq c ((flip <$> alt) `rSeq` RAlt [seq])
 rAlt :: RAlt f a -> RAlt f a -> RAlt f a
 rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
 
-match :: RAlt RChar a -> String -> Maybe a
+match :: Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
     f (a, "") = Just a

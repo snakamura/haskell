@@ -44,7 +44,7 @@ rMany r =
   let RAlt alt = rSeq ((:) <$> r) (rMany r)
    in RAlt (REmpty [] : alt)
 
-match :: RAlt a -> String -> Maybe a
+match :: Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
     f (a, "") = Just a
