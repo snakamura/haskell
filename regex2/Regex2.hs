@@ -3,7 +3,8 @@ module Regex2 where
 import Data.Maybe (mapMaybe, listToMaybe)
 
 data Regex
-  = Empty
+  = Never
+  | Empty
   | Char Char
   | Seq Regex Regex
   | Alt Regex Regex
@@ -12,7 +13,8 @@ data Regex
 many :: Regex -> Regex
 many r = Empty `Alt` (r `Seq` many r)
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0 = Never
 regex1 = Empty -- //
 regex2 = Char 'a' -- /a/
 regex3 = Char 'a' `Seq` Char 'b' -- /ab/
@@ -29,6 +31,7 @@ match r s = listToMaybe $ mapMaybe f (match' r s)
     f _ = Nothing
 
 match' :: Regex -> String -> [(Int, String)]
+match' Never _ = []
 match' Empty s = [(0, s)]
 match' (Char rc) (c : cs)
   | rc == c = [(1, cs)]

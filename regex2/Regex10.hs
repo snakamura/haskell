@@ -24,6 +24,9 @@ instance Alternative (RAlt f) where
 
 type Regex = RAlt RChar
 
+rNever :: RAlt f a
+rNever = RAlt []
+
 rEmpty :: a -> RAlt f a
 rEmpty a = RAlt [REmpty a]
 
@@ -73,7 +76,8 @@ matchChar _ [] = []
 rChar :: Char -> Regex Int
 rChar c = RAlt [RSeq (RChar c 1) (rEmpty id)]
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8 :: Regex Int
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8 :: Regex Int
+regex0 = empty
 regex1 = pure 0 -- //
 regex2 = rChar 'a' -- /a/
 regex3 = (+) <$> rChar 'a' <*> rChar 'b' -- /ab/

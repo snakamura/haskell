@@ -12,6 +12,9 @@ newtype RAlt a = RAlt [RSeq a]
 
 type Regex = RAlt
 
+rNever :: RAlt a
+rNever = RAlt []
+
 rEmpty :: (Monoid a) => RAlt a
 rEmpty = RAlt [REmpty mempty]
 
@@ -55,7 +58,8 @@ matchChar _ [] = []
 rChar :: Char -> Regex (Sum Int)
 rChar c = RAlt [RSeq (RChar c 1) rEmpty]
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex (Sum Int)
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex (Sum Int)
+regex0 = rNever
 regex1 = rEmpty -- //
 regex2 = rChar 'a' -- /a/
 regex3 = rChar 'a' `rSeq` rChar 'b' -- /ab/

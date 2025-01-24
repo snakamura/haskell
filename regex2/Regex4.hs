@@ -10,6 +10,9 @@ newtype RAlt = RAlt [RSeq] deriving (Show)
 
 type Regex = RAlt
 
+rNever :: Regex
+rNever = RAlt []
+
 rEmpty :: Regex
 rEmpty = RAlt [REmpty]
 
@@ -31,7 +34,8 @@ rMany r =
   let RAlt alt = rSeq r (rMany r)
    in RAlt (REmpty : alt)
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0 = rNever
 regex1 = rEmpty -- //
 regex2 = rChar 'a' -- /a/
 regex3 = rChar 'a' `rSeq` rChar 'b' -- /ab/

@@ -6,6 +6,9 @@ data RSeq c = REmpty | RSeq c (RAlt c) deriving (Show)
 
 newtype RAlt c = RAlt [RSeq c] deriving (Show)
 
+rNever :: RAlt c
+rNever = RAlt []
+
 rEmpty :: RAlt c
 rEmpty = RAlt [REmpty]
 
@@ -38,7 +41,8 @@ type Regex = RAlt RChar
 rChar :: Char -> Regex
 rChar c = RAlt [RSeq (RChar c) rEmpty]
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex
+regex0 = rNever
 regex1 = rEmpty -- //
 regex2 = rChar 'a' -- /a/
 regex3 = rChar 'a' `rSeq` rChar 'b' -- /ab/

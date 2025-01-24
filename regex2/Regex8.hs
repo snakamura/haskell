@@ -15,6 +15,9 @@ newtype RAlt a = RAlt [RSeq a] deriving (Functor)
 
 type Regex = RAlt
 
+rNever :: RAlt a
+rNever = RAlt []
+
 rEmpty :: a -> RAlt a
 rEmpty a = RAlt [REmpty a]
 
@@ -69,7 +72,8 @@ matchChar _ [] = []
 rChar :: Char -> Regex Int
 rChar c = RAlt [RSeq (RChar c 1) (rEmpty id)]
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex Int
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex Int
+regex0 = rNever
 regex1 = rEmpty 0 -- //
 regex2 = rChar 'a' -- /a/
 regex3 = rEmpty (+) `rSeq` rChar 'a' `rSeq` rChar 'b' -- /ab/

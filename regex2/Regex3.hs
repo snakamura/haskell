@@ -4,7 +4,8 @@ import Data.Maybe (mapMaybe, listToMaybe)
 import Data.Monoid (Sum)
 
 data Regex a
-  = Empty a
+  = Never
+  | Empty a
   | Char Char a
   | Seq (Regex a) (Regex a)
   | Alt (Regex a) (Regex a)
@@ -19,7 +20,8 @@ empty = Empty 0
 char :: Char -> Regex (Sum Int)
 char c = Char c 1
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex (Sum Int)
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex (Sum Int)
+regex0 = Never
 regex1 = empty -- //
 regex2 = char 'a' -- /a/
 regex3 = char 'a' `Seq` char 'b' -- /ab/
@@ -68,6 +70,7 @@ match r s = listToMaybe $ mapMaybe f (match' r s)
     f _ = Nothing
 
 match' :: Monoid a => Regex a -> String -> [(a, String)]
+match' Never _ = []
 match' (Empty a) s = [(a, s)]
 match' (Char rc a) (c : cs)
   | rc == c = [(a, cs)]

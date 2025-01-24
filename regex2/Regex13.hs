@@ -27,7 +27,8 @@ matchChar (RChar rc a) = do
 rChar :: Char -> Regex Int
 rChar c = liftAlt (RChar c 1)
 
-regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8 :: Regex Int
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8 :: Regex Int
+regex0 = empty
 regex1 = pure 0 -- //
 regex2 = rChar 'a' -- /a/
 regex3 = (+) <$> rChar 'a' <*> rChar 'b' -- /ab/
