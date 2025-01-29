@@ -72,7 +72,7 @@ matchChar _ [] = []
 rChar :: Char -> Regex Int
 rChar c = RAlt [RSeq (RChar c 1) (rEmpty id)]
 
-regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8 :: Regex Int
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8, regex9 :: Regex Int
 regex0 = rNever
 regex1 = rEmpty 0 -- //
 regex2 = rChar 'a' -- /a/
@@ -82,11 +82,12 @@ regex5 = rEmpty 0 `rAlt` rChar 'a' -- /|a/
 regex6 = rEmpty sum `rSeq` rMany (rChar 'a') -- /a*/
 regex7 = (rEmpty (+) `rSeq` rChar 'a' `rSeq` rChar 'b') `rAlt` (rEmpty (+) `rSeq` (rEmpty sum `rSeq` rMany (rEmpty (+) `rSeq` rChar 'c' `rSeq` rChar 'd')) `rSeq` rChar 'e') -- /ab|(cd)*e/
 regex8 = rEmpty (+) `rSeq` (rEmpty sum `rSeq` rMany (rChar 'a')) `rSeq` rChar 'a' -- /a*a/
+regex9 = (rEmpty (+) `rSeq` (rChar 'a' `rAlt` rChar 'b') `rSeq` rChar 'c') `rAlt` (rEmpty (\a b c -> a + b + c) `rSeq` rChar 'd' `rSeq` (rChar 'e' `rAlt` rChar 'f') `rSeq` rChar 'g') -- (a|b)c|d(e|f)g
 
 rChar' :: Char -> Regex String
 rChar' c = RAlt [RSeq (RChar c [c]) (rEmpty id)]
 
-regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex8' :: Regex String
+regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex8', regex9' :: Regex String
 regex1' = rEmpty "" -- //
 regex2' = rChar' 'a' -- /a/
 regex3' = rEmpty (<>) `rSeq` rChar' 'a' `rSeq` rChar' 'b' -- /ab/
@@ -95,11 +96,12 @@ regex5' = rEmpty "" `rAlt` rChar' 'a' -- /|a/
 regex6' = rEmpty mconcat `rSeq` rMany (rChar' 'a') -- /a*/
 regex7' = (rEmpty (<>) `rSeq` rChar' 'a' `rSeq` rChar' 'b') `rAlt` (rEmpty (<>) `rSeq` (rEmpty mconcat `rSeq` rMany (rEmpty (<>) `rSeq` rChar' 'c' `rSeq` rChar' 'd')) `rSeq` rChar' 'e') -- /ab|(cd)*e/
 regex8' = rEmpty (<>) `rSeq` (rEmpty mconcat `rSeq` rMany (rChar' 'a')) `rSeq` rChar' 'a' -- /a*a/
+regex9' = (rEmpty (<>) `rSeq` (rChar' 'a' `rAlt` rChar' 'b') `rSeq` rChar' 'c') `rAlt` (rEmpty (\a b c -> a <> b <> c) `rSeq` rChar' 'd' `rSeq` (rChar' 'e' `rAlt` rChar' 'f') `rSeq` rChar' 'g') -- (a|b)c|d(e|f)g
 
 rChar'' :: Char -> Regex ()
 rChar'' c = RAlt [RSeq (RChar c ()) (rEmpty id)]
 
-regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex8'' :: Regex ()
+regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex8'', regex9'' :: Regex ()
 regex1'' = rEmpty () -- //
 regex2'' = rChar'' 'a' -- /a/
 regex3'' = rEmpty (const (const ())) `rSeq` rChar'' 'a' `rSeq` rChar'' 'b' -- /ab/
@@ -108,3 +110,4 @@ regex5'' = rEmpty () `rAlt` rChar'' 'a' -- /|a/
 regex6'' = rEmpty (const ()) `rSeq` rMany (rChar'' 'a') -- /a*/
 regex7'' = (rEmpty (const (const())) `rSeq` rChar'' 'a' `rSeq` rChar'' 'b') `rAlt` (rEmpty (const (const ())) `rSeq` (rEmpty (const ()) `rSeq` rMany (rEmpty (const (const ())) `rSeq` rChar'' 'c' `rSeq` rChar'' 'd')) `rSeq` rChar'' 'e') -- /ab|(cd)*e/
 regex8'' = rEmpty (const (const ())) `rSeq` rMany (rChar'' 'a') `rSeq` rChar'' 'a' -- /a*a/
+regex9'' = (rEmpty (const (const ())) `rSeq` (rChar'' 'a' `rAlt` rChar'' 'b') `rSeq` rChar'' 'c') `rAlt` (rEmpty (\_ _ _ -> ()) `rSeq` rChar'' 'd' `rSeq` (rChar'' 'e' `rAlt` rChar'' 'f') `rSeq` rChar'' 'g') -- (a|b)c|d(e|f)g

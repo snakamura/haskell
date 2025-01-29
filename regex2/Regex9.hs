@@ -82,7 +82,7 @@ matchChar _ [] = []
 rChar :: Char -> Regex Int
 rChar c = RAlt [RSeq (RChar c 1) (rEmpty id)]
 
-regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8 :: Regex Int
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8, regex9 :: Regex Int
 regex0 = rNever
 regex1 = pure 0 -- //
 regex2 = rChar 'a' -- /a/
@@ -93,11 +93,12 @@ regex6 = sum <$> rMany (rChar 'a') -- /a*/
 regex7 = (+) <$> rChar 'a' <*> rChar 'b' <|> (+) <$> (sum <$> rMany ((+) <$> rChar 'c' <*> rChar 'd')) <*> rChar 'e' -- /ab|(cd)*e/
 regex7_ = const 0 <$> rChar 'a' <* rChar 'b' <|> (sum <$> rMany ((+) <$> rChar 'c' <*> rChar 'd')) <* rChar 'e' -- /ab|(cd)*e/
 regex8 = (+) <$> (sum <$> rMany (rChar 'a')) <*> rChar 'a' -- /a*a/
+regex9 = (+) <$> (rChar 'a' <|> rChar 'b') <*> rChar 'c' <|> (\a b c -> a + b + c) <$> rChar 'd' <*> (rChar 'e' <|> rChar 'f') <*> rChar 'g' -- (a|b)c|d(e|f)g
 
 rChar' :: Char -> Regex String
 rChar' c = RAlt [RSeq (RChar c [c]) (rEmpty id)]
 
-regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex7_', regex8' :: Regex String
+regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex7_', regex8', regex9' :: Regex String
 regex1' = pure "" -- //
 regex2' = rChar' 'a' -- /a/
 regex3' = (<>) <$> rChar' 'a' <*> rChar' 'b' -- /ab/
@@ -107,11 +108,12 @@ regex6' = mconcat <$> rMany (rChar' 'a') -- /a*/
 regex7' = (<>) <$> rChar' 'a' <*> rChar' 'b' <|> (<>) <$> (mconcat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <*> rChar' 'e' -- /ab|(cd)*e/
 regex7_' = const "" <$> rChar' 'a' <* rChar' 'b' <|> (mconcat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <* rChar' 'e' -- /ab|(cd)*e/
 regex8' = (<>) <$> (mconcat <$> rMany (rChar' 'a')) <*> rChar' 'a' -- /a*a/
+regex9' = (<>) <$> (rChar' 'a' <|> rChar' 'b') <*> rChar' 'c' <|> (\a b c -> a <> b <> c) <$> rChar' 'd' <*> (rChar' 'e' <|> rChar' 'f') <*> rChar' 'g' -- (a|b)c|d(e|f)g
 
 rChar'' :: Char -> Regex ()
 rChar'' c = RAlt [RSeq (RChar c ()) (rEmpty id)]
 
-regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex7_'', regex8'' :: Regex ()
+regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex7_'', regex8'', regex9'' :: Regex ()
 regex1'' = pure () -- //
 regex2'' = rChar'' 'a' -- /a/
 regex3'' = void $ rChar'' 'a' *> rChar'' 'b' -- /ab/
@@ -121,3 +123,4 @@ regex6'' = void $ rMany (rChar'' 'a') -- /a*/
 regex7'' = (void $ rChar'' 'a' *> rChar'' 'b') <|> (void $ (void $ rMany (void $ rChar'' 'c' *> rChar'' 'd')) *> rChar'' 'e') -- /ab|(cd)*e/
 regex7_'' = void $ rChar'' 'a' <* rChar'' 'b' <|> (void $ rMany (void $ rChar'' 'c' <* rChar'' 'd')) <* rChar'' 'e' -- /ab|(cd)*e/
 regex8'' = void $ rMany (rChar'' 'a') *> rChar'' 'a' -- /a*a/
+regex9'' = (rChar'' 'a' <|> rChar'' 'b') *> rChar'' 'c' <|> rChar'' 'd' *> (rChar'' 'e' <|> rChar'' 'f') *> rChar'' 'g' -- (a|b)c|d(e|f)g
