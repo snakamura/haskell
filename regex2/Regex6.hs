@@ -21,19 +21,19 @@ rChar :: Char -> Regex
 rChar c = RAlt [RSeq (RChar c) rEmpty]
 
 rSeq :: Regex -> Regex -> Regex
-rSeq (RAlt alt1) alt2 = RAlt $ concat [f a1 alt2 | a1 <- alt1]
+rSeq (RAlt seqs) alt = RAlt $ concat [rSeq' seq alt | seq <- seqs]
   where
-    f :: RSeq -> RAlt -> [RSeq]
-    f REmpty (RAlt alt) = alt
-    f (RSeq c1 (RAlt alt1')) alt2' = [RSeq c1 (RAlt (f a1 alt2')) | a1 <- alt1']
+    rSeq' :: RSeq -> RAlt -> [RSeq]
+    rSeq' REmpty (RAlt seqs') = seqs'
+    rSeq' (RSeq c1 (RAlt seqs')) alt' = [RSeq c1 (RAlt (rSeq' seq' alt')) | seq' <- seqs']
 
 rAlt :: Regex -> Regex -> Regex
-rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
+rAlt (RAlt seqs1) (RAlt seqs2) = RAlt $ seqs1 <> seqs2
 
 rMany :: Regex -> Regex
 rMany r =
-  let RAlt alt = rSeq r (rMany r)
-   in RAlt (REmpty : alt)
+  let RAlt seqs = rSeq r (rMany r)
+   in RAlt (REmpty : seqs)
 
 regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8, regex9, regex10 :: Regex
 regex0 = rNever
@@ -55,7 +55,7 @@ match r s = listToMaybe $ mapMaybe f $ matchAlt r s
     f _ = Nothing
 
 matchAlt :: RAlt -> String -> [(Int, String)]
-matchAlt (RAlt alt) s = concatMap (flip matchSeq s) alt
+matchAlt (RAlt seqs) s = concat [matchSeq seq s | seq <- seqs]
 
 matchSeq :: RSeq -> String -> [(Int, String)]
 matchSeq REmpty s = [(0, s)]

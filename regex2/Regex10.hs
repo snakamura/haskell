@@ -49,7 +49,7 @@ rSeq' (RSeq c alt) seq = RSeq c ((flip <$> alt) `rSeq` RAlt [seq])
 -}
 
 rAlt :: RAlt f a -> RAlt f a -> RAlt f a
-rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
+rAlt (RAlt seqs1) (RAlt seqs2) = RAlt $ seqs1 <> seqs2
 
 match :: Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
@@ -58,7 +58,7 @@ match r s = listToMaybe $ mapMaybe f $ matchAlt r s
     f _ = Nothing
 
 matchAlt :: RAlt RChar a -> String -> [(a, String)]
-matchAlt (RAlt alt) s = concatMap (flip matchSeq s) alt
+matchAlt (RAlt seqs) s = concat [matchSeq seq s | seq <- seqs]
 
 matchSeq :: RSeq RChar a -> String -> [(a, String)]
 matchSeq (REmpty a) s = [(a, s)]

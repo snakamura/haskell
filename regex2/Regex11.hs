@@ -51,7 +51,7 @@ rSeq' (RSeq c alt) seq = RSeq c ((flip <$> alt) `rSeq` RAlt [seq])
 -}
 
 rAlt :: RAlt f a -> RAlt f a -> RAlt f a
-rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
+rAlt (RAlt seqs1) (RAlt seqs2) = RAlt $ seqs1 <> seqs2
 
 match :: Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ runStateT (matchAlt r) s
@@ -60,8 +60,8 @@ match r s = listToMaybe $ mapMaybe f $ runStateT (matchAlt r) s
     f _ = Nothing
 
 matchAlt :: RAlt RChar a -> StateT String [] a
-matchAlt (RAlt alt) = StateT $ \s -> concatMap (\seq -> runStateT (matchSeq seq) s) alt
---matchAlt (RAlt alt) = foldr (\seq a -> matchSeq seq <|> a) empty alt
+matchAlt (RAlt seqs) = StateT $ \s -> concatMap (\seq -> runStateT (matchSeq seq) s) seqs
+--matchAlt (RAlt seqs) = foldr (\seq a -> matchSeq seq <|> a) empty seqs
 
 matchSeq :: RSeq RChar a -> StateT String [] a
 matchSeq (REmpty a) = pure a

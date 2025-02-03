@@ -13,22 +13,22 @@ rEmpty :: RAlt c
 rEmpty = RAlt [REmpty]
 
 rSeq :: RAlt c -> RAlt c -> RAlt c
-rSeq (RAlt alt1) alt2 = RAlt $ concat [f a1 alt2 | a1 <- alt1]
+rSeq (RAlt seqs) alt = RAlt $ concat [rSeq' seq alt | seq <- seqs]
   where
-    f :: RSeq c -> RAlt c -> [RSeq c]
-    f REmpty (RAlt alt) = alt
-    f (RSeq c1 (RAlt alt1')) alt2' = [RSeq c1 (RAlt (f a1 alt2')) | a1 <- alt1']
+    rSeq' :: RSeq c -> RAlt c -> [RSeq c]
+    rSeq' REmpty (RAlt seqs') = seqs'
+    rSeq' (RSeq c1 (RAlt seqs')) alt' = [RSeq c1 (RAlt (rSeq' seq' alt')) | seq' <- seqs']
 
 rAlt :: RAlt c -> RAlt c -> RAlt c
-rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
+rAlt (RAlt seqs1) (RAlt seqs2) = RAlt $ seqs1 <> seqs2
 
 rMany :: RAlt c -> RAlt c
 rMany r =
-  let RAlt alt = rSeq r (rMany r)
-   in RAlt (REmpty : alt)
+  let RAlt seqs = rSeq r (rMany r)
+   in RAlt (REmpty : seqs)
 
 matchAlt :: (c -> a -> [a]) -> RAlt c -> a -> [a]
-matchAlt matchChar' (RAlt alt) s = concatMap (flip (matchSeq matchChar') s) alt
+matchAlt matchChar' (RAlt seqs) s = concat [matchSeq matchChar' seq s | seq <- seqs]
 
 matchSeq :: (c -> a -> [a]) -> RSeq c -> a -> [a]
 matchSeq _ REmpty s = [s]

@@ -19,19 +19,19 @@ rEmpty :: (Monoid a) => RAlt a
 rEmpty = RAlt [REmpty mempty]
 
 rSeq :: RAlt a -> RAlt a -> RAlt a
-rSeq (RAlt alt1) alt2 = RAlt $ concat [rSeq' a1 alt2 | a1 <- alt1]
+rSeq (RAlt seqs) alt = RAlt $ concat [rSeq' seq alt | seq <- seqs]
   where
     rSeq' :: RSeq a -> RAlt a -> [RSeq a]
-    rSeq' (REmpty _) (RAlt alt) = alt
-    rSeq' (RSeq c1 (RAlt alt1')) alt2' = [RSeq c1 (RAlt (rSeq' a1 alt2')) | a1 <- alt1']
+    rSeq' (REmpty _) (RAlt seqs') = seqs'
+    rSeq' (RSeq c1 (RAlt seqs')) alt' = [RSeq c1 (RAlt (rSeq' seq' alt')) | seq' <- seqs']
 
 rAlt :: RAlt a -> RAlt a -> RAlt a
-rAlt (RAlt alt1) (RAlt alt2) = RAlt $ alt1 <> alt2
+rAlt (RAlt seqs1) (RAlt seqs2) = RAlt $ seqs1 <> seqs2
 
 rMany :: (Monoid a) => RAlt a -> RAlt a
 rMany r =
-  let RAlt alt = rSeq r (rMany r)
-   in RAlt (REmpty mempty : alt)
+  let RAlt seqs = rSeq r (rMany r)
+   in RAlt (REmpty mempty : seqs)
 
 match :: (Monoid a) => Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
@@ -40,7 +40,7 @@ match r s = listToMaybe $ mapMaybe f $ matchAlt r s
     f _ = Nothing
 
 matchAlt :: (Monoid a) => RAlt a -> String -> [(a, String)]
-matchAlt (RAlt alt) s = concatMap (flip matchSeq s) alt
+matchAlt (RAlt seqs) s = concat [matchSeq seq s | seq <- seqs]
 
 matchSeq :: (Monoid a) => RSeq a -> String -> [(a, String)]
 matchSeq (REmpty a) s = [(a, s)]
