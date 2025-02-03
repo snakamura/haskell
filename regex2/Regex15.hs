@@ -40,7 +40,7 @@ listChar (RChar _ a) = [a]
 rChar :: Char -> Regex String
 rChar c = liftAlt (RChar c [c])
 
-regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8, regex9 :: Regex String
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex7_, regex8, regex9, regex10 :: Regex String
 regex0 = empty
 regex1 = pure "" -- //
 regex2 = rChar 'a' -- /a/
@@ -52,3 +52,4 @@ regex7 = (<>) <$> rChar 'a' <*> rChar 'b' <|> (<>) <$> (concat <$> many ((<>) <$
 regex7_ = const "" <$> rChar 'a' <* rChar 'b' <|> (concat <$> many ((<>) <$> rChar 'c' <*> rChar 'd')) <* rChar 'e' -- /ab|(cd)*e/
 regex8 = (<>) <$> (concat <$> many (rChar 'a')) <*> rChar 'a' -- /a*a/
 regex9 = (<>) <$> (rChar 'a' <|> rChar 'b') <*> rChar 'c' <|> (\a b c -> a <> b <> c) <$> rChar 'd' <*> (rChar 'e' <|> rChar 'f') <*> rChar 'g' -- (a|b)c|d(e|f)g
+regex10 = (<>) <$> (concat <$> many (rChar 'a' <|> rChar 'b')) <*> (concat <$> many (rChar 'a' <|> rChar 'c')) -- (a|b)*(a|b|c)*

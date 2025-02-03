@@ -20,7 +20,7 @@ empty = Empty 0
 char :: Char -> Regex (Sum Int)
 char c = Char c 1
 
-regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8, regex9 :: Regex (Sum Int)
+regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8, regex9, regex10 :: Regex (Sum Int)
 regex0 = Never
 regex1 = empty -- //
 regex2 = char 'a' -- /a/
@@ -31,6 +31,7 @@ regex6 = many (char 'a') -- /a*/
 regex7 = (char 'a' `Seq` char 'b') `Alt` (many (char 'c' `Seq` char 'd') `Seq` char 'e') -- /ab|(cd)*e/
 regex8 = many (char 'a') `Seq` char 'a' -- /a*a/
 regex9 = ((char 'a' `Alt` char 'b') `Seq` char 'c') `Alt` (char 'd' `Seq` (char 'e' `Alt` char 'f') `Seq` char 'g') -- (a|b)c|d(e|f)g
+regex10 = many (char 'a' `Alt` char 'b') `Seq` many (char 'a' `Alt` char 'c') -- (a|b)*(a|b|c)*
 
 empty' :: Regex ()
 empty' = Empty ()
@@ -38,7 +39,7 @@ empty' = Empty ()
 char' :: Char -> Regex ()
 char' c = Char c ()
 
-regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex8', regex9' :: Regex ()
+regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex8', regex9', regex10' :: Regex ()
 regex1' = empty' -- //
 regex2' = char' 'a' -- /a/
 regex3' = char' 'a' `Seq` char' 'b' -- /ab/
@@ -48,6 +49,7 @@ regex6' = many (char' 'a') -- /a*/
 regex7' = (char' 'a' `Seq` char' 'b') `Alt` (many (char' 'c' `Seq` char' 'd') `Seq` char' 'e') -- /ab|(cd)*e/
 regex8' = many (char' 'a') `Seq` char' 'a' -- /a*a/
 regex9' = ((char' 'a' `Alt` char' 'b') `Seq` char' 'c') `Alt` (char' 'd' `Seq` (char' 'e' `Alt` char' 'f') `Seq` char' 'g') -- (a|b)c|d(e|f)g
+regex10' = many (char' 'a' `Alt` char' 'b') `Seq` many (char' 'a' `Alt` char' 'c') -- (a|b)*(a|b|c)*
 
 empty'' :: Regex String
 empty'' = Empty ""
@@ -55,7 +57,7 @@ empty'' = Empty ""
 char'' :: Char -> Regex String
 char'' c = Char c [c]
 
-regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex8'', regex9'' :: Regex String
+regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex8'', regex9'', regex10'' :: Regex String
 regex1'' = empty'' -- //
 regex2'' = char'' 'a' -- /a/
 regex3'' = char'' 'a' `Seq` char'' 'b' -- /ab/
@@ -65,6 +67,7 @@ regex6'' = many (char'' 'a') -- /a*/
 regex7'' = (char'' 'a' `Seq` char'' 'b') `Alt` (many (char'' 'c' `Seq` char'' 'd') `Seq` char'' 'e') -- /ab|(cd)*e/
 regex8'' = many (char'' 'a') `Seq` char'' 'a' -- /a*a/
 regex9'' = ((char'' 'a' `Alt` char'' 'b') `Seq` char'' 'c') `Alt` (char'' 'd' `Seq` (char'' 'e' `Alt` char'' 'f') `Seq` char'' 'g') -- (a|b)c|d(e|f)g
+regex10'' = many (char'' 'a' `Alt` char'' 'b') `Seq` many (char'' 'a' `Alt` char'' 'c') -- (a|b)*(a|b|c)*
 
 match :: Monoid a => Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f (match' r s)
