@@ -105,12 +105,12 @@ regex2' = rChar' 'a' -- /a/
 regex3' = (<>) <$> rChar' 'a' <*> rChar' 'b' -- /ab/
 regex4' = rChar' 'a' <|> rChar' 'b' -- /a|b/
 regex5' = pure "" <|> rChar' 'a' -- /|a/
-regex6' = mconcat <$> rMany (rChar' 'a') -- /a*/
-regex7' = (<>) <$> rChar' 'a' <*> rChar' 'b' <|> (<>) <$> (mconcat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <*> rChar' 'e' -- /ab|(cd)*e/
-regex7_' = const "" <$> rChar' 'a' <* rChar' 'b' <|> (mconcat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <* rChar' 'e' -- /ab|(cd)*e/
-regex8' = (<>) <$> (mconcat <$> rMany (rChar' 'a')) <*> rChar' 'a' -- /a*a/
+regex6' = concat <$> rMany (rChar' 'a') -- /a*/
+regex7' = (<>) <$> rChar' 'a' <*> rChar' 'b' <|> (<>) <$> (concat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <*> rChar' 'e' -- /ab|(cd)*e/
+regex7_' = const "" <$> rChar' 'a' <* rChar' 'b' <|> (concat <$> rMany ((<>) <$> rChar' 'c' <*> rChar' 'd')) <* rChar' 'e' -- /ab|(cd)*e/
+regex8' = (<>) <$> (concat <$> rMany (rChar' 'a')) <*> rChar' 'a' -- /a*a/
 regex9' = (<>) <$> (rChar' 'a' <|> rChar' 'b') <*> rChar' 'c' <|> (\a b c -> a <> b <> c) <$> rChar' 'd' <*> (rChar' 'e' <|> rChar' 'f') <*> rChar' 'g' -- (a|b)c|d(e|f)g
-regex10' = (<>) <$> (mconcat <$> rMany (rChar' 'a' <|> rChar' 'b')) <*> (mconcat <$> rMany (rChar' 'a' <|> rChar' 'c')) -- (a|b)*(a|b|c)*
+regex10' = (<>) <$> (concat <$> rMany (rChar' 'a' <|> rChar' 'b')) <*> (concat <$> rMany (rChar' 'a' <|> rChar' 'c')) -- (a|b)*(a|b|c)*
 
 rChar'' :: Char -> Regex ()
 rChar'' c = RAlt [RSeq (RChar c ()) (rEmpty id)]

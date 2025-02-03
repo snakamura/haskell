@@ -94,11 +94,11 @@ regex2' = rChar' 'a' -- /a/
 regex3' = rEmpty (<>) `rSeq` rChar' 'a' `rSeq` rChar' 'b' -- /ab/
 regex4' = rChar' 'a' `rAlt` rChar' 'b' -- /a|b/
 regex5' = rEmpty "" `rAlt` rChar' 'a' -- /|a/
-regex6' = rEmpty mconcat `rSeq` rMany (rChar' 'a') -- /a*/
-regex7' = (rEmpty (<>) `rSeq` rChar' 'a' `rSeq` rChar' 'b') `rAlt` (rEmpty (<>) `rSeq` (rEmpty mconcat `rSeq` rMany (rEmpty (<>) `rSeq` rChar' 'c' `rSeq` rChar' 'd')) `rSeq` rChar' 'e') -- /ab|(cd)*e/
-regex8' = rEmpty (<>) `rSeq` (rEmpty mconcat `rSeq` rMany (rChar' 'a')) `rSeq` rChar' 'a' -- /a*a/
+regex6' = rEmpty concat `rSeq` rMany (rChar' 'a') -- /a*/
+regex7' = (rEmpty (<>) `rSeq` rChar' 'a' `rSeq` rChar' 'b') `rAlt` (rEmpty (<>) `rSeq` (rEmpty concat `rSeq` rMany (rEmpty (<>) `rSeq` rChar' 'c' `rSeq` rChar' 'd')) `rSeq` rChar' 'e') -- /ab|(cd)*e/
+regex8' = rEmpty (<>) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a')) `rSeq` rChar' 'a' -- /a*a/
 regex9' = (rEmpty (<>) `rSeq` (rChar' 'a' `rAlt` rChar' 'b') `rSeq` rChar' 'c') `rAlt` (rEmpty (\a b c -> a <> b <> c) `rSeq` rChar' 'd' `rSeq` (rChar' 'e' `rAlt` rChar' 'f') `rSeq` rChar' 'g') -- (a|b)c|d(e|f)g
-regex10' = rEmpty (<>) `rSeq` (rEmpty mconcat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'b')) `rSeq` (rEmpty mconcat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'c')) -- (a|b)*(a|b|c)*
+regex10' = rEmpty (<>) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'b')) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'c')) -- (a|b)*(a|b|c)*
 
 rChar'' :: Char -> Regex ()
 rChar'' c = RAlt [RSeq (RChar c ()) (rEmpty id)]
