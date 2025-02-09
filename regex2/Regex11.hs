@@ -61,7 +61,7 @@ match r s = listToMaybe $ mapMaybe f $ runStateT (matchAlt r) s
 
 matchAlt :: RAlt RChar a -> StateT String [] a
 matchAlt (RAlt seqs) = StateT $ \s -> concatMap (\seq -> runStateT (matchSeq seq) s) seqs
---matchAlt (RAlt seqs) = foldr (\seq a -> matchSeq seq <|> a) empty seqs
+--matchAlt (RAlt seqs) = foldr (\seq states -> matchSeq seq <|> states) empty seqs
 
 matchSeq :: RSeq RChar a -> StateT String [] a
 matchSeq (REmpty a) = pure a
