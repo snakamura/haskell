@@ -22,7 +22,7 @@ instance Applicative (RAlt f) where
   (<*>) = rSeq
 
 instance Alternative (RAlt f) where
-  empty = RAlt []
+  empty = rNever
   (<|>) = rAlt
 
 type Regex = RAlt RChar

@@ -20,7 +20,7 @@ instance Applicative RAlt where
   (<*>) = rSeq
 
 instance Alternative RAlt where
-  empty = RAlt []
+  empty = rNever
   (<|>) = rAlt
 
 type Regex = RAlt
