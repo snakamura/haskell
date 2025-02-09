@@ -31,7 +31,7 @@ rEmpty :: a -> RAlt f a
 rEmpty a = RAlt [REmpty a]
 
 rSeq :: RAlt f (a -> b) -> RAlt f a -> RAlt f b
-rSeq (RAlt (seqs :: [RSeq f (a -> b)])) (alt :: RAlt f a) = RAlt $ concatMap (`rSeq'` alt) seqs
+rSeq (RAlt (seqs :: [RSeq f (a -> b)])) (alt :: RAlt f a) = RAlt $ concat [rSeq' seq alt | seq <- seqs]
   where
     rSeq' :: RSeq f (a -> b) -> RAlt f a -> [RSeq f b]
     rSeq' (REmpty (f :: a -> b)) (RAlt (seqs' :: [RSeq f a])) = map (f <$>) seqs'

@@ -22,7 +22,7 @@ rEmpty :: a -> RAlt a
 rEmpty a = RAlt [REmpty a]
 
 rSeq :: RAlt (a -> b) -> RAlt a -> RAlt b
-rSeq (RAlt (seqs :: [RSeq (a -> b)])) (alt :: RAlt a) = RAlt $ concatMap (`rSeq'` alt) seqs
+rSeq (RAlt (seqs :: [RSeq (a -> b)])) (alt :: RAlt a) = RAlt $ concat [rSeq' seq alt | seq <- seqs]
   where
     rSeq' :: RSeq (a -> b) -> RAlt a -> [RSeq b]
     rSeq' (REmpty (f :: a -> b)) (RAlt (seqs' :: [RSeq a])) = map (f <$>) seqs'
