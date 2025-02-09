@@ -60,9 +60,13 @@ match r s = listToMaybe $ mapMaybe f $ runStateT (matchAlt matchChar r) s
     f (a, "") = Just a
     f _ = Nothing
 
+--matchAlt :: (f a -> StateT String [] a) -> RAlt f a -> StateT String [] a
+--matchAlt :: (forall x. f x -> StateT String [] x) -> RAlt f a -> StateT String [] a
 matchAlt :: (Alternative g) => (forall x. f x -> g x) -> RAlt f a -> g a
 matchAlt m (RAlt seqs) = foldr (\seq a -> matchSeq m seq <|> a) empty seqs
 
+--matchSeq :: (f a -> StateT String [] a) -> RSeq f a -> StateT String[] a
+--matchSeq :: (forall x. f x -> StateT String [] x) -> RSeq f a -> StateT String[] a
 matchSeq :: (Alternative g) => (forall x. f x -> g x) -> RSeq f a -> g a
 matchSeq _ (REmpty a) = pure a
 matchSeq m (RSeq fa alt) = (&) <$> m fa <*> matchAlt m alt
