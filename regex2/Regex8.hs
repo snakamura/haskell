@@ -69,7 +69,7 @@ matchChar (RChar rc a) (c : cs)
   | otherwise = []
 matchChar _ [] = []
 
-rChar :: Char -> Regex Int
+rChar :: Char -> RAlt Int
 rChar c = RAlt [RSeq (RChar c 1) (rEmpty id)]
 
 regex0, regex1, regex2, regex3, regex4, regex5, regex6, regex7, regex8, regex9, regex10 :: Regex Int
@@ -85,7 +85,7 @@ regex8 = rEmpty (+) `rSeq` (rEmpty sum `rSeq` rMany (rChar 'a')) `rSeq` rChar 'a
 regex9 = (rEmpty (+) `rSeq` (rChar 'a' `rAlt` rChar 'b') `rSeq` rChar 'c') `rAlt` (rEmpty (\a b c -> a + b + c) `rSeq` rChar 'd' `rSeq` (rChar 'e' `rAlt` rChar 'f') `rSeq` rChar 'g') -- (a|b)c|d(e|f)g
 regex10 = rEmpty (+) `rSeq` (rEmpty sum `rSeq` rMany (rChar 'a' `rAlt` rChar 'b')) `rSeq` (rEmpty sum `rSeq` rMany (rChar 'a' `rAlt` rChar 'c')) -- (a|b)*(a|b|c)*
 
-rChar' :: Char -> Regex String
+rChar' :: Char -> RAlt String
 rChar' c = RAlt [RSeq (RChar c [c]) (rEmpty id)]
 
 regex1', regex2', regex3', regex4', regex5', regex6', regex7', regex8', regex9', regex10' :: Regex String
@@ -100,7 +100,7 @@ regex8' = rEmpty (<>) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a')) `rSeq` rC
 regex9' = (rEmpty (<>) `rSeq` (rChar' 'a' `rAlt` rChar' 'b') `rSeq` rChar' 'c') `rAlt` (rEmpty (\a b c -> a <> b <> c) `rSeq` rChar' 'd' `rSeq` (rChar' 'e' `rAlt` rChar' 'f') `rSeq` rChar' 'g') -- (a|b)c|d(e|f)g
 regex10' = rEmpty (<>) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'b')) `rSeq` (rEmpty concat `rSeq` rMany (rChar' 'a' `rAlt` rChar' 'c')) -- (a|b)*(a|b|c)*
 
-rChar'' :: Char -> Regex ()
+rChar'' :: Char -> RAlt ()
 rChar'' c = RAlt [RSeq (RChar c ()) (rEmpty id)]
 
 regex1'', regex2'', regex3'', regex4'', regex5'', regex6'', regex7'', regex8'', regex9'', regex10'' :: Regex ()
