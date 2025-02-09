@@ -33,16 +33,16 @@ rMany r =
   let RAlt seqs = rSeq r (rMany r)
    in RAlt (REmpty mempty : seqs)
 
-match :: (Monoid a) => Regex a -> String -> Maybe a
+match :: (Semigroup a) => Regex a -> String -> Maybe a
 match r s = listToMaybe $ mapMaybe f $ matchAlt r s
   where
     f (a, "") = Just a
     f _ = Nothing
 
-matchAlt :: (Monoid a) => RAlt a -> String -> [(a, String)]
+matchAlt :: (Semigroup a) => RAlt a -> String -> [(a, String)]
 matchAlt (RAlt seqs) s = concat [matchSeq seq s | seq <- seqs]
 
-matchSeq :: (Monoid a) => RSeq a -> String -> [(a, String)]
+matchSeq :: (Semigroup a) => RSeq a -> String -> [(a, String)]
 matchSeq (REmpty a) s = [(a, s)]
 matchSeq (RSeq char alt) s = do
   (a1, s1) <- matchChar char s
