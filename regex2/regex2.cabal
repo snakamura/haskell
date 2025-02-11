@@ -30,7 +30,7 @@ executable regex2
                       Regex14
                       Regex15
                       Regex16
-    build-depends:    base ^>=4.19.1.0,
+    build-depends:    base >=4.19.1.0,
                       free,
                       mtl
     default-language: GHC2021
