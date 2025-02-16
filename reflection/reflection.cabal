@@ -29,4 +29,5 @@ executable reflection
     default-extensions: FunctionalDependencies,
                         RankNTypes,
                         RecordWildCards,
+                        TypeData,
                         TypeFamilies

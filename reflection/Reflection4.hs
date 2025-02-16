@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeData #-}
-
 module Reflection4 where
 
 import Data.Coerce (coerce)
