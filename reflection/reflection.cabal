@@ -16,6 +16,13 @@ executable reflection
     main-is:          Main.hs
     other-modules:    Reflection1
                       Reflection2
+                      Reflection3
+                      Reflection4
+                      Reflection5
+                      Reflection6
+                      Reflection7
+                      Reflection8
+                      Reflection9
     build-depends:    base >=4.19.1.0,
                       reflection
     default-language: GHC2021
