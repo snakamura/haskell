@@ -16,8 +16,8 @@ instance Y Int where
   y1 = show
   y2 = (+)
 
-type WrapY :: k -> Type -> Type
-newtype WrapY s a = WrapY a
+type Wrap :: k -> Type -> Type
+newtype Wrap s a = Wrap a
 
 type DictY :: Type -> Type
 data DictY a = DictY
@@ -25,9 +25,9 @@ data DictY a = DictY
     _y2 :: a -> a -> Int
   }
 
-instance (Reifies s (DictY a)) => Y (WrapY s a) where
-  y1 (WrapY a) = _y1 (reflect (Proxy :: Proxy s)) a
-  y2 (WrapY a1) (WrapY a2) = _y2 (reflect (Proxy :: Proxy s)) a1 a2
+instance (Reifies s (DictY a)) => Y (Wrap s a) where
+  y1 (Wrap a) = _y1 (reflect (Proxy :: Proxy s)) a
+  y2 (Wrap a1) (Wrap a2) = _y2 (reflect (Proxy :: Proxy s)) a1 a2
 
 v1 :: String
 v1 = reify
@@ -35,7 +35,7 @@ v1 = reify
     { _y1 = \n -> show $ n + 100,
       _y2 = (*)
     }
-  $ \(_ :: Proxy s) -> y1 (WrapY 10 :: WrapY s Int)
+  $ \(_ :: Proxy s) -> y1 (Wrap 10 :: Wrap s Int)
 
 v2 :: Int
 v2 = reify
@@ -43,4 +43,4 @@ v2 = reify
     { _y1 = \n -> show $ n + 100,
       _y2 = (*)
     }
-  $ \(_ :: Proxy s) -> y2 (WrapY 10 :: WrapY s Int) (WrapY 20 :: WrapY s Int)
+  $ \(_ :: Proxy s) -> y2 (Wrap 10 :: Wrap s Int) (Wrap 20 :: Wrap s Int)

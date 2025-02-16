@@ -32,20 +32,23 @@ instance (Reifies s (DictMonoid a)) => Semigroup (Wrap Monoid s a) where
 instance (Reifies s (DictMonoid a)) => Monoid (Wrap Monoid s a) where
   mempty = Wrap $ _mempty (reflect (Proxy :: Proxy s))
 
-v3 :: Int
-v3 =
-  withDict @Monoid
+v :: (Reifies s (DictMonoid Int)) => Wrap Monoid s Int
+v = mempty <> Wrap 10 <> Wrap 20
+
+v1 :: Int
+v1 =
+  withDict
     DictMonoid
       { _mempty = 0,
         _mappend = (+)
       }
-    $ mempty <> Wrap 10 <> Wrap 20
+    v
 
-v4 :: Int
-v4 =
+v2 :: Int
+v2 =
   withDict @Monoid
     DictMonoid
       { _mempty = 1,
         _mappend = (*)
       }
-    $ mempty <> Wrap 10 <> Wrap 20
+    v
