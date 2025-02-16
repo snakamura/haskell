@@ -1,6 +1,5 @@
 module Reflection3 where
 
-import Data.Coerce (coerce)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import GHC.Exts (withDict)
@@ -35,17 +34,17 @@ data DictY a = DictY
 
 type BindY :: k -> Type -> Constraint
 class BindY s a | s -> a where
-  get :: Proxy s -> DictY (WrapY s a)
+  get :: Proxy s -> DictY a
 
 instance (BindY s a) => Y (WrapY s a) where
-  y1 = _y1 $ get (Proxy :: Proxy s)
-  y2 = _y2 $ get (Proxy :: Proxy s)
+  y1 (WrapY a) = _y1 (get (Proxy :: Proxy s)) a
+  y2 (WrapY a1) (WrapY a2) = _y2 (get (Proxy :: Proxy s)) a1 a2
 
-bindY :: forall s a r. DictY (WrapY s a) -> ((BindY s a) => Proxy s -> r) -> r
+bindY :: forall s a r. DictY a -> ((BindY s a) => Proxy s -> r) -> r
 bindY dictY f =
   withDict
     @(BindY s a)
-    {- @(Proxy s -> DictY (WrapY s a)) -}
+    {- @(Proxy s -> DictY a) -}
     (const dictY)
     f
     (Proxy :: Proxy s)
@@ -59,57 +58,23 @@ unsafeBindY dictY f = unsafeCoerce (Magic f) (const dictY) (Proxy :: Proxy s)
 v1 :: String
 v1 = bindY
   DictY
-    { _y1 = \(WrapY n) -> show $ n + 100,
-      _y2 = \(WrapY n) (WrapY m) -> n * m
+    { _y1 = \n -> show $ n + 100,
+      _y2 = (*)
     }
   $ \(_ :: Proxy s) -> y1 (WrapY 10 :: WrapY s Int)
 
 v2 :: Int
 v2 = bindY
   DictY
-    { _y1 = \(WrapY n) -> show $ n + 100,
-      _y2 = \(WrapY n) (WrapY m) -> n * m
-    }
-  $ \(_ :: Proxy s) -> y2 (WrapY 10 :: WrapY s Int) (WrapY 20 :: WrapY s Int)
-
-v3 :: String
-v3 = bindY
-  ( coerce
-      DictY
-        { _y1 = \n -> show $ n + 100,
-          _y2 = (*)
-        }
-  )
-  $ \(_ :: Proxy s) -> y1 (WrapY 10 :: WrapY s Int)
-
-bindY' :: forall s a r. DictY a -> ((BindY s a) => Proxy s -> r) -> r
-bindY' dictY f =
-  withDict
-    @(BindY s a)
-    {- @(Proxy s -> DictY (WrapY s a)) -}
-    (const (coerce {- @(DictY a) @(DictY (WrapY s a)) -} dictY))
-    f
-    (Proxy :: Proxy s)
-
-unsafeBindY' :: forall s a r. DictY a -> ((BindY s a) => Proxy s -> r) -> r
-unsafeBindY' dictY f =
-  unsafeCoerce
-    (Magic f)
-    (const (coerce @(DictY a) @(DictY (WrapY s a)) dictY))
-    (Proxy :: Proxy s)
-
-v4 :: String
-v4 = bindY'
-  DictY
     { _y1 = \n -> show $ n + 100,
       _y2 = (*)
     }
-  $ \(_ :: Proxy s) -> y1 (WrapY 10 :: WrapY s Int)
+  $ \(_ :: Proxy s) -> y2 (WrapY 10 :: WrapY s Int) (WrapY 20 :: WrapY s Int)
 
 type data BadKind = Bad
 
 bad :: WrapY Bad Int
-bad = bindY'
+bad = bindY
   DictY
     { _y1 = \n -> show $ n + 100,
       _y2 = (*)
@@ -119,8 +84,8 @@ bad = bindY'
 instance BindY Bad Int where
   get _ =
     DictY
-      { _y1 = \(WrapY n) -> show $ n + 1000,
-        _y2 = \(WrapY n) (WrapY m) -> n + m
+      { _y1 = \n -> show $ n + 1000,
+        _y2 = (+)
       }
 
 v5 :: String
