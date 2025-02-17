@@ -36,19 +36,7 @@ v :: (Reifies s (DictMonoid Int)) => Wrap Monoid s Int
 v = mempty <> Wrap 10 <> Wrap 20
 
 v1 :: Int
-v1 =
-  withDict
-    DictMonoid
-      { _mempty = 0,
-        _mappend = (+)
-      }
-    v
+v1 = withDict (DictMonoid 0 (+)) v
 
 v2 :: Int
-v2 =
-  withDict @Monoid
-    DictMonoid
-      { _mempty = 1,
-        _mappend = (*)
-      }
-    v
+v2 = withDict (DictMonoid 1 (*)) v
