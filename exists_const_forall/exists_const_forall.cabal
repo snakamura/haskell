@@ -16,6 +16,8 @@ executable reflection
     main-is:          Main.hs
     other-modules:    Exists
                       Forall
+                      Some
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
-    default-extensions:
+    default-extensions: GADTs
+                        TypeData
