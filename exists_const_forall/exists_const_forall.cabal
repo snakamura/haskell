@@ -14,7 +14,8 @@ common warnings
 executable reflection
     import:           warnings
     main-is:          Main.hs
-    other-modules:    Exists
+    other-modules:    Any
+                      Exists
                       Forall
                       Some
     build-depends:    base >=4.19.1.0
