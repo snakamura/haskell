@@ -90,3 +90,15 @@ fmap''' = \(MkSomeFA fa g) -> fmap'' fa g
 
 fmap'''' :: Functor f => SomeFA f ~> f
 fmap'''' = \(MkSomeFA fa g) -> fmap'' fa g
+
+liftA2' :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+liftA2' = liftA2
+
+liftA2'' :: Applicative f => (x -> y -> a) -> f x -> f y -> f a
+liftA2'' = liftA2'
+
+data SomeFA2 f a where
+  MkSomeFA2 :: (x -> y -> a) -> f x -> f y -> SomeFA2 f a
+
+liftA2''' :: Applicative f => SomeFA2 f a -> f a
+liftA2''' (MkSomeFA2 g fx fy) = liftA2'' g fx fy
