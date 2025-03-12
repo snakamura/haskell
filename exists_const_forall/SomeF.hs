@@ -6,11 +6,14 @@ type SomeF :: (k -> Type) -> Type
 data SomeF f where
   MkSomeF :: f a -> SomeF f
 
-lengthSomeF :: SomeF [] -> Int
-lengthSomeF (MkSomeF l) = length l
-
 someFValue :: SomeF []
 someFValue = MkSomeF [1 :: Int]
+
+fromSomeF :: SomeF [] -> Int
+fromSomeF (MkSomeF l) = length l
+
+toSomeF :: Int -> SomeF []
+toSomeF n = MkSomeF [n]
 
 forward :: (SomeF f -> a) -> (forall x. f x -> a)
 forward g = \fx -> g (MkSomeF fx)

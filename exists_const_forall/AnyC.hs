@@ -17,8 +17,8 @@ toAnyCNum n = MkAnyC (fromInteger (toInteger n))
 anyCReadValue :: AnyC Read
 anyCReadValue = MkAnyC (read "1")
 
-fromAnyCShow :: AnyC Show -> String
-fromAnyCShow (MkAnyC a) = let n = a :: Int in show n
+fromAnyCRead :: AnyC Read -> String
+fromAnyCRead (MkAnyC a) = let n = a :: Int in show n
 
 toAnyCRead :: String -> AnyC Read
 toAnyCRead s = MkAnyC (read s)

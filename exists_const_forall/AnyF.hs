@@ -5,18 +5,14 @@ import Data.Kind
 type AnyF :: (k -> Type) -> Type
 newtype AnyF f = MkAnyF (forall a. f a)
 
-anyFLength :: AnyF [] -> Int
-anyFLength (MkAnyF l) = let intList :: [Int] = l in length intList
-
 anyFValue :: AnyF []
 anyFValue = MkAnyF []
 
-type data V = V1 | V2
+fromAnyF :: AnyF [] -> Int
+fromAnyF (MkAnyF l) = let intList :: [Int] = l in length intList
 
-type SV :: V -> Type
-data SV v where
-  MkSV1 :: Int -> SV V1
-  MkSV2 :: String -> SV V2
+toAnyF :: Int -> AnyF []
+toAnyF _ = MkAnyF []
 
 forward :: (forall x. a -> f x) -> (a -> AnyF f)
 forward g = \a -> MkAnyF (g a)

@@ -12,8 +12,8 @@ someCShowValue = MkSomeC (1 :: Int)
 fromSomeCShow :: SomeC Show -> String
 fromSomeCShow (MkSomeC a) = show a
 
-toSomeCRead :: String -> SomeC Read
-toSomeCRead s = MkSomeC (read @Int s)
+toSomeCShow :: Int -> SomeC Show
+toSomeCShow n = MkSomeC n
 
 forward :: (SomeC c -> a) -> (forall x. c x => x -> a)
 forward g = \x -> g (MkSomeC x)

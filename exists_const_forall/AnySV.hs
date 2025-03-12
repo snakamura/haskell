@@ -12,11 +12,14 @@ data SV v where
 type AnySV :: Type
 newtype AnySV = MkAnySV (forall v. SV v)
 
-anySVShow :: AnySV -> String
-anySVShow (MkAnySV sv) =
+anySV :: AnySV
+anySV = MkAnySV undefined
+
+fromAnySV :: AnySV -> String
+fromAnySV (MkAnySV sv) =
   case sv of
     MkSV1 n -> show n
     MkSV2 s -> s
 
-anySV :: AnySV
-anySV = MkAnySV undefined
+toAnySV :: Int -> AnySV
+toAnySV _ = MkAnySV undefined
