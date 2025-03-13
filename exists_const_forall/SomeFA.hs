@@ -10,12 +10,15 @@ fmap' = flip fmap
 fmap'' :: Functor f => f x -> (x -> a) -> f a
 fmap'' = fmap'
 
+fmap''' :: Functor f => (f x, x -> a) -> f a
+fmap''' = uncurry fmap''
+
 type SomeFA :: (Type -> Type) -> Type -> Type
 data SomeFA f a where
   MkSomeFA :: f x -> (x -> a) -> SomeFA f a
 
-fmap''' :: Functor f => SomeFA f a -> f a
-fmap''' = \(MkSomeFA fa g) -> fmap'' fa g
+fmap'''' :: Functor f => SomeFA f a -> f a
+fmap'''' = \(MkSomeFA fa g) -> fmap''' (fa,  g)
 
-fmap'''' :: Functor f => SomeFA f ~> f
-fmap'''' = \(MkSomeFA fa g) -> fmap'' fa g
+fmap''''' :: Functor f => SomeFA f ~> f
+fmap''''' = \(MkSomeFA fa g) -> fmap''' (fa, g)
