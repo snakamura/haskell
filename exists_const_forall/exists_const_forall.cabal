@@ -17,12 +17,15 @@ executable reflection
     other-modules:    Any
                       AnyC
                       AnyF
+                      AnyFA
                       AnySV
                       Exists
                       Forall
                       Some
                       SomeC
                       SomeF
+                      SomeFA
+                      SomeFA2
                       SomeSV
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
