@@ -17,3 +17,10 @@ data SomeFA2 f a where
 
 liftA2'''' :: Applicative f => SomeFA2 f a -> f a
 liftA2'''' (MkSomeFA2 g fx fy) = liftA2''' (g, fx, fy)
+
+type Day :: (Type -> Type) -> (Type -> Type) -> Type -> Type
+data Day f g a where
+  Day :: (x -> y -> a) -> f x -> g y -> Day f g a
+
+dap :: Applicative f => Day f f a -> f a
+dap (Day h fx fy) = liftA2 h fx fy
