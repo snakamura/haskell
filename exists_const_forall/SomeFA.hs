@@ -22,3 +22,10 @@ fmap'''' = \(MkSomeFA fa g) -> fmap''' (fa,  g)
 
 fmap''''' :: Functor f => SomeFA f ~> f
 fmap''''' = \(MkSomeFA fa g) -> fmap''' (fa, g)
+
+type Coyoneda :: (Type -> Type) -> Type -> Type
+data Coyoneda f a where
+  Coyoneda :: (x -> a) -> f x -> Coyoneda f a
+
+lowerCoyoneda :: Functor f => Coyoneda f ~> f
+lowerCoyoneda (Coyoneda g fa) = g <$> fa
