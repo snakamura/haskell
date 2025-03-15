@@ -18,3 +18,9 @@ fmap''' fa = MkAnyFA (fmap'' fa)
 
 fmap'''' :: Functor f => f ~> AnyFA f
 fmap'''' fa = MkAnyFA (fmap'' fa)
+
+type Yoneda :: (Type -> Type) -> Type -> Type
+newtype Yoneda f a = Yoneda (forall x. (a -> x) -> f x)
+
+liftYoneda :: Functor f => f ~> Yoneda f
+liftYoneda fa = Yoneda (<$> fa)
