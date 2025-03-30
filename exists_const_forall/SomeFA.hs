@@ -14,8 +14,7 @@ fmap''' :: Functor f => (f x, x -> a) -> f a
 fmap''' = uncurry fmap''
 
 type SomeFA :: (Type -> Type) -> Type -> Type
-data SomeFA f a where
-  MkSomeFA :: f x -> (x -> a) -> SomeFA f a
+data SomeFA f a = forall x. MkSomeFA (f x) (x -> a)
 
 fmap'''' :: Functor f => SomeFA f a -> f a
 fmap'''' = \(MkSomeFA fa g) -> fmap''' (fa,  g)
@@ -24,8 +23,7 @@ fmap''''' :: Functor f => SomeFA f ~> f
 fmap''''' = \(MkSomeFA fa g) -> fmap''' (fa, g)
 
 type Coyoneda :: (Type -> Type) -> Type -> Type
-data Coyoneda f a where
-  Coyoneda :: (x -> a) -> f x -> Coyoneda f a
+data Coyoneda f a = forall x. Coyoneda (x -> a) (f x)
 
 lowerCoyoneda :: Functor f => Coyoneda f ~> f
 lowerCoyoneda (Coyoneda g fa) = g <$> fa

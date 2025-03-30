@@ -3,8 +3,7 @@ module Some where
 import Data.Kind
 
 type Some :: Type
-data Some where
-  MkSome :: a -> Some
+data Some = forall a. MkSome a
 
 someValue :: Some
 someValue = MkSome (1 :: Int)
