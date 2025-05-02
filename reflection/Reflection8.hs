@@ -14,7 +14,7 @@ data DictMonoid a = DictMonoid
   }
 
 instance (Reifies s (DictMonoid a)) => Semigroup (Wrap s a) where
-  (Wrap a1) <> (Wrap a2) = Wrap $ _mappend (reflect (Proxy :: Proxy s)) a1 a2
+  Wrap a1 <> Wrap a2 = Wrap $ _mappend (reflect (Proxy :: Proxy s)) a1 a2
 
 instance (Reifies s (DictMonoid a)) => Monoid (Wrap s a) where
   mempty = Wrap $ _mempty (reflect (Proxy :: Proxy s))

@@ -27,7 +27,7 @@ instance ReifiableConstraint Monoid where
   type Dict Monoid a = DictMonoid a
 
 instance (Reifies s (DictMonoid a)) => Semigroup (Wrap Monoid s a) where
-  (Wrap a1) <> (Wrap a2) = Wrap $ _mappend (reflect (Proxy :: Proxy s)) a1 a2
+  Wrap a1 <> Wrap a2 = Wrap $ _mappend (reflect (Proxy :: Proxy s)) a1 a2
 
 instance (Reifies s (DictMonoid a)) => Monoid (Wrap Monoid s a) where
   mempty = Wrap $ _mempty (reflect (Proxy :: Proxy s))
