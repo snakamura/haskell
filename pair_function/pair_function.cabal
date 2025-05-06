@@ -1,0 +1,21 @@
+cabal-version:      3.0
+name:               pair-function
+version:            0.1.0.0
+license:            MIT
+license-file:       LICENSE
+author:             Satoshi Nakamura
+maintainer:         snak@snak.org
+category:           Data
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable reflection
+    import:           warnings
+    main-is:          Main.hs
+    other-modules:
+    build-depends:    base >=4.19.1.0,
+                      comonad
+    default-language: GHC2021
+    default-extensions:
