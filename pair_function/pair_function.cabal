@@ -15,6 +15,7 @@ executable reflection
     import:           warnings
     main-is:          Main.hs
     other-modules:    Curry
+                      Reader
     build-depends:    base >=4.19.1.0,
                       comonad
     default-language: GHC2021
