@@ -16,6 +16,7 @@ executable reflection
     main-is:          Main.hs
     other-modules:    Curry
                       Reader
+                      State
                       Writer
     build-depends:    base >=4.19.1.0,
                       comonad
