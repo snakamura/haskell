@@ -3,61 +3,60 @@ module State where
 import Control.Comonad
 import Data.Maybe
 
-newtype State s a = State (s -> (s, a))
+newtype State t a = State (t -> (t, a))
 
-instance Functor (State s) where
-    fmap :: (a -> b) -> State s a -> State s b
-    fmap a2b (State s2sa) = State $ \s -> let (s', a) = s2sa s in (s', a2b a)
+instance Functor (State t) where
+  fmap :: (a -> b) -> State t a -> State t b
+  fmap a2b (State t2ta) = State $ \t -> let (t', a) = t2ta t in (t', a2b a)
 
-instance Applicative (State s) where
-    pure :: a -> State s a
-    pure a = State (\s -> (s, a))
+instance Applicative (State t) where
+  pure :: a -> State t a
+  pure a = State (, a)
 
-    (<*>) :: State s (a -> b) -> State s a -> State s b
-    State s2sa2b <*> State s2sa = State $ \s -> let (s', a2b) = s2sa2b s
-                                                    (s'', a) = s2sa s'
-                                                 in (s'', a2b a)
+  (<*>) :: State t (a -> b) -> State t a -> State t b
+  State t2ta2b <*> State t2ta = State $ \t -> let (t', a2b) = t2ta2b t
+                                                  (t'', a) = t2ta t'
+                                               in (t'', a2b a)
 
-instance Monad (State s) where
-    (>>=) :: State s a -> (a -> State s b) -> State s b
-    State s2sa >>= a2sb = State $ \s -> let (s', a) = s2sa s
-                                            State s2sb = a2sb a
-                                         in s2sb s'
+instance Monad (State t) where
+  (>>=) :: State t a -> (a -> State t b) -> State t b
+  State t2ta >>= a2sb = State $ \t -> let (t', a) = t2ta t
+                                          State t2tb = a2sb a
+                                       in t2tb t'
 
 withState :: (String, Int)
-withState = let state = "state"
-                s1 :: Int -> State String String
-                s1 n = State $ \s -> (s <> "!!!", show $ n + 10)
-                s2 :: String -> State String Int
-                s2 n = State $ \s -> (s <> n, length n)
-                s3 :: Int -> State String Int
-                s3 = pure
-                State s2sa = pure 100 >>= s1 >>= s2 >>= s3
-              in s2sa state
+withState =
+  let s1 :: Int -> State String String
+      s1 n = State $ \t -> (t <> "!!!", show $ n + 10)
+      s2 :: String -> State String Int
+      s2 s = State $ \t -> (t <> s, length s)
+      s3 :: Int -> State String Int
+      s3 = pure
+      state = "state"
+      State t2ta = pure 100 >>= s1 >>= s2 >>= s3
+   in t2ta state
 
-newtype Store s a = Store (s, s -> a)
+newtype Store t a = Store (t, t -> a)
 
-instance Functor (Store s) where
-    fmap :: (a -> b) -> Store s a -> Store s b
-    fmap a2b (Store (s, s2a)) = Store (s, a2b . s2a)
+instance Functor (Store t) where
+  fmap :: (a -> b) -> Store t a -> Store t b
+  fmap a2b (Store (t, t2a)) = Store (t, a2b . t2a)
 
-instance Comonad (Store s) where
-    extract :: Store s a -> a
-    extract (Store (s, s2a)) = s2a s
+instance Comonad (Store k) where
+  extract :: Store k a -> a
+  extract (Store (k, k2a)) = k2a k
 
-    extend :: (Store s a -> b) -> Store s a -> Store s b
-    extend sa2b (Store (s, s2a)) = Store (s, \s' -> sa2b (Store (s', s2a)))
-
-    --duplicate :: Store s a -> Store s (Store s a)
-    --duplicate (Store (s, s2a)) = Store (s, \s' -> Store (s', s2a))
+  extend :: (Store k a -> b) -> Store k a -> Store k b
+  extend sa2b (Store (k, k2a)) = Store (k, \k' -> sa2b (Store (k', k2a)))
 
 withStore :: ([Int], Int)
-withStore = let store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-                s1 :: Store Int String -> (String, String)
-                s1 (Store (s, s2a)) = (s2a (s - 1), s2a (s + 1))
-                s2 :: Store Int (String, String) -> Int
-                s2 (Store (s, s2a)) = length $ uncurry (<>) $ s2a s
-                s3 :: Store Int Int -> Int
-                s3 = extract
-                Store (s', s2a') = Store (3, \s -> fromMaybe "" $ lookup s store) =>> s1 =>> s2 =>> s3
-            in (map s2a' [1..5], s2a' s')
+withStore =
+  let s1 :: Store Int String -> (String, String)
+      s1 (Store (n, n2s)) = (n2s (n - 1), n2s (n + 1))
+      s2 :: Store Int (String, String) -> Int
+      s2 (Store (n, n2ss)) = length $ uncurry (<>) $ n2ss n
+      s3 :: Store Int Int -> Int
+      s3 = extract
+      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
+   in (map k2a' [1..5], k2a' k')
