@@ -3,49 +3,55 @@ module Writer where
 import Data.Bifunctor
 import Control.Comonad
 
-newtype Writer w a = Writer (w, a)
+newtype Writer m a = Writer (m, a)
 
-instance Functor (Writer w) where
-    fmap :: (a -> b) -> Writer w a -> Writer w b
-    fmap a2b (Writer (w, a)) = Writer (w, a2b a)
+instance Functor (Writer m) where
+  fmap :: (a -> b) -> Writer m a -> Writer m b
+  fmap a2b (Writer (m, a)) = Writer (m, a2b a)
 
-instance Monoid w => Applicative (Writer w) where
-    pure :: a -> Writer w a
-    pure a = Writer (mempty, a)
+instance Monoid m => Applicative (Writer m) where
+  pure :: a -> Writer m a
+  pure a = Writer (mempty, a)
 
-    (<*>) :: Writer w (a -> b) -> Writer w a -> Writer w b
-    Writer (wa2b, a2b) <*> Writer (wa, a) = Writer (wa <> wa2b, a2b a)
+  (<*>) :: Writer m (a -> b) -> Writer m a -> Writer m b
+  Writer (ma2b, a2b) <*> Writer (ma, a) = Writer (ma <> ma2b, a2b a)
 
-instance Monoid w => Monad (Writer w) where
-    (>>=) :: Writer w a -> (a -> Writer w b) -> Writer w b
-    Writer (wa, a) >>= a2wb = let Writer (wb, b) = a2wb a in Writer (wa <> wb, b)
+instance Monoid m => Monad (Writer m) where
+  (>>=) :: Writer m a -> (a -> Writer m b) -> Writer m b
+  Writer (ma, a) >>= a2wb = let Writer (mb, b) = a2wb a in Writer (ma <> mb, b)
 
 withWriter :: (String, Int)
-withWriter = let w1, w2, w3 :: Int -> Writer String Int
-                 w1 n = Writer ("1st\n", n + 1)
-                 w2 n = Writer ("2nd\n", n * 10)
-                 w3 = pure
-                 Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
-              in (w, a)
+withWriter =
+  let w1 :: Int -> Writer String String
+      w1 n = Writer ("1st\n", show $ n + 1)
+      w2 :: String -> Writer String Int
+      w2 s = Writer ("2nd\n", length s * 10)
+      w3 :: Int -> Writer String Int
+      w3 = pure
+      Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
+  in (w, a)
 
 
-newtype Traced w a = Traced (w -> a)
+newtype Traced m a = Traced (m -> a)
 
-instance Functor (Traced w) where
-    fmap :: (a -> b) -> Traced w a -> Traced w b
-    fmap a2b (Traced w2a) = Traced (a2b . w2a)
+instance Functor (Traced m) where
+  fmap :: (a -> b) -> Traced m a -> Traced m b
+  fmap a2b (Traced m2a) = Traced (a2b . m2a)
 
-instance Monoid w => Comonad (Traced w) where
-    extract :: (Traced w a) -> a
-    extract (Traced w2a) = w2a mempty
+instance Monoid m => Comonad (Traced m) where
+  extract :: (Traced m a) -> a
+  extract (Traced m2a) = m2a mempty
 
-    extend :: (Traced w a -> b) -> Traced w a -> Traced w b
-    extend ta2b (Traced w2a) = Traced $ \wb -> ta2b (Traced $ \wa -> w2a (wa <> wb))
+  extend :: (Traced m a -> b) -> Traced m a -> Traced m b
+  extend ta2b (Traced m2a) = Traced $ \mb -> ta2b (Traced $ \ma -> m2a (ma <> mb))
 
 withTraced :: (String, Int)
-withTraced = let t1, t2, t3 :: Traced String (String, Int) -> (String, Int)
-                 t1 (Traced w2a) = second (+ 1) $ w2a "1st\n"
-                 t2 (Traced w2a) = second (* 10) $ w2a "2nd\n"
-                 t3 = extract
-                 Traced w2a' = Traced (, 100) =>> t1 =>> t2 =>> t3
-              in w2a' ""
+withTraced =
+  let t1 :: Traced String (String, Int) -> (String, String)
+      t1 (Traced m2a) = second (show . (+ 1)) $ m2a "1st\n"
+      t2 :: Traced String (String, String) -> (String, Int)
+      t2 (Traced m2a) = second ((* 10) . length) $ m2a "2nd\n"
+      t3 :: Traced String (String, Int) -> (String, Int)
+      t3 = extract
+      Traced w2a' = Traced (, 100) =>> t1 =>> t2 =>> t3
+   in w2a' ""
