@@ -11,7 +11,7 @@ build-type:         Simple
 common warnings
     ghc-options: -Wall
 
-executable reflection
+executable pair_function
     import:           warnings
     main-is:          Main.hs
     other-modules:    Curry
