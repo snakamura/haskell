@@ -5,6 +5,10 @@ import Prelude hiding (Monoid)
 data Monoid a = Append a a
               | Empty
 
+instance Functor Monoid where
+    fmap f (Append n m) = Append (f n) (f m)
+    fmap _ Empty = Empty
+
 sumIntAlg :: Monoid Int -> Int
 sumIntAlg (Append m n) = m + n
 sumIntAlg Empty = 0
@@ -39,20 +43,22 @@ out (In f) = f
 initialAlg :: Monoid (Fix Monoid) -> Fix Monoid
 initialAlg = In
 
-m0, m1 :: Monoid (Fix Monoid)
-m0 = Empty
-m1 = (Append (In Empty) (In Empty))
+m0, m1 :: Fix Monoid
+m0 = In Empty
+m1 = In (Append (In Empty) (In (Append (In Empty) (In Empty))))
 
-instance Functor Monoid where
-    fmap f (Append n m) = Append (f n) (f m)
-    fmap _ Empty = Empty
+homInitialToSumInt :: Fix Monoid -> Int
+homInitialToSumInt = sumIntAlg . fmap homInitialToSumInt . out
+
+i0, i1 :: Int
+i0 = homInitialToSumInt m0
+i1 = homInitialToSumInt m1
 
 homInitialToInt :: (Monoid Int -> Int) -> Fix Monoid -> Int
 homInitialToInt alg = alg . fmap (homInitialToInt alg) . out
 
-v0', v1' :: Int
-v0' = homInitialToInt sumIntAlg (In m0)
-v1' = homInitialToInt sumIntAlg (In m1)
-
-hom :: Functor f => (f a -> a) -> Fix f -> a
+hom :: (Monoid a -> a) -> Fix Monoid -> a
 hom alg = alg . fmap (hom alg) . out
+
+cata :: Functor f => (f a -> a) -> Fix f -> a
+cata alg = alg . fmap (cata alg) . out
