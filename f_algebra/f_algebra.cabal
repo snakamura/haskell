@@ -14,7 +14,8 @@ common warnings
 executable f_algrebra
     import:           warnings
     main-is:          Main.hs
-    other-modules:    FreeMonoid
+    other-modules:    CofreeMonoid
+                      FreeMonoid
                       Monoid
                       MonoidCoalgebra
     build-depends:    base >=4.19.1.0
