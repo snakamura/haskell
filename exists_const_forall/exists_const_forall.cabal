@@ -27,7 +27,9 @@ executable reflection
                       SomeFA
                       SomeFA2
                       SomeSV
+                      Triple
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
-    default-extensions: GADTs
+    default-extensions: FunctionalDependencies
+                        GADTs
                         TypeData
