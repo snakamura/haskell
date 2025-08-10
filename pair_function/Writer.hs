@@ -1,7 +1,7 @@
 module Writer where
 
-import Data.Bifunctor
 import Control.Comonad
+import Data.Monoid
 
 newtype Writer m a = Writer (m, a)
 
@@ -45,13 +45,12 @@ instance Monoid m => Comonad (Traced m) where
   extend :: (Traced m a -> b) -> Traced m a -> Traced m b
   extend ta2b (Traced m2a) = Traced $ \mb -> ta2b (Traced $ \ma -> m2a (ma <> mb))
 
-withTraced :: (String, Int)
+withTraced :: Double
 withTraced =
-  let t1 :: Traced String (String, Int) -> (String, String)
-      t1 (Traced m2a) = second (show . (+ 1)) $ m2a "1st\n"
-      t2 :: Traced String (String, String) -> (String, Int)
-      t2 (Traced m2a) = second ((* 10) . length) $ m2a "2nd\n"
-      t3 :: Traced String (String, Int) -> (String, Int)
-      t3 = extract
-      Traced w2a' = Traced (, 100) =>> t1 =>> t2 =>> t3
-   in w2a' ""
+  let original :: Traced (Sum Int) Double
+      original = Traced $ \(Sum n) -> sin (fromIntegral n)
+      gain :: Double -> Traced (Sum Int) Double -> Double
+      gain g (Traced m2a) = g * m2a (Sum 0)
+      delay :: Int -> Traced (Sum Int) Double -> Double
+      delay d (Traced m2a) = m2a (Sum (-d))
+   in extract $ original =>> gain 2 =>> delay 3
