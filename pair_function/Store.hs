@@ -16,6 +16,21 @@ instance Comonad (Store k) where
   extend :: (Store k a -> b) -> Store k a -> Store k b
   extend sa2b (Store (k, k2a)) = Store (k, \k' -> sa2b (Store (k', k2a)))
 
+pos :: Store t a -> t
+pos (Store (t, _)) = t
+
+peek :: t -> Store t a -> a
+peek t (Store (_, t2a)) = t2a t
+
+peeks :: (t -> t) -> Store t a -> a
+peeks f (Store (t, t2a)) = t2a (f t)
+
+seek :: t -> Store t a -> Store t a
+seek t (Store (_, t2a)) = Store (t, t2a)
+
+seeks :: (t -> t) -> Store t a -> Store t a
+seeks f (Store (t, t2a)) = Store (f t, t2a)
+
 withStore :: ([Int], Int)
 withStore =
   let s1 :: Store Int String -> (String, String)
@@ -23,7 +38,19 @@ withStore =
       s2 :: Store Int (String, String) -> Int
       s2 (Store (n, n2ss)) = length $ uncurry (<>) $ n2ss n
       s3 :: Store Int Int -> Int
-      s3 = extract
+      s3 (Store (n, n2n)) = n2n (n * 2)
+      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
+   in (map k2a' [1..5], k2a' k')
+
+withStore' :: ([Int], Int)
+withStore' =
+  let s1 :: Store Int String -> (String, String)
+      s1 s = (peeks (subtract 1) s, peeks (+ 1) s)
+      s2 :: Store Int (String, String) -> Int
+      s2 s = length $ uncurry (<>) $ extract s
+      s3 :: Store Int Int -> Int
+      s3 s = extract $ seeks (* 2) s
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
       Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
    in (map k2a' [1..5], k2a' k')

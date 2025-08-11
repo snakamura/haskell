@@ -17,6 +17,12 @@ instance Monad (Reader e) where
   (>>=) :: Reader e a -> (a -> Reader e b) -> Reader e b
   Reader e2a >>= a2rb = Reader $ \e -> let Reader e2b = a2rb (e2a e) in e2b e
 
+ask :: Reader e e
+ask = Reader id
+
+local :: (e -> e) -> Reader e a -> Reader e a
+local e2e (Reader e2a) = Reader $ e2a . e2e
+
 withReader :: Int
 withReader =
   let r1 :: Int -> Reader Int String
@@ -24,7 +30,19 @@ withReader =
       r2 :: String -> Reader Int Int
       r2 s = Reader (* (length s + 2))
       r3 :: Int -> Reader Int Int
-      r3 = pure
+      r3 n = Reader $ \e -> let Reader e'2a = Reader $ \e' -> e' + n in e'2a (e * 2)
+      env = 10
+      Reader e2a = pure 100 >>= r1 >>= r2 >>= r3
+   in e2a env
+
+withReader' :: Int
+withReader' =
+  let r1 :: Int -> Reader Int String
+      r1 n = ask >>= \m -> pure $ show (m + n + 1)
+      r2 :: String -> Reader Int Int
+      r2 s = ask >>= \m -> pure $ m * (length s + 2)
+      r3 :: Int -> Reader Int Int
+      r3 n = local (* 2) $ ask >>= \e -> pure $ e + n
       env = 10
       Reader e2a = pure 100 >>= r1 >>= r2 >>= r3
    in e2a env

@@ -17,12 +17,26 @@ instance Monoid m => Monad (Writer m) where
   (>>=) :: Writer m a -> (a -> Writer m b) -> Writer m b
   Writer (ma, a) >>= a2wb = let Writer (mb, b) = a2wb a in Writer (ma <> mb, b)
 
+tell :: m -> Writer m ()
+tell m = Writer (m, ())
+
 withWriter :: (String, Int)
 withWriter =
   let w1 :: Int -> Writer String String
       w1 n = Writer ("1st\n", show $ n + 1)
       w2 :: String -> Writer String Int
       w2 s = Writer ("2nd\n", length s * 10)
+      w3 :: Int -> Writer String Int
+      w3 = pure
+      Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
+  in (w, a)
+
+withWriter' :: (String, Int)
+withWriter' =
+  let w1 :: Int -> Writer String String
+      w1 n = tell "1st\n" >> pure (show $ n + 1)
+      w2 :: String -> Writer String Int
+      w2 s = tell "2nd\n" >> pure (length s * 10)
       w3 :: Int -> Writer String Int
       w3 = pure
       Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
