@@ -15,8 +15,11 @@ executable pair_function
     import:           warnings
     main-is:          Main.hs
     other-modules:    Curry
+                      Env
                       Reader
                       State
+                      Store
+                      Traced
                       Writer
     build-depends:    base >=4.19.1.0,
                       comonad
