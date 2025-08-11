@@ -6,14 +6,14 @@ instance Functor (Writer m) where
   fmap :: (a -> b) -> Writer m a -> Writer m b
   fmap a2b (Writer (m, a)) = Writer (m, a2b a)
 
-instance Monoid m => Applicative (Writer m) where
+instance (Monoid m) => Applicative (Writer m) where
   pure :: a -> Writer m a
   pure a = Writer (mempty, a)
 
   (<*>) :: Writer m (a -> b) -> Writer m a -> Writer m b
   Writer (ma2b, a2b) <*> Writer (ma, a) = Writer (ma <> ma2b, a2b a)
 
-instance Monoid m => Monad (Writer m) where
+instance (Monoid m) => Monad (Writer m) where
   (>>=) :: Writer m a -> (a -> Writer m b) -> Writer m b
   Writer (ma, a) >>= a2wb = let Writer (mb, b) = a2wb a in Writer (ma <> mb, b)
 
@@ -29,7 +29,7 @@ withWriter =
       w3 :: Int -> Writer String Int
       w3 = pure
       Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
-  in (w, a)
+   in (w, a)
 
 withWriter' :: (String, Int)
 withWriter' =
@@ -40,4 +40,4 @@ withWriter' =
       w3 :: Int -> Writer String Int
       w3 = pure
       Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
-  in (w, a)
+   in (w, a)

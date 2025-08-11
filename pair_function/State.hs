@@ -8,18 +8,20 @@ instance Functor (State t) where
 
 instance Applicative (State t) where
   pure :: a -> State t a
-  pure a = State (, a)
+  pure a = State (,a)
 
   (<*>) :: State t (a -> b) -> State t a -> State t b
-  State t2ta2b <*> State t2ta = State $ \t -> let (t', a2b) = t2ta2b t
-                                                  (t'', a) = t2ta t'
-                                               in (t'', a2b a)
+  State t2ta2b <*> State t2ta = State $ \t ->
+    let (t', a2b) = t2ta2b t
+        (t'', a) = t2ta t'
+     in (t'', a2b a)
 
 instance Monad (State t) where
   (>>=) :: State t a -> (a -> State t b) -> State t b
-  State t2ta >>= a2sb = State $ \t -> let (t', a) = t2ta t
-                                          State t2tb = a2sb a
-                                       in t2tb t'
+  State t2ta >>= a2sb = State $ \t ->
+    let (t', a) = t2ta t
+        State t2tb = a2sb a
+     in t2tb t'
 
 get :: State t t
 get = State $ \t -> (t, t)

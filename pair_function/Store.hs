@@ -41,7 +41,7 @@ withStore =
       s3 (Store (n, n2n)) = n2n (n * 2)
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
       Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
-   in (map k2a' [1..5], k2a' k')
+   in (map k2a' [1 .. 5], k2a' k')
 
 withStore' :: ([Int], Int)
 withStore' =
@@ -53,4 +53,4 @@ withStore' =
       s3 s = extract $ seeks (* 2) s
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
       Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
-   in (map k2a' [1..5], k2a' k')
+   in (map k2a' [1 .. 5], k2a' k')

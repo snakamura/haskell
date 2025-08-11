@@ -9,7 +9,7 @@ instance Functor (Traced m) where
   fmap :: (a -> b) -> Traced m a -> Traced m b
   fmap a2b (Traced m2a) = Traced (a2b . m2a)
 
-instance Monoid m => Comonad (Traced m) where
+instance (Monoid m) => Comonad (Traced m) where
   extract :: (Traced m a) -> a
   extract (Traced m2a) = m2a mempty
 
