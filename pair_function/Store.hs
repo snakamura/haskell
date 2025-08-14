@@ -9,12 +9,12 @@ instance Functor (Store t) where
   fmap :: (a -> b) -> Store t a -> Store t b
   fmap a2b (Store (t, t2a)) = Store (t, a2b . t2a)
 
-instance Comonad (Store k) where
-  extract :: Store k a -> a
-  extract (Store (k, k2a)) = k2a k
+instance Comonad (Store t) where
+  extract :: Store t a -> a
+  extract (Store (t, t2a)) = t2a t
 
-  extend :: (Store k a -> b) -> Store k a -> Store k b
-  extend sa2b (Store (k, k2a)) = Store (k, \k' -> sa2b (Store (k', k2a)))
+  extend :: (Store t a -> b) -> Store t a -> Store t b
+  extend sa2b (Store (t, t2a)) = Store (t, \t' -> sa2b (Store (t', t2a)))
 
 pos :: Store t a -> t
 pos (Store (t, _)) = t
@@ -40,8 +40,8 @@ withStore =
       s3 :: Store Int Int -> Int
       s3 (Store (n, n2n)) = n2n (n * 2)
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-      Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
-   in (map k2a' [1 .. 5], k2a' k')
+      Store (t', t2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
+   in (map t2a' [1 .. 5], t2a' t')
 
 withStore' :: ([Int], Int)
 withStore' =
@@ -52,5 +52,5 @@ withStore' =
       s3 :: Store Int Int -> Int
       s3 s = extract $ seeks (* 2) s
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-      Store (k', k2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
-   in (map k2a' [1 .. 5], k2a' k')
+      Store (t', t2a') = Store (3, \t -> fromMaybe "" $ lookup t store) =>> s1 =>> s2 =>> s3
+   in (map t2a' [1 .. 5], t2a' t')
