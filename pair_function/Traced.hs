@@ -16,6 +16,9 @@ instance (Monoid m) => Comonad (Traced m) where
   extend :: (Traced m a -> b) -> Traced m a -> Traced m b
   extend ta2b (Traced m2a) = Traced $ \mb -> ta2b (Traced $ \ma -> m2a (ma <> mb))
 
+  duplicate :: Traced m a -> Traced m (Traced m a)
+  duplicate (Traced m2a) = Traced $ \mta -> Traced $ \ma -> m2a (mta <> ma)
+
 trace :: m -> Traced m a -> a
 trace m (Traced m2a) = m2a m
 

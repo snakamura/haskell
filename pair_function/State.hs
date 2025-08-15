@@ -23,6 +23,9 @@ instance Monad (State t) where
         State t2tb = a2sb a
      in t2tb t'
 
+join :: State t (State t a) -> State t a
+join (State t2ta) = State $ \tta -> let (ta, State t2a) = t2ta tta in t2a ta
+
 get :: State t t
 get = State $ \t -> (t, t)
 

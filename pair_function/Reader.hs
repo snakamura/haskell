@@ -17,6 +17,9 @@ instance Monad (Reader e) where
   (>>=) :: Reader e a -> (a -> Reader e b) -> Reader e b
   Reader e2a >>= a2rb = Reader $ \e -> let Reader e2b = a2rb (e2a e) in e2b e
 
+join :: Reader e (Reader e a) -> Reader e a
+join (Reader e2ra) = Reader $ \e -> let Reader e2a = e2ra e in e2a e
+
 ask :: Reader e e
 ask = Reader id
 

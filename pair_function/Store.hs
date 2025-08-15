@@ -16,6 +16,9 @@ instance Comonad (Store t) where
   extend :: (Store t a -> b) -> Store t a -> Store t b
   extend sa2b (Store (t, t2a)) = Store (t, \t' -> sa2b (Store (t', t2a)))
 
+  duplicate :: Store t a -> Store t (Store t a)
+  duplicate (Store (t, t2a)) = Store (t, \t' -> Store (t', t2a))
+
 pos :: Store t a -> t
 pos (Store (t, _)) = t
 

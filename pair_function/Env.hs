@@ -15,6 +15,9 @@ instance Comonad (Env v) where
   extend :: (Env v a -> b) -> Env v a -> Env v b
   extend ea2b ea@(Env (v, _)) = Env (v, ea2b ea)
 
+  duplicate :: Env v a -> Env v (Env v a)
+  duplicate (Env (v, a)) = Env (v, Env (v, a))
+
 ask :: Env v a -> v
 ask (Env (v, _)) = v
 
