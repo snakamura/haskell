@@ -31,7 +31,9 @@ withWriter =
       w2 s = Writer ("2nd\n", length s * 10)
       w3 :: Int -> Writer String Int
       w3 = pure
-      Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
+
+      initialValue = 100
+      Writer (w, a) = return initialValue >>= w1 >>= w2 >>= w3
    in (w, a)
 
 withWriter' :: (String, Int)
@@ -42,7 +44,9 @@ withWriter' =
       w2 s = tell "2nd\n" >> pure (length s * 10)
       w3 :: Int -> Writer String Int
       w3 = pure
-      Writer (w, a) = return 100 >>= w1 >>= w2 >>= w3
+
+      initialValue = 100
+      Writer (w, a) = return initialValue >>= w1 >>= w2 >>= w3
    in (w, a)
 
 withWriter'' :: (String, Int)
@@ -53,5 +57,7 @@ withWriter'' =
       w2 s = Writer ("2nd\n", length s * 10)
       w3 :: Int -> Writer String Int
       w3 = pure
-      Writer (w, a) = join $ join $ fmap (fmap w3) $ fmap w2 $ w1 100
+
+      initialValue = 100
+      Writer (w, a) = join $ join $ fmap (fmap w3) $ fmap w2 $ w1 initialValue
    in (w, a)

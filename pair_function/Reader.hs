@@ -34,8 +34,10 @@ withReader =
       r2 s = Reader (* (length s + 2))
       r3 :: Int -> Reader Int Int
       r3 n = Reader $ \e -> let Reader e'2a = Reader $ \e' -> e' + n in e'2a (e * 2)
+
+      initialValue = 100
+      Reader e2a = pure initialValue >>= r1 >>= r2 >>= r3
       env = 10
-      Reader e2a = pure 100 >>= r1 >>= r2 >>= r3
    in e2a env
 
 withReader' :: Int
@@ -46,8 +48,10 @@ withReader' =
       r2 s = ask >>= \m -> pure $ m * (length s + 2)
       r3 :: Int -> Reader Int Int
       r3 n = local (* 2) $ ask >>= \e -> pure $ e + n
+
+      initialValue = 100
+      Reader e2a = pure initialValue >>= r1 >>= r2 >>= r3
       env = 10
-      Reader e2a = pure 100 >>= r1 >>= r2 >>= r3
    in e2a env
 
 withReader'' :: Int
@@ -58,6 +62,8 @@ withReader'' =
       r2 s = Reader (* (length s + 2))
       r3 :: Int -> Reader Int Int
       r3 n = Reader $ \e -> let Reader e'2a = Reader $ \e' -> e' + n in e'2a (e * 2)
+
+      initialValue = 100
+      Reader e2a = join $ join $ fmap (fmap r3) $ fmap r2 $ r1 initialValue
       env = 10
-      Reader e2a = join $ join $ fmap (fmap r3) $ fmap r2 $ r1 100
    in e2a env

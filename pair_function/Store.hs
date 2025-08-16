@@ -42,8 +42,10 @@ withStore =
       s2 (Store (n, n2ss)) = length $ uncurry (<>) $ n2ss n
       s3 :: Store Int Int -> Int
       s3 (Store (n, n2n)) = n2n (n * 2)
-      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-      Store (t', t2a') = Store (3, \k -> fromMaybe "" $ lookup k store) =>> s1 =>> s2 =>> s3
+
+      values = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      store = Store (3, \k -> fromMaybe "" $ lookup k values)
+      Store (t', t2a') = store =>> s1 =>> s2 =>> s3
    in (map t2a' [1 .. 5], t2a' t')
 
 withStore' :: ([Int], Int)
@@ -54,8 +56,10 @@ withStore' =
       s2 s = length $ uncurry (<>) $ extract s
       s3 :: Store Int Int -> Int
       s3 s = extract $ seeks (* 2) s
-      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-      Store (t', t2a') = Store (3, \t -> fromMaybe "" $ lookup t store) =>> s1 =>> s2 =>> s3
+
+      values = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      store = Store (3, \k -> fromMaybe "" $ lookup k values)
+      Store (t', t2a') = store =>> s1 =>> s2 =>> s3
    in (map t2a' [1 .. 5], t2a' t')
 
 withStore'' :: Int
@@ -66,6 +70,8 @@ withStore'' =
       s2 (Store (n, n2ss)) = length $ uncurry (<>) $ n2ss n
       s3 :: Store Int Int -> Int
       s3 (Store (n, n2n)) = n2n (n * 2)
-      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
-      a' = s3 $ fmap s2 $ fmap (fmap s1) $ duplicate $ duplicate $ Store (3, \k -> fromMaybe "" $ lookup k store)
+
+      values = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      store = Store (3, \k -> fromMaybe "" $ lookup k values)
+      a' = s3 $ fmap s2 $ fmap (fmap s1) $ duplicate $ duplicate store
    in a'

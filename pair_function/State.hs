@@ -43,9 +43,11 @@ withState =
       s2 s = State $ \t -> (t <> s, length s)
       s3 :: Int -> State String Int
       s3 = pure
-      state = "state"
-      State t2ta = pure 100 >>= s1 >>= s2 >>= s3
-   in t2ta state
+
+      initialValue = 100
+      State t2ta = pure initialValue >>= s1 >>= s2 >>= s3
+      initialState = "state"
+   in t2ta initialState
 
 withState' :: (String, Int)
 withState' =
@@ -55,9 +57,11 @@ withState' =
       s2 s = modify (<> s) >> pure (length s)
       s3 :: Int -> State String Int
       s3 = pure
-      state = "state"
-      State t2ta = pure 100 >>= s1 >>= s2 >>= s3
-   in t2ta state
+
+      initialValue = 100
+      State t2ta = pure initialValue >>= s1 >>= s2 >>= s3
+      initialState = "state"
+   in t2ta initialState
 
 withState'' :: (String, Int)
 withState'' =
@@ -67,6 +71,8 @@ withState'' =
       s2 s = State $ \t -> (t <> s, length s)
       s3 :: Int -> State String Int
       s3 = pure
-      state = "state"
-      State t2ta = join $ join $ fmap (fmap s3) $ fmap s2 $ s1 100
-   in t2ta state
+
+      initialValue = 100
+      State t2ta = join $ join $ fmap (fmap s3) $ fmap s2 $ s1 initialValue
+      initialState = "state"
+   in t2ta initialState
