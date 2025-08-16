@@ -49,3 +49,15 @@ withReader' =
       env = 10
       Reader e2a = pure 100 >>= r1 >>= r2 >>= r3
    in e2a env
+
+withReader'' :: Int
+withReader'' =
+  let r1 :: Int -> Reader Int String
+      r1 n = Reader $ show . (+ (n + 1))
+      r2 :: String -> Reader Int Int
+      r2 s = Reader (* (length s + 2))
+      r3 :: Int -> Reader Int Int
+      r3 n = Reader $ \e -> let Reader e'2a = Reader $ \e' -> e' + n in e'2a (e * 2)
+      env = 10
+      Reader e2a = join $ join $ fmap (fmap r3) $ fmap r2 $ r1 100
+   in e2a env

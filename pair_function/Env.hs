@@ -47,3 +47,15 @@ withEnv' =
       env = 10
       Env (_, a) = Env (env, 100) =>> e1 =>> e2 =>> e3
    in a
+
+withEnv'' :: Int
+withEnv'' =
+  let e1 :: Env Int Int -> String
+      e1 (Env (v, n)) = show $ v + n + 1
+      e2 :: Env Int String -> Int
+      e2 (Env (v, s)) = v * (length s + 2)
+      e3 :: Env Int Int -> Int
+      e3 (Env (v, n)) = let e3' (Env (v', n')) = v' + n' in e3' (Env (v * 2, n))
+      env = 10
+      a = e3 $ fmap e2 $ fmap (fmap e1) $ duplicate $ duplicate $ Env (env, 100)
+   in a

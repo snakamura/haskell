@@ -58,3 +58,15 @@ withState' =
       state = "state"
       State t2ta = pure 100 >>= s1 >>= s2 >>= s3
    in t2ta state
+
+withState'' :: (String, Int)
+withState'' =
+  let s1 :: Int -> State String String
+      s1 n = State $ \t -> (t <> "!!!", t <> show (n + 10))
+      s2 :: String -> State String Int
+      s2 s = State $ \t -> (t <> s, length s)
+      s3 :: Int -> State String Int
+      s3 = pure
+      state = "state"
+      State t2ta = join $ join $ fmap (fmap s3) $ fmap s2 $ s1 100
+   in t2ta state

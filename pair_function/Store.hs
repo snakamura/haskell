@@ -57,3 +57,15 @@ withStore' =
       store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
       Store (t', t2a') = Store (3, \t -> fromMaybe "" $ lookup t store) =>> s1 =>> s2 =>> s3
    in (map t2a' [1 .. 5], t2a' t')
+
+withStore'' :: Int
+withStore'' =
+  let s1 :: Store Int String -> (String, String)
+      s1 (Store (n, n2s)) = (n2s (n - 1), n2s (n + 1))
+      s2 :: Store Int (String, String) -> Int
+      s2 (Store (n, n2ss)) = length $ uncurry (<>) $ n2ss n
+      s3 :: Store Int Int -> Int
+      s3 (Store (n, n2n)) = n2n (n * 2)
+      store :: [(Int, String)] = [(1, "one"), (2, "two"), (3, "three"), (4, "four"), (5, "five")]
+      a' = s3 $ fmap s2 $ fmap (fmap s1) $ duplicate $ duplicate $ Store (3, \k -> fromMaybe "" $ lookup k store)
+   in a'
