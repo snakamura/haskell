@@ -11,7 +11,7 @@ instance (Monoid m) => Applicative (Writer m) where
   pure a = Writer (mempty, a)
 
   (<*>) :: Writer m (a -> b) -> Writer m a -> Writer m b
-  Writer (ma2b, a2b) <*> Writer (ma, a) = Writer (ma <> ma2b, a2b a)
+  Writer (ma2b, a2b) <*> Writer (ma, a) = Writer (ma2b <> ma, a2b a)
 
 instance (Monoid m) => Monad (Writer m) where
   (>>=) :: Writer m a -> (a -> Writer m b) -> Writer m b
