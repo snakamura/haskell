@@ -17,6 +17,7 @@ executable hlistmap
     other-modules:    Map1
                       Map2
                       Map3
+                      Map4
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds
