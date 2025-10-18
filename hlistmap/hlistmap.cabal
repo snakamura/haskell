@@ -1,0 +1,26 @@
+cabal-version:      3.0
+name:               hlistmap
+version:            0.1.0.0
+license:            MIT
+license-file:       LICENSE
+author:             Satoshi Nakamura
+maintainer:         snak@snak.org
+category:           Data
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable hlistmap
+    import:           warnings
+    main-is:          Main.hs
+    other-modules:    Map1
+    build-depends:    base >=4.19.1.0
+    default-language: GHC2021
+    default-extensions: DataKinds
+                        GADTs
+                        RequiredTypeArguments
+                        TypeAbstractions
+                        TypeApplications
+                        TypeData
+                        TypeFamilies
