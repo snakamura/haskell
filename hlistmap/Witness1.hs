@@ -13,9 +13,11 @@ type family MapTypes objectTypes where
   MapTypes (Object nameType ': objectTypes) =
     nameType ': MapTypes objectTypes
 
+type IsObject :: Type -> Type
 data IsObject objectType where
   IsObject :: IsObject (Object nameType)
 
+type AreObjects :: [Type] -> Type
 data AreObjects objectTypes where
   AreObjectsNil :: AreObjects '[]
   AreObjectsCons ::

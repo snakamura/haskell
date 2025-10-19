@@ -13,9 +13,11 @@ type family MapTypes objectTypeCon objectTypes where
   MapTypes Object (Object nameType ': objectTypes) =
     nameType ': MapTypes Object objectTypes
 
+type IsObject :: Type -> Type
 data IsObject objectType where
   IsObject :: IsObject (Object nameType)
 
+type AreObjects :: [Type] -> Type
 data AreObjects objectTypes where
   AreObjectsNil :: AreObjects '[]
   AreObjectsCons ::
@@ -23,6 +25,7 @@ data AreObjects objectTypes where
     AreObjects objectTypes ->
     AreObjects (objectType ': objectTypes)
 
+type IsObjectC :: Type -> Constraint
 class IsObjectC objectType where
   isObject :: objectType -> IsObject objectType
 
@@ -30,6 +33,7 @@ instance IsObjectC (Object nameType) where
   isObject :: Object nameType -> IsObject (Object nameType)
   isObject _ = IsObject
 
+type AreObjectsC :: [Type] -> Constraint
 class AreObjectsC objectTypes where
   areObjects :: HList objectTypes -> AreObjects objectTypes
 
