@@ -1,4 +1,4 @@
-module Map7 where
+module Witness2 where
 
 import Data.Kind
 import HList
@@ -7,11 +7,11 @@ import Object
 import Objects
 import Prelude hiding (map)
 
-type MapTypes :: (Type -> Type) -> [Type] -> [Type]
-type family MapTypes objectTypeCon objectTypes where
-  MapTypes _ '[] = '[]
-  MapTypes Object (Object nameType ': objectTypes) =
-    nameType ': MapTypes Object objectTypes
+type MapTypes :: [Type] -> [Type]
+type family MapTypes objectTypes where
+  MapTypes '[] = '[]
+  MapTypes (Object nameType ': objectTypes) =
+    nameType ': MapTypes objectTypes
 
 data IsObject objectType where
   IsObject :: IsObject (Object nameType)
@@ -51,7 +51,7 @@ map ::
   AreObjects objectTypes ->
   (forall nameType. Object nameType -> nameType) ->
   HList objectTypes ->
-  HList (MapTypes Object objectTypes)
+  HList (MapTypes objectTypes)
 map AreObjectsNil _ HNil = HNil
 map (AreObjectsCons IsObject o) f (HCons object objects) =
   HCons (f object) (map o f objects)
@@ -60,7 +60,7 @@ mapC ::
   (AreObjectsC objectTypes) =>
   (forall nameType. Object nameType -> nameType) ->
   HList objectTypes ->
-  HList (MapTypes Object objectTypes)
+  HList (MapTypes objectTypes)
 mapC f objects = map (areObjects objects) f objects
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]

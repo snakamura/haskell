@@ -1,4 +1,4 @@
-module Map8 where
+module MapItemClass1 where
 
 import Data.Kind
 import HList

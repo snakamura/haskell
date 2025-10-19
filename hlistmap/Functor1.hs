@@ -1,4 +1,4 @@
-module Map2 where
+module Functor1 where
 
 import Data.Functor.Identity
 import Data.Kind

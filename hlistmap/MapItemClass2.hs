@@ -1,4 +1,4 @@
-module Map10 where
+module MapItemClass2 where
 
 import Data.Kind
 import HList
@@ -19,11 +19,11 @@ type (@@) :: (a ~> b) -> a -> b
 type f @@ x = Apply f x
 infixr @@
 
-type MapItem :: (Type -> Type) -> Type -> Constraint
-class MapItem objectTypeCon objectType where
+type MapItem :: Type -> Constraint
+class MapItem objectType where
   type Mapped objectType :: Type
   mapItem ::
-    (forall objectTypeParam. objectTypeCon objectTypeParam -> objectTypeParam) ->
+    (forall nameType. Object nameType -> nameType) ->
     objectType ->
     Mapped objectType
 
@@ -32,7 +32,7 @@ data MappedSym0 t
 
 type instance Apply MappedSym0 x = Mapped x
 
-instance MapItem Object (Object nameType) where
+instance MapItem (Object nameType) where
   type Mapped (Object nameType) = nameType
   mapItem ::
     (forall nameType'. Object nameType' -> nameType') ->
@@ -51,23 +51,12 @@ type family All c ts where
   All c (t ': ts) = (c t, All c ts)
 
 map ::
-  All (MapItem objectType) objectTypes =>
-  (forall nameType. objectType nameType -> nameType) ->
+  (All MapItem objectTypes) =>
+  (forall nameType. Object nameType -> nameType) ->
   HList objectTypes ->
   HList (MapTypes MappedSym0 objectTypes)
 map _ HNil = HNil
-map f (HCons x xs) = HCons (mapItem f x) (map f xs)
+map f (HCons object objects) = HCons (mapItem f object) (map f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
 mappedNames = map name exampleObjects
-
-instance MapItem (Object' ageType) (Object' ageType titleType) where
-  type Mapped (Object' ageType titleType) = titleType
-  mapItem ::
-    (forall titleType'. Object' ageType titleType' -> titleType') ->
-    Object' ageType titleType ->
-    titleType
-  mapItem f = f
-
-mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
-mappedTitles = map (title @Int) exampleObjects'

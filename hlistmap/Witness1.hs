@@ -1,4 +1,4 @@
-module Map5 where
+module Witness1 where
 
 import Data.Kind
 import HList

@@ -14,20 +14,20 @@ common warnings
 executable hlistmap
     import:           warnings
     main-is:          Main.hs
-    other-modules:    HList
+    other-modules:    Functor1
+                      HList
                       Literal
-                      Map1
-                      Map2
-                      Map3
-                      Map4
-                      Map5
-                      Map6
-                      Map7
-                      Map8
-                      Map9
-                      Map10
+                      MapClass1
+                      MapClass2
+                      MapClass3
+                      MapItemClass1
+                      MapItemClass2
+                      MapItemClass3
                       Object
                       Objects
+                      Witness1
+                      Witness2
+                      Witness3
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds
