@@ -30,6 +30,8 @@ executable hlistmap
                       Witness3
                       Witness4
                       Witness5
+                      Witness6
+                      Witness7
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds
