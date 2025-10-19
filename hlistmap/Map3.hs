@@ -27,7 +27,10 @@ instance Map '[] where
     HList '[]
   map _ HNil = HNil
 
-instance (Map objectTypes) => Map (Object nameType ': objectTypes) where
+instance
+  (Map objectTypes) =>
+  Map (Object nameType ': objectTypes)
+  where
   map ::
     (forall nameType'. Object nameType' -> nameType') ->
     HList (Object nameType ': objectTypes) ->

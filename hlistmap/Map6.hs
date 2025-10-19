@@ -23,26 +23,45 @@ data AreObjects objectTypes where
     AreObjects objectTypes ->
     AreObjects (objectType ': objectTypes)
 
+class IsObjectC objectType where
+  isObject :: objectType -> IsObject objectType
+
+instance IsObjectC (Object nameType) where
+  isObject :: Object nameType -> IsObject (Object nameType)
+  isObject _ = IsObject
+
+class AreObjectsC objectTypes where
+  areObjects :: HList objectTypes -> AreObjects objectTypes
+
+instance AreObjectsC '[] where
+  areObjects :: HList '[] -> AreObjects '[]
+  areObjects HNil = AreObjectsNil
+
+instance
+  (IsObjectC objectType, AreObjectsC objectTypes) =>
+  AreObjectsC (objectType ': objectTypes)
+  where
+  areObjects ::
+    HList (objectType ': objectTypes) ->
+    AreObjects (objectType ': objectTypes)
+  areObjects (HCons object objects) =
+    AreObjectsCons (isObject object) (areObjects objects)
+
 map ::
   AreObjects objectTypes ->
   (forall nameType. Object nameType -> nameType) ->
   HList objectTypes ->
   HList (MapTypes objectTypes)
 map AreObjectsNil _ HNil = HNil
-map (AreObjectsCons IsObject areObjects) f (HCons object objects) =
-  HCons
-    (f object)
-    (map areObjects f objects)
+map (AreObjectsCons IsObject o) f (HCons object objects) =
+  HCons (f object) (map o f objects)
+
+mapC ::
+  (AreObjectsC objectTypes) =>
+  (forall nameType. Object nameType -> nameType) ->
+  HList objectTypes ->
+  HList (MapTypes objectTypes)
+mapC f objects = map (areObjects objects) f objects
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
-mappedNames =
-  map
-    ( AreObjectsCons
-        IsObject
-        ( AreObjectsCons
-            IsObject
-            (AreObjectsCons IsObject AreObjectsNil)
-        )
-    )
-    name
-    exampleObjects
+mappedNames = mapC name exampleObjects

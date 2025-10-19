@@ -13,26 +13,36 @@ type family MapTypes objectTypes where
   MapTypes (Object nameType ': objectTypes) =
     nameType ': MapTypes objectTypes
 
-type Map :: [Type] -> Constraint
-class Map objectTypes where
-  map ::
-    (forall nameType. Object nameType -> nameType) ->
-    HList objectTypes ->
-    HList (MapTypes objectTypes)
+data IsObject objectType where
+  IsObject :: IsObject (Object nameType)
 
-instance Map '[] where
-  map ::
-    (forall nameType. Object nameType -> nameType) ->
-    HList '[] ->
-    HList '[]
-  map _ HNil = HNil
+data AreObjects objectTypes where
+  AreObjectsNil :: AreObjects '[]
+  AreObjectsCons ::
+    IsObject objectType ->
+    AreObjects objectTypes ->
+    AreObjects (objectType ': objectTypes)
 
-instance (Map objectTypes) => Map (Object nameType ': objectTypes) where
-  map ::
-    (forall nameType'. Object nameType' -> nameType') ->
-    HList (Object nameType ': objectTypes) ->
-    HList (nameType ': MapTypes objectTypes)
-  map f (HCons object objects) = HCons (f object) (map f objects)
+map ::
+  AreObjects objectTypes ->
+  (forall nameType. Object nameType -> nameType) ->
+  HList objectTypes ->
+  HList (MapTypes objectTypes)
+map AreObjectsNil _ HNil = HNil
+map (AreObjectsCons IsObject areObjects) f (HCons object objects) =
+  HCons
+    (f object)
+    (map areObjects f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
-mappedNames = map name exampleObjects
+mappedNames =
+  map
+    ( AreObjectsCons
+        IsObject
+        ( AreObjectsCons
+            IsObject
+            (AreObjectsCons IsObject AreObjectsNil)
+        )
+    )
+    name
+    exampleObjects
