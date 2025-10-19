@@ -29,10 +29,12 @@ executable hlistmap
                       Witness2
                       Witness3
                       Witness4
+                      Witness5
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds
                         GADTs
+                        LambdaCase
                         MultiParamTypeClasses
                         RequiredTypeArguments
                         TypeAbstractions
