@@ -23,10 +23,12 @@ executable hlistmap
                       Map7
                       Map8
                       Map9
+                      Map10
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds
                         GADTs
+                        MultiParamTypeClasses
                         RequiredTypeArguments
                         TypeAbstractions
                         TypeApplications
