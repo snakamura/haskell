@@ -7,21 +7,21 @@ import Object
 import Objects
 import Prelude hiding (map)
 
-type MapTypes :: (Type -> Type) -> [Type] -> [Type]
-type family MapTypes objectTypeCon objectTypes
+type MapTypes :: [Type] -> [Type]
+type family MapTypes objectTypes
 
-type instance MapTypes _ '[] = '[]
+type instance MapTypes '[] = '[]
 
 type instance
-  MapTypes Object (Object nameType ': objectTypes) =
-    nameType ': MapTypes Object objectTypes
+  MapTypes (Object nameType ': objectTypes) =
+    nameType ': MapTypes objectTypes
 
 type Map :: (Type -> Type) -> [Type] -> Constraint
 class Map objectTypeCon objectTypes where
   map ::
     (forall nameType. objectTypeCon nameType -> nameType) ->
     HList objectTypes ->
-    HList (MapTypes objectTypeCon objectTypes)
+    HList (MapTypes objectTypes)
 
 instance Map objectTypeCon '[] where
   map ::
@@ -37,15 +37,15 @@ instance
   map ::
     (forall nameType'. Object nameType' -> nameType') ->
     HList (Object nameType ': objectTypes) ->
-    HList (nameType ': MapTypes Object objectTypes)
+    HList (nameType ': MapTypes objectTypes)
   map f (HCons object objects) = HCons (f object) (map f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
 mappedNames = map name exampleObjects
 
 type instance
-  MapTypes (Object' ageType) (Object' ageType titleType ': objectTypes) =
-    titleType ': MapTypes (Object' ageType) objectTypes
+  MapTypes (Object' ageType titleType ': objectTypes) =
+    titleType ': MapTypes objectTypes
 
 instance
   (Map (Object' ageType) objectTypes) =>
@@ -54,7 +54,7 @@ instance
   map ::
     (forall titleType'. Object' ageType titleType' -> titleType') ->
     HList (Object' ageType titleType ': objectTypes) ->
-    HList (titleType ': MapTypes (Object' ageType) objectTypes)
+    HList (titleType ': MapTypes objectTypes)
   map f (HCons object objects) = HCons (f object) (map f objects)
 
 mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
