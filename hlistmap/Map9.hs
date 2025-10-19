@@ -1,35 +1,11 @@
 module Map9 where
 
 import Data.Kind
-import GHC.Base hiding (map)
-import GHC.TypeLits
-import Data.Proxy
+import HList
+import Literal
+import Object
+import Objects
 import Prelude hiding (map)
-
-type HList :: [Type] -> Type
-data HList xs where
-    HNil :: HList '[]
-    HCons :: x -> HList xs -> HList (x ': xs)
-
-infixr `HCons`
-
-type Literal :: Symbol -> Type
-newtype Literal n = Literal String
-
-makeLiteral :: forall (n :: Symbol) -> KnownSymbol n => Literal n
-makeLiteral n = Literal (symbolVal (Proxy @n))
-
-makeLiteral' :: KnownSymbol n => Literal n
-makeLiteral' @n = Literal (symbolVal (Proxy @n))
-
-type Object :: Type -> Type
-newtype Object n = Object { name :: n }
-
-objects :: HList [Object (Literal "a"), Object (Literal "b"), Object (Literal "c")]
-objects = Object { name = makeLiteral "a" } `HCons`
-          Object { name = makeLiteral "b" } `HCons`
-          Object { name = makeLiteral "c" } `HCons`
-          HNil
 
 type TyFun :: Type -> Type -> Type
 data TyFun a b
@@ -44,33 +20,43 @@ type f @@ x = Apply f x
 infixr @@
 
 type MapItem :: Type -> Constraint
-class MapItem o where
-    type Mapped o :: Type
-    mapItem :: (forall n. Object n -> n) -> o -> Mapped o
+class MapItem objectType where
+  type Mapped objectType :: Type
+  mapItem ::
+    (forall nameType. Object nameType -> nameType) ->
+    objectType ->
+    Mapped objectType
 
 type MappedSym0 :: Type ~> Type
 data MappedSym0 t
 
 type instance Apply MappedSym0 x = Mapped x
 
-instance MapItem (Object n) where
-    type Mapped (Object n) = n
-    mapItem :: (forall n'. Object n' -> n') -> Object n -> n
-    mapItem f = f
+instance MapItem (Object nameType) where
+  type Mapped (Object nameType) = nameType
+  mapItem ::
+    (forall nameType'. Object nameType' -> nameType') ->
+    Object nameType ->
+    nameType
+  mapItem f = f
 
-type MapAll :: (Type ~> Type) -> [Type] -> [Type]
-type family MapAll f xs where
-    MapAll _ '[] = '[]
-    MapAll f (x ': xs) = f @@ x ': MapAll f xs
+type MapTypes :: (Type ~> Type) -> [Type] -> [Type]
+type family MapTypes f ts where
+  MapTypes _ '[] = '[]
+  MapTypes f (t ': ts) = f @@ t ': MapTypes f ts
 
 type All :: (Type -> Constraint) -> [Type] -> Constraint
-type family All c xs where
-    All c '[] = ()
-    All c (x ': xs) = (c x, All c xs)
+type family All c ts where
+  All c '[] = ()
+  All c (t ': ts) = (c t, All c ts)
 
-map :: All MapItem xs => (forall n. Object n -> n) -> HList xs -> HList (MapAll MappedSym0 xs)
+map ::
+  (All MapItem objectTypes) =>
+  (forall nameType. Object nameType -> nameType) ->
+  HList objectTypes ->
+  HList (MapTypes MappedSym0 objectTypes)
 map _ HNil = HNil
-map f (HCons x xs) = HCons (mapItem f x) (map f xs)
+map f (HCons object objects) = HCons (mapItem f object) (map f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
-mappedNames = map name objects
+mappedNames = map name exampleObjects

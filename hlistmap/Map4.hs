@@ -1,51 +1,38 @@
 module Map4 where
 
 import Data.Kind
-import GHC.Base
-import GHC.TypeLits
-import Data.Proxy
+import HList
+import Literal
+import Object
+import Objects
+import Prelude hiding (map)
 
-type HList :: [Type] -> Type
-data HList xs where
-    HNil :: HList '[]
-    HCons :: x -> HList xs -> HList (x ': xs)
+type MapTypes :: [Type] -> [Type]
+type family MapTypes objectTypes where
+  MapTypes '[] = '[]
+  MapTypes (Object nameType ': objectTypes) =
+    nameType ': MapTypes objectTypes
 
-infixr `HCons`
+type Map :: [Type] -> Constraint
+class Map objectTypes where
+  map ::
+    (forall nameType. Object nameType -> nameType) ->
+    HList objectTypes ->
+    HList (MapTypes objectTypes)
 
-type Literal :: Symbol -> Type
-newtype Literal n = Literal String
+instance Map '[] where
+  map ::
+    (forall nameType. Object nameType -> nameType) ->
+    HList '[] ->
+    HList '[]
+  map _ HNil = HNil
 
-makeLiteral :: forall (n :: Symbol) -> KnownSymbol n => Literal n
-makeLiteral n = Literal (symbolVal (Proxy @n))
-
-makeLiteral' :: KnownSymbol n => Literal n
-makeLiteral' @n = Literal (symbolVal (Proxy @n))
-
-type Object :: Type -> Type
-newtype Object n = Object { name :: n }
-
-objects :: HList [Object (Literal "a"), Object (Literal "b"), Object (Literal "c")]
-objects = Object { name = makeLiteral "a" } `HCons`
-          Object { name = makeLiteral "b" } `HCons`
-          Object { name = makeLiteral "c" } `HCons`
-          HNil
-
-type MapToName :: [Type] -> [Type]
-type family MapToName xs where
-    MapToName '[] = '[]
-    MapToName (Object n ': xs) = n ': MapToName xs
-
-type MapName :: [Type] -> Constraint
-class MapName xs where
-    mapName :: (forall n. Object n -> n) -> HList xs -> HList (MapToName xs)
-
-instance MapName '[] where
-    mapName :: (forall n. Object n -> n) -> HList '[] -> HList '[]
-    mapName _ HNil = HNil
-
-instance MapName xs => MapName (Object n ': xs) where
-    mapName :: (forall n'. Object n' -> n') -> HList (Object n ': xs) -> HList (n ': MapToName xs)
-    mapName f (HCons x xs) = HCons (f x) (mapName f xs)
+instance (Map objectTypes) => Map (Object nameType ': objectTypes) where
+  map ::
+    (forall nameType'. Object nameType' -> nameType') ->
+    HList (Object nameType ': objectTypes) ->
+    HList (nameType ': MapTypes objectTypes)
+  map f (HCons object objects) = HCons (f object) (map f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
-mappedNames = mapName name objects
+mappedNames = map name exampleObjects

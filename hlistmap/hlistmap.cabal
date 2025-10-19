@@ -14,7 +14,9 @@ common warnings
 executable hlistmap
     import:           warnings
     main-is:          Main.hs
-    other-modules:    Map1
+    other-modules:    HList
+                      Literal
+                      Map1
                       Map2
                       Map3
                       Map4
@@ -24,6 +26,8 @@ executable hlistmap
                       Map8
                       Map9
                       Map10
+                      Object
+                      Objects
     build-depends:    base >=4.19.1.0
     default-language: GHC2021
     default-extensions: DataKinds

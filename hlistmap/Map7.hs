@@ -1,72 +1,67 @@
 module Map7 where
 
 import Data.Kind
-import GHC.Base hiding (map)
-import GHC.TypeLits
-import Data.Proxy
+import HList
+import Literal
+import Object
+import Objects
 import Prelude hiding (map)
 
-type HList :: [Type] -> Type
-data HList xs where
-    HNil :: HList '[]
-    HCons :: x -> HList xs -> HList (x ': xs)
+type MapTypes :: [Type] -> [Type]
+type family MapTypes objectTypes where
+  MapTypes '[] = '[]
+  MapTypes (Object nameType ': objectTypes) =
+    nameType ': MapTypes objectTypes
 
-infixr `HCons`
+data IsObject objectType where
+  IsObject :: IsObject (Object nameType)
 
-type Literal :: Symbol -> Type
-newtype Literal n = Literal String
+data AreObjects objectTypes where
+  AreObjectsNil :: AreObjects '[]
+  AreObjectsCons ::
+    IsObject objectType ->
+    AreObjects objectTypes ->
+    AreObjects (objectType ': objectTypes)
 
-makeLiteral :: forall (n :: Symbol) -> KnownSymbol n => Literal n
-makeLiteral n = Literal (symbolVal (Proxy @n))
+class IsObjectC objectType where
+  isObject :: objectType -> IsObject objectType
 
-makeLiteral' :: KnownSymbol n => Literal n
-makeLiteral' @n = Literal (symbolVal (Proxy @n))
+instance IsObjectC (Object nameType) where
+  isObject :: Object nameType -> IsObject (Object nameType)
+  isObject _ = IsObject
 
-type Object :: Type -> Type
-newtype Object n = Object { name :: n }
-
-objects :: HList [Object (Literal "a"), Object (Literal "b"), Object (Literal "c")]
-objects = Object { name = makeLiteral "a" } `HCons`
-          Object { name = makeLiteral "b" } `HCons`
-          Object { name = makeLiteral "c" } `HCons`
-          HNil
-
-type MapType :: [Type] -> [Type]
-type family MapType xs where
-    MapType '[] = '[]
-    MapType (Object n ': xs) = n ': MapType xs
-
-data IsObject n where
-    IsObject :: IsObject (Object n)
-
-data AreObjects ns where
-    AreObjectsNil :: AreObjects '[]
-    AreObjectsCons :: IsObject n -> AreObjects ns -> AreObjects (n ': ns)
-
-class IsObjectC n where
-    isObject :: n -> IsObject n
-
-instance IsObjectC (Object n) where
-    isObject :: Object n -> IsObject (Object n)
-    isObject _ = IsObject
-
-class AreObjectsC ns where
-    areObjects :: HList ns -> AreObjects ns
+class AreObjectsC objectTypes where
+  areObjects :: HList objectTypes -> AreObjects objectTypes
 
 instance AreObjectsC '[] where
-    areObjects :: HList '[] -> AreObjects '[]
-    areObjects HNil = AreObjectsNil
+  areObjects :: HList '[] -> AreObjects '[]
+  areObjects HNil = AreObjectsNil
 
-instance (IsObjectC (Object n), AreObjectsC ns) => AreObjectsC (Object n ': ns) where
-    areObjects :: HList (Object n ': ns) -> AreObjects (Object n ': ns)
-    areObjects (HCons x xs) = AreObjectsCons (isObject x) (areObjects xs)
+instance
+  (IsObjectC (Object nameType), AreObjectsC objectTypes) =>
+  AreObjectsC (Object nameType ': objectTypes)
+  where
+  areObjects ::
+    HList (Object nameType ': objectTypes) ->
+    AreObjects (Object nameType ': objectTypes)
+  areObjects (HCons object objects) =
+    AreObjectsCons (isObject object) (areObjects objects)
 
-map :: AreObjects xs -> (forall n. Object n -> n) -> HList xs -> HList (MapType xs)
+map ::
+  AreObjects objectTypes ->
+  (forall nameType. Object nameType -> nameType) ->
+  HList objectTypes ->
+  HList (MapTypes objectTypes)
 map AreObjectsNil _ HNil = HNil
-map (AreObjectsCons IsObject o) f (HCons x xs) = HCons (f x) (map o f xs)
+map (AreObjectsCons IsObject o) f (HCons object objects) =
+  HCons (f object) (map o f objects)
 
-mapC :: AreObjectsC xs => (forall n. Object n -> n) -> HList xs -> HList (MapType xs)
-mapC f xs = map (areObjects xs) f xs
+mapC ::
+  (AreObjectsC objectTypes) =>
+  (forall nameType. Object nameType -> nameType) ->
+  HList objectTypes ->
+  HList (MapTypes objectTypes)
+mapC f objects = map (areObjects objects) f objects
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
-mappedNames = mapC name objects
+mappedNames = mapC name exampleObjects
