@@ -19,13 +19,13 @@ type instance
 type Map :: (Type -> Type) -> [Type] -> Constraint
 class Map objectTypeCon objectTypes where
   map ::
-    (forall nameType. objectTypeCon nameType -> nameType) ->
+    (forall elementType. objectTypeCon elementType -> elementType) ->
     HList objectTypes ->
     HList (MapTypes objectTypes)
 
 instance Map objectTypeCon '[] where
   map ::
-    (forall nameType. objectTypeCon nameType -> nameType) ->
+    (forall elementType. objectTypeCon elementType -> elementType) ->
     HList '[] ->
     HList '[]
   map _ HNil = HNil

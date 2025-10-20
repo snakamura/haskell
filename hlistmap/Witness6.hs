@@ -8,17 +8,17 @@ import Objects
 import Prelude hiding (map)
 
 type IsObject :: Type -> Type -> Type
-data IsObject objectType nameType where
+data IsObject objectType elementType where
   IsObject :: IsObject (Object nameType) nameType
   IsObject' :: IsObject (Object' ageType titleType) titleType
 
 type AreObjects :: [Type] -> [Type] -> Type
-data AreObjects objectTypes nameTypes where
+data AreObjects objectTypes elementTypes where
   AreObjectsNil :: AreObjects '[] '[]
   AreObjectsCons ::
-    IsObject objectType nameType ->
-    AreObjects objectTypes nameTypes ->
-    AreObjects (objectType ': objectTypes) (nameType ': nameTypes)
+    IsObject objectType elementType ->
+    AreObjects objectTypes elementTypes ->
+    AreObjects (objectType ': objectTypes) (elementType ': elementTypes)
 
 type Arrows :: [Type] -> [Type] -> [Type]
 type family Arrows xs rs where
@@ -26,10 +26,10 @@ type family Arrows xs rs where
   Arrows (x ': xs) (r ': rs) = (x -> r) ': Arrows xs rs
 
 map ::
-  AreObjects objectTypes nameTypes ->
-  HList (Arrows objectTypes nameTypes) ->
+  AreObjects objectTypes elementTypes ->
+  HList (Arrows objectTypes elementTypes) ->
   HList objectTypes ->
-  HList nameTypes
+  HList elementTypes
 map AreObjectsNil _ HNil = HNil
 map (AreObjectsCons _ areObjects) (HCons f fs) (HCons object objects) =
   HCons

@@ -23,7 +23,7 @@ type MapItem :: (Type -> Type) -> Type -> Constraint
 class MapItem objectTypeCon objectType where
   type Mapped objectType :: Type
   mapItem ::
-    (forall objectTypeParam. objectTypeCon objectTypeParam -> objectTypeParam) ->
+    (forall elementType. objectTypeCon elementType -> elementType) ->
     objectType ->
     Mapped objectType
 
