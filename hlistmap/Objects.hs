@@ -15,9 +15,9 @@ exampleObjects ::
       Object (Literal "c")
     ]
 exampleObjects =
-  Object {name = makeLiteral "a"}
-    `HCons` Object {name = makeLiteral "b"}
-    `HCons` Object {name = makeLiteral "c"}
+  Object {name = Literal @"a"}
+    `HCons` Object {name = Literal @"b"}
+    `HCons` Object {name = Literal @"c"}
     `HCons` HNil
 
 exampleObjects' ::
@@ -27,7 +27,7 @@ exampleObjects' ::
       Object' Int (Literal "c")
     ]
 exampleObjects' =
-  Object' {age = 20, title = makeLiteral "a"}
-    `HCons` Object' {age = 30, title = makeLiteral "b"}
-    `HCons` Object' {age = 40, title = makeLiteral "c"}
+  Object' {age = 20, title = Literal @"a"}
+    `HCons` Object' {age = 30, title = Literal @"b"}
+    `HCons` Object' {age = 40, title = Literal @"c"}
     `HCons` HNil

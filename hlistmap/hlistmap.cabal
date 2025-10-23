@@ -38,9 +38,11 @@ executable hlistmap
                         GADTs
                         LambdaCase
                         MultiParamTypeClasses
+                        PatternSynonyms
                         RequiredTypeArguments
                         TypeAbstractions
                         TypeApplications
                         TypeData
                         TypeFamilies
                         UndecidableInstances
+                        ViewPatterns

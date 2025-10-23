@@ -15,9 +15,9 @@ infixr `HCons`
 
 exampleObjects :: HList Object [Literal "a", Literal "b", Literal "c"]
 exampleObjects =
-  Object {name = makeLiteral "a"}
-    `HCons` Object {name = makeLiteral "b"}
-    `HCons` Object {name = makeLiteral "c"}
+  Object {name = Literal @"a"}
+    `HCons` Object {name = Literal @"b"}
+    `HCons` Object {name = Literal @"c"}
     `HCons` HNil
 
 mapName :: HList Object xs -> HList Identity xs
