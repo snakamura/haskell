@@ -7,20 +7,16 @@ import Object
 import Objects
 import Prelude hiding (map)
 
-type MapTypes :: [Type] -> [Type]
-type family MapTypes objectTypes where
-  MapTypes '[] = '[]
-  MapTypes (Object nameType ': objectTypes) =
-    nameType ': MapTypes objectTypes
-
 type Map :: [Type] -> Constraint
 class Map objectTypes where
+  type ResultTypes objectTypes :: [Type]
   map ::
     (forall nameType. Object nameType -> nameType) ->
     HList objectTypes ->
-    HList (MapTypes objectTypes)
+    HList (ResultTypes objectTypes)
 
 instance Map '[] where
+  type ResultTypes '[] = '[]
   map ::
     (forall nameType. Object nameType -> nameType) ->
     HList '[] ->
@@ -31,10 +27,13 @@ instance
   (Map objectTypes) =>
   Map (Object nameType ': objectTypes)
   where
+  type
+    ResultTypes (Object nameType ': objectTypes) =
+      nameType ': ResultTypes objectTypes
   map ::
     (forall nameType'. Object nameType' -> nameType') ->
     HList (Object nameType ': objectTypes) ->
-    HList (nameType ': MapTypes objectTypes)
+    HList (nameType ': ResultTypes objectTypes)
   map f (HCons object objects) = HCons (f object) (map f objects)
 
 mappedNames :: HList [Literal "a", Literal "b", Literal "c"]
