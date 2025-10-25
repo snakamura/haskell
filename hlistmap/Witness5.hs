@@ -51,7 +51,7 @@ mappedNames =
     )
     exampleObjects
 
-mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
+mappedTitles :: HList [Literal "x", Literal "y", Literal "z"]
 mappedTitles =
   map
     ( AreObjectsCons

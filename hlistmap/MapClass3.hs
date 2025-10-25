@@ -51,5 +51,5 @@ instance
     HList (titleType ': ResultType objectTypes)
   map f (HCons object objects) = HCons (f object) (map f objects)
 
-mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
+mappedTitles :: HList [Literal "x", Literal "y", Literal "z"]
 mappedTitles = map (title @Int) exampleObjects'

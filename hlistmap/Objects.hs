@@ -22,12 +22,12 @@ exampleObjects =
 
 exampleObjects' ::
   HList
-    [ Object' Int (Literal "a"),
-      Object' Int (Literal "b"),
-      Object' Int (Literal "c")
+    [ Object' Int (Literal "x"),
+      Object' Int (Literal "y"),
+      Object' Int (Literal "z")
     ]
 exampleObjects' =
-  Object' {age = 20, title = Literal @"a"}
-    `HCons` Object' {age = 30, title = Literal @"b"}
-    `HCons` Object' {age = 40, title = Literal @"c"}
+  Object' {age = 20, title = Literal @"x"}
+    `HCons` Object' {age = 30, title = Literal @"y"}
+    `HCons` Object' {age = 40, title = Literal @"z"}
     `HCons` HNil

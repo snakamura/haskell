@@ -69,5 +69,5 @@ instance MapItem (Object' ageType) (Object' ageType titleType) where
     titleType
   mapItem f = f
 
-mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
+mappedTitles :: HList [Literal "x", Literal "y", Literal "z"]
 mappedTitles = map (title @Int) exampleObjects'

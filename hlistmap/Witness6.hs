@@ -82,7 +82,7 @@ instance
   buildObject'Arrows (AreObjectsCons IsObject' areObjects) f =
     HCons f (buildObject'Arrows @objectTypes @titleTypes areObjects f)
 
-mappedTitles :: HList [Literal "a", Literal "b", Literal "c"]
+mappedTitles :: HList [Literal "x", Literal "y", Literal "z"]
 mappedTitles =
   let areObjects =
         AreObjectsCons
