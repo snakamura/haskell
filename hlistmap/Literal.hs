@@ -14,7 +14,7 @@ import Data.Proxy
 import GHC.TypeLits
 
 type Literal :: Symbol -> Type
-data Literal s = Literal deriving (Show, Eq)
+data Literal s = Literal
 
 getLiteral :: forall (s :: Symbol). (KnownSymbol s) => Literal s -> String
 getLiteral Literal = symbolVal (Proxy @s)
