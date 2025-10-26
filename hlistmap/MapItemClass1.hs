@@ -9,24 +9,24 @@ import Prelude hiding (map)
 
 type MapItem :: Type -> Constraint
 class MapItem objectType where
-  type Mapped objectType :: Type
+  type ResultType objectType :: Type
   mapItem ::
     (forall nameType. Object nameType -> nameType) ->
     objectType ->
-    Mapped objectType
+    ResultType objectType
 
 instance MapItem (Object nameType) where
-  type Mapped (Object nameType) = nameType
+  type ResultType (Object nameType) = nameType
   mapItem ::
     (forall nameType'. Object nameType' -> nameType') ->
     Object nameType ->
     nameType
   mapItem f = f
 
-type MapTypes :: [Type] -> [Type]
-type family MapTypes ts where
-  MapTypes '[] = '[]
-  MapTypes (t ': ts) = Mapped t ': MapTypes ts
+type ResultTypes :: [Type] -> [Type]
+type family ResultTypes ts where
+  ResultTypes '[] = '[]
+  ResultTypes (t ': ts) = ResultType t ': ResultTypes ts
 
 type All :: (Type -> Constraint) -> [Type] -> Constraint
 type family All c ts where
@@ -37,7 +37,7 @@ map ::
   (All MapItem objectTypes) =>
   (forall nameType. Object nameType -> nameType) ->
   HList objectTypes ->
-  HList (MapTypes objectTypes)
+  HList (ResultTypes objectTypes)
 map _ HNil = HNil
 map f (HCons object objects) = HCons (mapItem f object) (map f objects)
 
