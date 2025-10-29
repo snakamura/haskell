@@ -7,7 +7,11 @@ import Object
 import Objects
 import Prelude hiding (map)
 
-type a ~> b = (a -> b) -> Type
+type TyFun :: k -> l -> Type
+data TyFun a b
+
+type (~>) :: k -> l -> Type
+type a ~> b = TyFun a b -> Type
 
 type Apply :: (a ~> b) -> a -> b
 type family Apply f x
