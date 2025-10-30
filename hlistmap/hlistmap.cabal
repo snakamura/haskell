@@ -23,6 +23,7 @@ executable hlistmap
                       MapItemClass1
                       MapItemClass2
                       MapItemClass3
+                      MapItemClass4
                       Object
                       Objects
                       Witness1
@@ -32,7 +33,12 @@ executable hlistmap
                       Witness5
                       Witness6
                       Witness7
-    build-depends:    base >=4.19.1.0
+                      Witness8
+    build-depends:    base >=4.19.1.0,
+                      generics-sop >=0.5,
+                      singletons >=3.0,
+                      singletons-base >=3.5,
+                      singletons-th >=3.5
     default-language: GHC2021
     default-extensions: DataKinds
                         GADTs
@@ -40,6 +46,7 @@ executable hlistmap
                         MultiParamTypeClasses
                         PatternSynonyms
                         RequiredTypeArguments
+                        TemplateHaskell
                         TypeAbstractions
                         TypeApplications
                         TypeData
