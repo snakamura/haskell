@@ -20,6 +20,7 @@ executable pair_function
                       Profunctor.Closed
                       Profunctor.CoproductStrong
                       Profunctor.Costar
+                      Profunctor.DinaturalTransformation
                       Profunctor.ProductStrong
                       Profunctor.Star
     build-depends:    base >=4.19.1.0,
