@@ -17,11 +17,15 @@ executable pair_function
     other-modules:    Functor.Closed
                       Functor.CoproductStrong
                       Functor.ProductStrong
+                      Profunctor.CoproductStrong
                       Profunctor.Costar
+                      Profunctor.ProductStrong
                       Profunctor.Star
     build-depends:    base >=4.19.1.0,
                       distributive,
+                      either,
                       profunctors
     default-language: GHC2021
-    default-extensions: UndecidableInstances
+    default-extensions: LambdaCase
+                        UndecidableInstances
 
