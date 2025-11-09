@@ -17,6 +17,7 @@ executable pair_function
     other-modules:    Functor.Closed
                       Functor.CoproductStrong
                       Functor.ProductStrong
+                      Profunctor.Closed
                       Profunctor.CoproductStrong
                       Profunctor.Costar
                       Profunctor.ProductStrong
