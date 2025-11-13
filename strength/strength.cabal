@@ -16,6 +16,7 @@ executable pair_function
     main-is:          Main.hs
     other-modules:    Functor.Closed
                       Functor.CoproductStrong
+                      Functor.NaturalTransformation
                       Functor.ProductStrong
                       Profunctor.Closed
                       Profunctor.CoproductStrong
