@@ -10,6 +10,6 @@ instance ClosedFunctor Maybe where
   closed (Just a2b) = \a -> Just (a2b a)
   closed Nothing = \_ -> Nothing
 
-instance (Functor f, Distributive f) => ClosedFunctor f where
+instance (Functor f) => ClosedFunctor f where
   closed :: f (((->) a) b) -> (->) a (f b)
   closed fab = distribute fab
