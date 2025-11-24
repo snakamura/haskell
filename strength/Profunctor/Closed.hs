@@ -1,8 +1,7 @@
 module Profunctor.Closed where
 
-import Data.Distributive
 import Data.Profunctor (Profunctor (..))
--- import Functor.Closed
+import Functor.Closed
 import Profunctor.Costar
 import Profunctor.Star
 
@@ -16,23 +15,12 @@ instance ClosedProfunctor (->) where
         b = a2b a
      in b
 
-{-
 instance (ClosedFunctor f) => ClosedProfunctor (Star f) where
   closed :: forall a b c. Star f a b -> Star f (c -> a) (c -> b)
   closed (Star a2fb) = Star g
     where
       g :: (c -> a) -> f (c -> b)
       g c2a = Functor.Closed.closed h
-        where
-          h = undefined
--}
-
-instance (Distributive f) => ClosedProfunctor (Star f) where
-  closed :: forall a b c. Star f a b -> Star f (c -> a) (c -> b)
-  closed (Star a2fb) = Star g
-    where
-      g :: (c -> a) -> f (c -> b)
-      g c2a = distribute h
         where
           h :: c -> f b
           h c = a2fb (c2a c)
