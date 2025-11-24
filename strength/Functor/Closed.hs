@@ -3,13 +3,14 @@ module Functor.Closed where
 import Data.Distributive
 
 class (Functor f) => ClosedFunctor f where
-  closed :: f (a -> b) -> (a -> f b)
+  closed :: (a -> f b) -> f (a -> b)
 
-instance ClosedFunctor Maybe where
-  closed :: Maybe (a -> b) -> (a -> Maybe b)
-  closed (Just a2b) = \a -> Just (a2b a)
-  closed Nothing = \_ -> Nothing
+instance ClosedFunctor ((->) r) where
+  closed :: (a -> (r -> b)) -> (r -> (a -> b))
+  closed a2fb = \r a ->
+    let fb = a2fb a
+     in fb r
 
-instance (Functor f) => ClosedFunctor f where
-  closed :: f (((->) a) b) -> (->) a (f b)
-  closed fab = distribute fab
+instance (Functor f, Distributive f) => ClosedFunctor f where
+  closed :: (a -> f b) -> f (a -> b)
+  closed a2fb = distribute a2fb
