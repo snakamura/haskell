@@ -14,3 +14,6 @@ instance ClosedFunctor ((->) r) where
 instance (Functor f, Distributive f) => ClosedFunctor f where
   closed :: (a -> f b) -> f (a -> b)
   closed a2fb = distribute a2fb
+
+unclosed :: (Functor f) => f (a -> b) -> (a -> f b)
+unclosed fa2b = \a -> fmap (\a2b -> a2b a) fa2b
