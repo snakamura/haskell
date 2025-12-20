@@ -10,28 +10,13 @@ newtype Delta v a = Delta v
 type Lim :: (J -> Type) -> Type
 data Lim f = Lim (f J1) (f J2)
 
-{-
-homDeltaVtoF ::
-  forall v f.
-  (Cone v (f J1) (f J2)) =>
-  (Delta v J1 -> f J1, Delta v J2 -> f J2)
-homDeltaVtoF =
-  ( \(Delta v) -> p @_ @(f J1) @(f J2) v,
-    \(Delta v) -> q @_ @(f J1) @(f J2) v
-  )
-
-homVtoLimV :: (Cone v (F J1) (F J2)) => v -> Lim F
-homVtoLimV v = Lim (p @_ @(F J1) @(F J2) v) (q @_ @(F J1) @(F J2) v)
--}
+type (~>) :: (J -> Type) -> (J -> Type) -> Type
+type f ~> g = forall (j :: J). f j -> g j
 
 type Adjunction :: (Type -> (J -> Type)) -> ((J -> Type) -> Type) -> Constraint
 class Adjunction f g | f -> g, g -> f where
-  leftAdjunct ::
-    forall (v :: Type) (d :: J -> Type) (j :: J).
-    (f v j -> d j) -> (v -> g d)
-  rightAdjunct ::
-    forall (v :: Type) (d :: J -> Type) (j :: J).
-    (v -> g d) -> (f v j -> d j)
+  leftAdjunct :: forall (v :: Type) (d :: J -> Type). (f v ~> d) -> (v -> g d)
+  rightAdjunct :: forall (v :: Type) (d :: J -> Type). (v -> g d) -> (f v ~> d)
 
 type Adjunction' :: (Type -> (J -> Type)) -> ((J -> Type) -> Type) -> Constraint
 class Adjunction' f g | f -> g, g -> f where
@@ -65,8 +50,14 @@ data C
 
 data V = V (D J1) (D J2) C
 
-hom1 :: (Delta V J1 -> (D J1, D J2), Delta V J2 -> (D J1, D J2))
-hom1 = (\(Delta (V a b _)) -> (a, b), \(Delta (V a b _)) -> (a, b))
+homDeltaVtoD :: (Delta V J1 -> D J1, Delta V J2 -> D J2)
+homDeltaVtoD = (\(Delta (V a _ _)) -> a, \(Delta (V _ b _)) -> b)
 
-hom2 :: V -> Lim D
-hom2 (V a b _) = Lim a b
+homVtoLimD :: V -> Lim D
+homVtoLimD (V a b _) = Lim a b
+
+homVtoLimD' :: V -> Lim D
+homVtoLimD' = leftAdjunct' homDeltaVtoD
+
+homDeltaVtoD' :: (Delta V J1 -> D J1, Delta V J2 -> D J2)
+homDeltaVtoD' = rightAdjunct' homVtoLimD
