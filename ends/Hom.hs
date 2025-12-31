@@ -1,8 +1,10 @@
 module Hom where
 
+import Data.Kind
 import Data.List
 import Data.Profunctor
 
+type Hom :: (Type -> Type) -> (Type -> Type) -> Type -> Type -> Type
 newtype Hom f g a b = Hom (f a -> g b)
 
 type List2Maybe a b = Hom List Maybe a b
