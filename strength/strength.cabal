@@ -11,7 +11,7 @@ build-type:         Simple
 common warnings
     ghc-options: -Wall
 
-executable pair_function
+executable strength
     import:           warnings
     main-is:          Main.hs
     other-modules:    Functor.Closed
@@ -23,6 +23,7 @@ executable pair_function
                       Profunctor.CoproductStrong
                       Profunctor.Costar
                       Profunctor.DinaturalTransformation
+                      Profunctor.NaturalTransformation
                       Profunctor.ProductStrong
                       Profunctor.Pure
                       Profunctor.Star
