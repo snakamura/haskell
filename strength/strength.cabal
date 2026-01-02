@@ -19,10 +19,12 @@ executable pair_function
                       Functor.NaturalTransformation
                       Functor.ProductStrong
                       Profunctor.Closed
+                      Profunctor.Const
                       Profunctor.CoproductStrong
                       Profunctor.Costar
                       Profunctor.DinaturalTransformation
                       Profunctor.ProductStrong
+                      Profunctor.Pure
                       Profunctor.Star
     build-depends:    base >=4.19.1.0,
                       distributive,
