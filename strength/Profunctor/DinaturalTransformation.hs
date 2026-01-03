@@ -6,7 +6,7 @@ import Profunctor.Costar
 import Profunctor.Pure
 import Profunctor.Star
 
--- lmap f . alphaB . rmap f = rmap f . alphaA . lmap f
+-- rmap ab . alphaA . lmap ab = lmap ab . alphaB . rmap ab
 
 pureStar :: forall f a. (Applicative f) => Pure a a -> Star f a a
 pureStar (Pure a2a) = Star a2fa
