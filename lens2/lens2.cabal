@@ -16,6 +16,7 @@ executable lens2
     main-is:          Main.hs
     other-modules:    Sample
                       Store
+                      VanLaarhoven
     build-depends:    base >=4.19.1.0,
                       comonad
     default-language: GHC2021
