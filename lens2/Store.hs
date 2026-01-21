@@ -45,6 +45,17 @@ compose m2i o2m =
       setter s z = set o2m (set m2i z (view o2m s)) s
    in lens getter setter
 
+compose' :: Lens middle inner -> Lens outer middle -> Lens outer inner
+compose' m_i o_m = \o ->
+  let Store (m, o2m) = o_m o
+      Store (i, m2i) = m_i m
+   in Store (i, \i -> o2m (m2i i))
+
+compose'' :: Lens middle inner -> Lens outer middle -> Lens outer inner
+compose'' m_i o_m = \o ->
+  let Store (m, o2m) = o_m o
+   in fmap o2m (m_i m)
+
 firstName :: Lens Person String
 firstName = compose first name
 
