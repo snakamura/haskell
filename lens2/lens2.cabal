@@ -14,10 +14,12 @@ common warnings
 executable lens2
     import:           warnings
     main-is:          Main.hs
-    other-modules:    Sample
+    other-modules:    Profunctor
+                      Sample
                       Store
                       VanLaarhoven
     build-depends:    base >=4.19.1.0,
-                      comonad
+                      comonad,
+                      profunctors
     default-language: GHC2021
     default-extensions:
