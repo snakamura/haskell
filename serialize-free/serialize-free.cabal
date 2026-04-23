@@ -13,8 +13,11 @@ common warnings
 
 executable serialize-free
     main-is:          Main.hs
-    other-modules:    Free1
+    other-modules:    Free
+                      Free1
                       Free2
-    build-depends:    base
+                      Free3
+    build-depends:    base,
+                      kan-extensions
     default-language: GHC2024
-    default-extensions:
+    default-extensions: UndecidableInstances
