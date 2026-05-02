@@ -1,6 +1,5 @@
 module Free1 where
 
-import Data.Functor.Coyoneda
 import Data.List
 import Text.Read
 
