@@ -17,7 +17,9 @@ executable serialize-free
                       Free1
                       Free2
                       Free3
+                      Free4
     build-depends:    base,
                       kan-extensions
     default-language: GHC2024
     default-extensions: UndecidableInstances
+    ghc-options: -Wall -Wno-x-partial
