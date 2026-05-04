@@ -42,6 +42,12 @@ deriving instance Functor Action
 
 type Program a = Free Action a
 
+runProgram :: Program a -> IO a
+runProgram = foldFree interpret
+  where
+    interpret :: Action a -> IO a
+    interpret (Action command f) = f <$> runCommand command
+
 getLineLengthP :: Program LineLength
 getLineLengthP = Free (Action GetLineLength Pure)
 

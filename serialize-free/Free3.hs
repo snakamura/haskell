@@ -31,6 +31,9 @@ runSomeCommand (SomeCommand command) = show <$> runCommand command
 
 type Program a = Free (Coyoneda Command) a
 
+runProgram :: Program a -> IO a
+runProgram = foldFree (lowerCoyoneda . hoistCoyoneda runCommand)
+
 getLineP :: Program String
 getLineP = Free (Coyoneda Pure GetLine)
 

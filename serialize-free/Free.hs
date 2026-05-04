@@ -21,3 +21,7 @@ instance Functor f => Monad (Free f) where
     (>>=) :: Free f a -> (a -> Free f b) -> Free f b
     Pure a >>= f = f a
     Free x >>= f = Free (fmap (>>= f) x)
+
+foldFree :: (Monad m) => (forall x. f x -> m x) -> Free f a -> m a
+foldFree _ (Pure a) = pure a
+foldFree f (Free as) = f as >>= foldFree f
