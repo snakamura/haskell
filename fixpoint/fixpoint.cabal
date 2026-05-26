@@ -1,0 +1,21 @@
+cabal-version:      3.0
+name:               fixpoint
+version:            0.1.0.0
+license:            MIT
+license-file:       LICENSE
+author:             Satoshi Nakamura
+maintainer:         snak@snak.org
+category:           Data
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable fixpoint
+    main-is:          Main.hs
+    other-modules:    GenericMaybe
+                      Maybe
+    build-depends:    base
+    default-language: GHC2024
+    default-extensions:
+    ghc-options: -Wall -Wno-x-partial
