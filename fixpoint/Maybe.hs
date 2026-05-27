@@ -3,13 +3,23 @@
 module Maybe where
 
 import Data.Kind
-import Prelude hiding (Maybe(..))
+import Prelude hiding (Maybe (..))
 
 type Maybe :: Type -> Type
-data Maybe a = Nothing | Just a deriving Functor
+data Maybe a = Nothing | Just a deriving (Functor)
 
 type Mu :: (Type -> Type) -> Type
 newtype Mu f = Mu (f (Mu f))
+
+cata :: (Functor f) => (f a -> a) -> Mu f -> a
+cata alg (Mu fmuf) =
+  let fa = cata alg <$> fmuf
+   in alg fa
+
+ana :: (Functor f) => (a -> f a) -> a -> Mu f
+ana coalg a =
+  let fa = coalg a
+   in Mu $ ana coalg <$> fa
 
 type Nat :: Type
 type Nat = Mu Maybe
@@ -20,11 +30,19 @@ one = Mu (Just (Mu Nothing))
 two = Mu (Just (Mu (Just (Mu Nothing))))
 
 fromInt :: Int -> Nat
-fromInt 0 = Mu Nothing
-fromInt n = Mu $ Just $ fromInt $ n - 1
+fromInt = ana coalg
+  where
+    coalg 0 = Nothing
+    coalg n = Just $ n - 1
 
 inf :: Nat
 inf = Mu (Just inf)
+
+toInt :: Nat -> Int
+toInt = cata alg
+  where
+    alg Nothing = 0
+    alg (Just n) = n + 1
 
 is :: Int -> Nat -> Bool
 is 0 (Mu Nothing) = True
@@ -36,7 +54,15 @@ type Nu :: (Type -> Type) -> Type
 data Nu f where
   Nu :: (s -> f s) -> s -> Nu f
 
-project :: Functor f => Nu f -> f (Nu f)
+cata' :: (Functor f) => (f a -> a) -> Nu f -> a
+cata' alg nu =
+  let fnuf = project nu
+   in alg $ cata' alg <$> fnuf
+
+ana' :: (Functor f) => (a -> f a) -> a -> Nu f
+ana' = Nu
+
+project :: (Functor f) => Nu f -> f (Nu f)
 project (Nu next state) = Nu next <$> next state
 
 type CoNat :: Type
@@ -56,13 +82,19 @@ one' = Nu f True
     f True = Just False
 
 fromInt' :: Int -> CoNat
-fromInt' n = Nu f n
+fromInt' = ana' coalg
   where
-    f 0 = Nothing
-    f n' = Just $ n' - 1
+    coalg 0 = Nothing
+    coalg n' = Just $ n' - 1
 
 inf' :: CoNat
-inf' = Nu (\_ -> Just ()) ()
+inf' = ana' (\_ -> Just ()) ()
+
+toInt' :: CoNat -> Int
+toInt' = cata' alg
+  where
+    alg Nothing = 0
+    alg (Just n) = n + 1
 
 is' :: Int -> CoNat -> Bool
 is' n coNat =
