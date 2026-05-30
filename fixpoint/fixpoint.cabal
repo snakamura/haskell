@@ -13,9 +13,15 @@ common warnings
 
 executable fixpoint
     main-is:          Main.hs
-    other-modules:    GenericMaybe
+    other-modules:    Fix
+                      FixNat
+                      GenericMaybe
                       Maybe
+                      Mu
+                      MuNat
+                      Nu
+                      NuNat
     build-depends:    base
     default-language: GHC2024
-    default-extensions:
+    default-extensions: Strict
     ghc-options: -Wall -Wno-x-partial
