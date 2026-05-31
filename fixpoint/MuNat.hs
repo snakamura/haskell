@@ -18,6 +18,7 @@ two = Mu (\alg -> alg (Just (alg (Just (alg Nothing)))))
 fromInt :: Int -> Nat
 fromInt = ana coalg
   where
+    coalg :: Int -> Maybe Int
     coalg 0 = Nothing
     coalg n = Just $ n - 1
 
@@ -27,11 +28,13 @@ inf = Mu (\alg -> fix (alg . Just))
 toInt :: Nat -> Int
 toInt = cata alg
   where
+    alg :: Maybe Int -> Int
     alg Nothing = 0
     alg (Just n) = n + 1
 
 is :: Int -> Nat -> Bool
 is n nat = cata alg nat n
  where
+    alg :: Maybe (Int -> Bool) -> (Int -> Bool)
     alg Nothing = (== 0)
     alg (Just f) = \n' -> n' > 0 && f (n' - 1)

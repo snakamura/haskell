@@ -11,3 +11,16 @@ cata alg (Mu f) = f alg
 
 ana :: (Functor f) => (a -> f a) -> a -> Mu f
 ana coalg a = Mu (\alg -> let h x = alg (h <$> coalg x) in h a)
+
+embed :: (Functor f) => f (Mu f) -> Mu f
+embed fmuf = Mu $ \alg -> alg $ cata alg <$> fmuf
+
+project :: (Functor f) => Mu f -> f (Mu f)
+project = snd . cata phi
+  where
+    phi x = (embed (fst <$> x), fst <$> x)
+
+para :: (Functor f) => (f (Mu f, a) -> a) -> Mu f -> a
+para alg = snd . cata phi
+  where
+    phi x = (embed (fst <$> x), alg x)
