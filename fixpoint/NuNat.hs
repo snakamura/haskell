@@ -10,14 +10,14 @@ type Nat :: Type
 type Nat = Nu Maybe
 
 projectNat :: Nat -> Maybe Nat
-projectNat (Nu next state) =
+projectNat (Out next state) =
   case next state of
-    Just state' -> Just $ Nu next state'
+    Just state' -> Just $ Out next state'
     Nothing -> Nothing
 
 zero, one :: Nat
-zero = Nu (\() -> Nothing) ()
-one = Nu f True
+zero = Out (\() -> Nothing) ()
+one = Out f True
   where
     f False = Nothing
     f True = Just False

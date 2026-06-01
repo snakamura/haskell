@@ -11,9 +11,9 @@ type Nat :: Type
 type Nat = Mu Maybe
 
 zero, one, two :: Nat
-zero = Mu (\alg -> alg Nothing)
-one = Mu (\alg -> alg (Just (alg Nothing)))
-two = Mu (\alg -> alg (Just (alg (Just (alg Nothing)))))
+zero = In (\alg -> alg Nothing)
+one = In (\alg -> alg (Just (alg Nothing)))
+two = In (\alg -> alg (Just (alg (Just (alg Nothing)))))
 
 fromInt :: Int -> Nat
 fromInt = ana coalg
@@ -23,7 +23,7 @@ fromInt = ana coalg
     coalg n = Just $ n - 1
 
 inf :: Nat
-inf = Mu (\alg -> fix (alg . Just))
+inf = In (\alg -> fix (alg . Just))
 
 toInt :: Nat -> Int
 toInt = cata alg

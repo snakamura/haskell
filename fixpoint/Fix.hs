@@ -6,10 +6,10 @@ type Fix :: (Type -> Type) -> Type
 newtype Fix f = Fix (f (Fix f))
 
 cata :: (Functor f) => (f a -> a) -> Fix f -> a
-cata alg (Fix ffixf) = alg $ cata alg <$> ffixf
+cata alg = alg . fmap (cata alg) . project
 
 ana :: (Functor f) => (a -> f a) -> a -> Fix f
-ana coalg a = Fix $ ana coalg <$> coalg a
+ana coalg = embed . fmap (ana coalg) . coalg
 
 embed :: f (Fix f) -> Fix f
 embed = Fix
