@@ -1,6 +1,7 @@
 module FixNat where
 
 import Data.Kind
+import Numeric.Natural
 import Prelude hiding (Maybe (..))
 
 import Fix
@@ -14,26 +15,35 @@ zero = Fix Nothing
 one = Fix (Just (Fix Nothing))
 two = Fix (Just (Fix (Just (Fix Nothing))))
 
-fromInt :: Int -> Nat
-fromInt = ana coalg
+fromNatural :: Natural -> Nat
+fromNatural = ana coalg
   where
-    coalg :: Int -> Maybe Int
+    coalg :: Natural -> Maybe Natural
     coalg 0 = Nothing
     coalg n = Just $ n - 1
 
 inf :: Nat
 inf = Fix (Just inf)
 
-toInt :: Nat -> Int
-toInt = cata alg
+toNatural :: Nat -> Natural
+toNatural = cata alg
   where
-    alg :: Maybe Int -> Int
+    alg :: Maybe Natural -> Natural
     alg Nothing = 0
     alg (Just n) = n + 1
 
-is :: Int -> Nat -> Bool
+is :: Natural -> Nat -> Bool
 is n nat = cata alg nat n
   where
-    alg :: Maybe (Int -> Bool) -> (Int -> Bool)
+    alg :: Maybe (Natural -> Bool) -> (Natural -> Bool)
     alg Nothing = (== 0)
     alg (Just f) = \n' -> n' > 0 && f (n' - 1)
+
+type Fix' :: (Type -> Type) -> Type
+newtype Fix' f = Fix' (() -> f (Fix' f))
+
+type Nat' :: Type
+type Nat' = Fix' Maybe
+
+inf' :: Nat'
+inf' = Fix' (\_ -> Just inf')
