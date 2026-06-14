@@ -23,5 +23,5 @@ executable fixpoint
                       NuNat
     build-depends:    base
     default-language: GHC2024
-    default-extensions: Strict
+    default-extensions: Strict, TypeAbstractions
     ghc-options: -Wall -Wno-x-partial

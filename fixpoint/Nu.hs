@@ -7,25 +7,27 @@ data Nu f where
   Out :: (s -> f s) -> s -> Nu f
 
 cata :: (Functor f) => (f a -> a) -> Nu f -> a
-cata alg nu = alg $ cata alg <$> project nu
+cata alg = alg . fmap (cata alg) . project
 
 ana :: (Functor f) => (a -> f a) -> a -> Nu f
 ana = Out
 
 embed :: (Functor f) => f (Nu f) -> Nu f
-embed = apo (fmap Left)
 {-
-embed = ana coalg . Left
-  where
-    coalg (Left f) = Right <$> f
-    coalg (Right n) = Right <$> project n
+embed = apo (fmap Left)
 -}
+embed @f = ana coalg . Right
+  where
+    coalg :: Either (Nu f) (f (Nu f)) -> f (Either (Nu f) (f (Nu f)))
+    coalg (Left nu) = Left <$> project nu
+    coalg (Right fnuf) = Left <$> fnuf
 
 project :: (Functor f) => Nu f -> f (Nu f)
-project (Out next state) = Out next <$> next state
+project (Out coalg value) = Out coalg <$> coalg value
 
 apo :: (Functor f) => (a -> f (Either (Nu f) a)) -> a -> Nu f
-apo psi = ana c . Right
+apo @f @a psi = ana coalg . Right
   where
-    c (Left n) = Left <$> project n
-    c (Right a) = psi a
+    coalg :: Either (Nu f) a -> f (Either (Nu f) a)
+    coalg (Left nu) = Left <$> project nu
+    coalg (Right a) = psi a

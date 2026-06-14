@@ -16,14 +16,16 @@ embed :: (Functor f) => f (Mu f) -> Mu f
 embed fmuf = In $ \alg -> alg $ cata alg <$> fmuf
 
 project :: (Functor f) => Mu f -> f (Mu f)
-project = para $ fmap fst
 {-
-project = snd . cata phi
-  where
-    phi x = (embed (fst <$> x), fst <$> x)
+project = para $ fmap fst
 -}
+project @f = snd . cata alg
+  where
+    alg :: f (Mu f, f (Mu f)) -> (Mu f, f (Mu f))
+    alg x = (embed (fst <$> x), fst <$> x)
 
 para :: (Functor f) => (f (Mu f, a) -> a) -> Mu f -> a
-para alg = snd . cata phi
+para @f @a phi = snd . cata alg
   where
-    phi x = (embed (fst <$> x), alg x)
+    alg :: f (Mu f, a) -> (Mu f, a)
+    alg x = (embed (fst <$> x), phi x)
