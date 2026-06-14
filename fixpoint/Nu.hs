@@ -4,7 +4,7 @@ import Data.Kind
 
 type Nu :: (Type -> Type) -> Type
 data Nu f where
-  Out :: (s -> f s) -> s -> Nu f
+  Out :: (a -> f a) -> a -> Nu f
 
 cata :: (Functor f) => (f a -> a) -> Nu f -> a
 cata alg = alg . fmap (cata alg) . project

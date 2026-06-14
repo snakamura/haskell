@@ -7,7 +7,7 @@ newtype Mu f where
   In :: (forall a. (f a -> a) -> a) -> Mu f
 
 cata :: (Functor f) => (f a -> a) -> Mu f -> a
-cata alg (In run) = run alg
+cata alg (In cata') = cata' alg
 
 ana :: (Functor f) => (a -> f a) -> a -> Mu f
 ana coalg a = In (\alg -> let h x = alg (h <$> coalg x) in h a)
