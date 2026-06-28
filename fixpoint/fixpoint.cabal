@@ -13,7 +13,10 @@ common warnings
 
 executable fixpoint
     main-is:          Main.hs
-    other-modules:    Fix
+    other-modules:    Church
+                      ChurchFunctor
+                      ChurchMu
+                      Fix
                       FixNat
                       GenericMaybe
                       Maybe
