@@ -15,6 +15,9 @@ zero = Fix Nothing
 one = Fix (Just (Fix Nothing))
 two = Fix (Just (Fix (Just (Fix Nothing))))
 
+succ :: Nat -> Nat
+succ n = Fix (Just n)
+
 fromNatural :: Natural -> Nat
 fromNatural = ana coalg
   where
