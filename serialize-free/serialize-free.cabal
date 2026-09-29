@@ -18,6 +18,7 @@ executable serialize-free
                       Free2
                       Free3
                       Free4
+                      Free5
     build-depends:    base,
                       kan-extensions
     default-language: GHC2024
