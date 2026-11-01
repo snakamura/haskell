@@ -13,7 +13,8 @@ common warnings
 
 executable cont3
     main-is:          Main.hs
-    other-modules:    Cont1
+    other-modules:    Cont
+                      Cont1
     build-depends:    base
     default-language: GHC2024
     default-extensions:
