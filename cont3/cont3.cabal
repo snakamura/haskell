@@ -1,0 +1,19 @@
+cabal-version:      3.0
+name:               cont3
+version:            0.1.0.0
+license:            MIT
+license-file:       LICENSE
+author:             Satoshi Nakamura
+maintainer:         snak@snak.org
+category:           Data
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable cont3
+    main-is:          Main.hs
+    other-modules:    Cont1
+    build-depends:    base
+    default-language: GHC2024
+    default-extensions:
