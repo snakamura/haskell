@@ -1,8 +1,7 @@
 module Cont1 where
 
-import Control.Monad
-
 import Cont
+import Control.Monad
 
 isZero :: Int -> Bool
 isZero 0 = True
@@ -23,9 +22,6 @@ boolToStringCPS b next = next $ show b
 
 composedCPS :: Int -> (String -> r) -> r
 composedCPS n next = isZeroCPS n $ \b -> boolToStringCPS b $ \s -> next s
-
-evalCont :: Cont r r -> r
-evalCont (Cont ar2r) = ar2r id
 
 isZeroCont :: Int -> Cont r Bool
 isZeroCont 0 = Cont $ \b2r -> b2r True
